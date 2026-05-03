@@ -12,7 +12,8 @@
         "cta2_link": "shopify://pages/wig-spa",
         "image_focal_x": 55,
         "image_focal_y": 22,
-        "min_height_px": 720
+        "min_height_px": 720,
+        "image_asset_filename": "hero.jpg"
       }
     },
     "tc_stats": {

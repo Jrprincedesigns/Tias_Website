@@ -26,6 +26,13 @@
         width="{{ section.settings.image.width }}"
         height="{{ section.settings.image.height }}"
       >
+    {%- elsif section.settings.image_asset_filename != blank -%}
+      <img
+        src="{{ section.settings.image_asset_filename | asset_url }}"
+        sizes="100vw"
+        alt=""
+        loading="eager"
+      >
     {%- endif -%}
   </div>
   <div class="tc-hero__overlay"></div>
@@ -76,7 +83,14 @@
       "type": "image_picker",
       "id": "image",
       "label": "Hero image",
-      "info": "Recommended: portrait or landscape photo, at least 2000px wide. Falls back to a lavender gradient if empty."
+      "info": "Recommended: portrait or landscape photo, at least 2000px wide. If empty, the asset filename below is used as a fallback."
+    },
+    {
+      "type": "text",
+      "id": "image_asset_filename",
+      "label": "Asset filename fallback",
+      "default": "hero.jpg",
+      "info": "Used only when no image is selected above. Loads from the theme's assets/ folder."
     },
     {
       "type": "range",
