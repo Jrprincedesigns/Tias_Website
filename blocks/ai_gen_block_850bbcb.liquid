@@ -1,0 +1,239 @@
+{% doc %}
+  @prompt
+    a banner with text that moves acros the screen 
+{% enddoc %}
+{% assign ai_gen_id = block.id | replace: '_', '' | downcase %}
+
+{% style %}
+  .ai-scrolling-banner-{{ ai_gen_id }} {
+    display: block;
+    width: 100%;
+    overflow: hidden;
+    background-color: {{ block.settings.background_color }};
+    padding: {{ block.settings.padding_vertical }}px 0;
+  }
+
+  .ai-scrolling-banner__track-{{ ai_gen_id }} {
+    display: flex;
+    width: fit-content;
+    animation: ai-scroll-{{ ai_gen_id }} {{ block.settings.scroll_speed }}s linear infinite;
+  }
+
+  .ai-scrolling-banner__content-{{ ai_gen_id }} {
+    display: flex;
+    align-items: center;
+    white-space: nowrap;
+    gap: {{ block.settings.text_spacing }}px;
+  }
+
+  .ai-scrolling-banner__text-{{ ai_gen_id }} {
+    color: {{ block.settings.text_color }};
+    font-size: {{ block.settings.font_size }}px;
+    font-weight: {{ block.settings.font_weight }};
+    text-transform: {{ block.settings.text_transform }};
+  }
+
+  .ai-scrolling-banner__separator-{{ ai_gen_id }} {
+    color: {{ block.settings.separator_color }};
+    font-size: {{ block.settings.font_size }}px;
+  }
+
+  @keyframes ai-scroll-{{ ai_gen_id }} {
+    0% {
+      transform: translateX(0);
+    }
+    100% {
+      transform: translateX(-50%);
+    }
+  }
+
+  .ai-scrolling-banner__track-{{ ai_gen_id }}:hover {
+    animation-play-state: {{ block.settings.pause_on_hover }};
+  }
+
+  @media screen and (max-width: 749px) {
+    .ai-scrolling-banner__text-{{ ai_gen_id }} {
+      font-size: calc({{ block.settings.font_size }}px * 0.8);
+    }
+
+    .ai-scrolling-banner__separator-{{ ai_gen_id }} {
+      font-size: calc({{ block.settings.font_size }}px * 0.8);
+    }
+  }
+{% endstyle %}
+
+<div class="ai-scrolling-banner-{{ ai_gen_id }}" {{ block.shopify_attributes }}>
+  <div class="ai-scrolling-banner__track-{{ ai_gen_id }}">
+    <div class="ai-scrolling-banner__content-{{ ai_gen_id }}">
+      {% for i in (1..10) %}
+        <span class="ai-scrolling-banner__text-{{ ai_gen_id }}">{{ block.settings.banner_text }}</span>
+        <span class="ai-scrolling-banner__separator-{{ ai_gen_id }}">{{ block.settings.separator }}</span>
+      {% endfor %}
+    </div>
+    <div class="ai-scrolling-banner__content-{{ ai_gen_id }}" aria-hidden="true">
+      {% for i in (1..10) %}
+        <span class="ai-scrolling-banner__text-{{ ai_gen_id }}">{{ block.settings.banner_text }}</span>
+        <span class="ai-scrolling-banner__separator-{{ ai_gen_id }}">{{ block.settings.separator }}</span>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+{% schema %}
+{
+  "name": "Scrolling banner",
+  "settings": [
+    {
+      "type": "header",
+      "content": "Content"
+    },
+    {
+      "type": "text",
+      "id": "banner_text",
+      "label": "Banner text",
+      "default": "Free shipping on orders over $50"
+    },
+    {
+      "type": "text",
+      "id": "separator",
+      "label": "Separator",
+      "default": "★"
+    },
+    {
+      "type": "range",
+      "id": "text_spacing",
+      "label": "Text spacing",
+      "min": 20,
+      "max": 100,
+      "step": 10,
+      "unit": "px",
+      "default": 40
+    },
+    {
+      "type": "header",
+      "content": "Animation"
+    },
+    {
+      "type": "range",
+      "id": "scroll_speed",
+      "label": "Scroll speed",
+      "min": 10,
+      "max": 60,
+      "step": 5,
+      "unit": "s",
+      "default": 20
+    },
+    {
+      "type": "select",
+      "id": "pause_on_hover",
+      "label": "Pause on hover",
+      "options": [
+        {
+          "value": "paused",
+          "label": "Yes"
+        },
+        {
+          "value": "running",
+          "label": "No"
+        }
+      ],
+      "default": "paused"
+    },
+    {
+      "type": "header",
+      "content": "Style"
+    },
+    {
+      "type": "color",
+      "id": "background_color",
+      "label": "Background color",
+      "default": "#4770db"
+    },
+    {
+      "type": "color",
+      "id": "text_color",
+      "label": "Text color",
+      "default": "#ffffff"
+    },
+    {
+      "type": "color",
+      "id": "separator_color",
+      "label": "Separator color",
+      "default": "#ffffff"
+    },
+    {
+      "type": "range",
+      "id": "font_size",
+      "label": "Font size",
+      "min": 12,
+      "max": 48,
+      "step": 2,
+      "unit": "px",
+      "default": 18
+    },
+    {
+      "type": "select",
+      "id": "font_weight",
+      "label": "Font weight",
+      "options": [
+        {
+          "value": "400",
+          "label": "Normal"
+        },
+        {
+          "value": "500",
+          "label": "Medium"
+        },
+        {
+          "value": "600",
+          "label": "Semi-bold"
+        },
+        {
+          "value": "700",
+          "label": "Bold"
+        }
+      ],
+      "default": "600"
+    },
+    {
+      "type": "select",
+      "id": "text_transform",
+      "label": "Text transform",
+      "options": [
+        {
+          "value": "none",
+          "label": "None"
+        },
+        {
+          "value": "uppercase",
+          "label": "Uppercase"
+        },
+        {
+          "value": "lowercase",
+          "label": "Lowercase"
+        },
+        {
+          "value": "capitalize",
+          "label": "Capitalize"
+        }
+      ],
+      "default": "uppercase"
+    },
+    {
+      "type": "range",
+      "id": "padding_vertical",
+      "label": "Vertical padding",
+      "min": 10,
+      "max": 50,
+      "step": 5,
+      "unit": "px",
+      "default": 15
+    }
+  ],
+  "presets": [
+    {
+      "name": "Scrolling banner"
+    }
+  ]
+}
+{% endschema %}

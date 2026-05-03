@@ -533,6 +533,7 @@ quick-order-list .pagination-wrapper {
 }
 
 @media screen and (min-width: 990px) {
+
   .quick-order-list__table thead th:first-child,
   .quick-order-list-total__column {
     width: 37%;

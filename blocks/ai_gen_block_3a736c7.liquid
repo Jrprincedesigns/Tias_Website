@@ -1,0 +1,312 @@
+{% doc %}
+  @prompt
+    Create 4 side by side video cards. Add a smooth holographic shimmer effect and a shadow., remove the title and description under the video card, increase the video cards , increase the video cards sizes, increase video card size more
+{% enddoc %}
+{% assign ai_gen_id = block.id | replace: '_', '' | downcase %}
+
+{% style %}
+  .ai-video-cards-{{ ai_gen_id }} {
+    display: block;
+    width: {{ block.settings.desktop_width_percent }}%;
+    max-width: 100%;
+  }
+
+  .ai-video-cards-grid-{{ ai_gen_id }} {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: {{ block.settings.card_gap }}px;
+  }
+
+  .ai-video-card-{{ ai_gen_id }} {
+    position: relative;
+    border-radius: {{ block.settings.border_radius }}px;
+    overflow: hidden;
+    background: {{ block.settings.card_background }};
+    box-shadow: {{ block.settings.shadow_horizontal }}px {{ block.settings.shadow_vertical }}px {{ block.settings.shadow_blur }}px rgba(0, 0, 0, {{ block.settings.shadow_opacity }});
+  }
+
+  .ai-video-card-{{ ai_gen_id }}::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      rgba(255, 255, 255, 0.1) 25%,
+      rgba(255, 182, 193, 0.2) 35%,
+      rgba(173, 216, 230, 0.2) 50%,
+      rgba(144, 238, 144, 0.2) 65%,
+      rgba(255, 255, 255, 0.1) 75%,
+      transparent 100%
+    );
+    z-index: 2;
+    pointer-events: none;
+  }
+
+  .ai-video-card-{{ ai_gen_id }}:hover::before {
+    animation: ai-holographic-shimmer-{{ ai_gen_id }} 1.5s ease-in-out;
+  }
+
+  @keyframes ai-holographic-shimmer-{{ ai_gen_id }} {
+    0% {
+      left: -100%;
+    }
+    100% {
+      left: 100%;
+    }
+  }
+
+  .ai-video-card-wrapper-{{ ai_gen_id }} {
+    position: relative;
+    width: 100%;
+    padding-bottom: {{ block.settings.card_aspect_ratio }}%;
+    background-color: #f4f4f4;
+  }
+
+  .ai-video-card-wrapper-{{ ai_gen_id }} video {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .ai-video-card-placeholder-{{ ai_gen_id }} {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #f4f4f4;
+  }
+
+  .ai-video-card-placeholder-{{ ai_gen_id }} svg {
+    width: 60%;
+    height: 60%;
+    opacity: 0.3;
+  }
+
+  @media screen and (max-width: 989px) {
+    .ai-video-cards-grid-{{ ai_gen_id }} {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  @media screen and (max-width: 749px) {
+    .ai-video-cards-grid-{{ ai_gen_id }} {
+      grid-template-columns: 1fr;
+    }
+  }
+{% endstyle %}
+
+<video-cards-{{ ai_gen_id }} class="ai-video-cards-{{ ai_gen_id }}" {{ block.shopify_attributes }}>
+  <div class="ai-video-cards-grid-{{ ai_gen_id }}">
+    {% for i in (1..4) %}
+      {% liquid
+        assign video_key = 'video_' | append: i
+        assign video = block.settings[video_key]
+      %}
+
+      <div class="ai-video-card-{{ ai_gen_id }}">
+        <div class="ai-video-card-wrapper-{{ ai_gen_id }}">
+          {% if video %}
+            <video
+              autoplay
+              muted
+              loop
+              playsinline
+              preload="metadata"
+            >
+              {% for source in video.sources %}
+                <source src="{{ source.url }}" type="{{ source.mime_type }}">
+              {% endfor %}
+            </video>
+          {% else %}
+            <div class="ai-video-card-placeholder-{{ ai_gen_id }}">
+              {{ 'image' | placeholder_svg_tag }}
+            </div>
+          {% endif %}
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+</video-cards-{{ ai_gen_id }}>
+
+<script>
+  (function() {
+    class VideoCards{{ ai_gen_id }} extends HTMLElement {
+      constructor() {
+        super();
+      }
+
+      connectedCallback() {
+        this.videos = this.querySelectorAll('video');
+        this.setupVideos();
+      }
+
+      setupVideos() {
+        this.videos.forEach((video) => {
+          video.addEventListener('loadedmetadata', () => {
+            video.play().catch(() => {});
+          });
+        });
+      }
+    }
+
+    customElements.define('video-cards-{{ ai_gen_id }}', VideoCards{{ ai_gen_id }});
+  })();
+</script>
+
+{% schema %}
+{
+  "name": "Video cards",
+  "settings": [
+    {
+      "type": "header",
+      "content": "Layout"
+    },
+    {
+      "type": "range",
+      "id": "desktop_width_percent",
+      "label": "Desktop width",
+      "min": 50,
+      "max": 100,
+      "step": 5,
+      "unit": "%",
+      "default": 100
+    },
+    {
+      "type": "range",
+      "id": "card_gap",
+      "label": "Gap between cards",
+      "min": 8,
+      "max": 40,
+      "step": 4,
+      "unit": "px",
+      "default": 20
+    },
+    {
+      "type": "range",
+      "id": "card_aspect_ratio",
+      "label": "Card height",
+      "min": 60,
+      "max": 200,
+      "step": 10,
+      "unit": "%",
+      "default": 140
+    },
+    {
+      "type": "range",
+      "id": "border_radius",
+      "label": "Border radius",
+      "min": 0,
+      "max": 40,
+      "step": 2,
+      "unit": "px",
+      "default": 12
+    },
+    {
+      "type": "header",
+      "content": "Card style"
+    },
+    {
+      "type": "color",
+      "id": "card_background",
+      "label": "Background",
+      "default": "#ffffff"
+    },
+    {
+      "type": "header",
+      "content": "Shadow"
+    },
+    {
+      "type": "range",
+      "id": "shadow_horizontal",
+      "label": "Horizontal offset",
+      "min": -20,
+      "max": 20,
+      "step": 2,
+      "unit": "px",
+      "default": 0
+    },
+    {
+      "type": "range",
+      "id": "shadow_vertical",
+      "label": "Vertical offset",
+      "min": -20,
+      "max": 20,
+      "step": 2,
+      "unit": "px",
+      "default": 8
+    },
+    {
+      "type": "range",
+      "id": "shadow_blur",
+      "label": "Blur",
+      "min": 0,
+      "max": 40,
+      "step": 4,
+      "unit": "px",
+      "default": 16
+    },
+    {
+      "type": "range",
+      "id": "shadow_opacity",
+      "label": "Opacity",
+      "min": 0,
+      "max": 1,
+      "step": 0.1,
+      "default": 0.2
+    },
+    {
+      "type": "header",
+      "content": "Video 1"
+    },
+    {
+      "type": "video",
+      "id": "video_1",
+      "label": "Video"
+    },
+    {
+      "type": "header",
+      "content": "Video 2"
+    },
+    {
+      "type": "video",
+      "id": "video_2",
+      "label": "Video"
+    },
+    {
+      "type": "header",
+      "content": "Video 3"
+    },
+    {
+      "type": "video",
+      "id": "video_3",
+      "label": "Video"
+    },
+    {
+      "type": "header",
+      "content": "Video 4"
+    },
+    {
+      "type": "video",
+      "id": "video_4",
+      "label": "Video"
+    }
+  ],
+  "presets": [
+    {
+      "name": "Video cards"
+    }
+  ],
+  "tag": null
+}
+{% endschema %}

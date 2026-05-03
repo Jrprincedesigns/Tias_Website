@@ -1,0 +1,138 @@
+{% doc %}
+  @prompt
+    Create a compact announcement banner section with large bold text filled with an image (image clipped through the text characters). The section should be slim and announcement-bar sized with minimal padding. Include a setting to control the background color of the section. Text size should be large and bold but the overall section height should be compact like a typical announcement bar.
+{% enddoc %}
+{% assign ai_gen_id = block.id | replace: '_', '' | downcase %}
+
+{% style %}
+  .ai-image-text-banner-{{ ai_gen_id }} {
+    display: block;
+    width: 100%;
+    background-color: {{ block.settings.background_color }};
+    padding: {{ block.settings.vertical_padding }}px 20px;
+    overflow: hidden;
+  }
+
+  .ai-image-text-banner__container-{{ ai_gen_id }} {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .ai-image-text-banner__text-{{ ai_gen_id }} {
+    font-size: {{ block.settings.text_size }}px;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin: 0;
+    line-height: 1;
+    background-image: url('{{ block.settings.clip_image | image_url: width: 2000 }}');
+    background-size: cover;
+    background-position: center;
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: transparent;
+  }
+
+  .ai-image-text-banner__text-placeholder-{{ ai_gen_id }} {
+    font-size: {{ block.settings.text_size }}px;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin: 0;
+    line-height: 1;
+    color: {{ block.settings.fallback_text_color }};
+  }
+
+  @media screen and (max-width: 749px) {
+    .ai-image-text-banner__text-{{ ai_gen_id }},
+    .ai-image-text-banner__text-placeholder-{{ ai_gen_id }} {
+      font-size: calc({{ block.settings.text_size }}px * 0.5);
+    }
+
+    .ai-image-text-banner-{{ ai_gen_id }} {
+      padding: {{ block.settings.vertical_padding | times: 0.7 }}px 15px;
+    }
+  }
+{% endstyle %}
+
+<div class="ai-image-text-banner-{{ ai_gen_id }}" {{ block.shopify_attributes }}>
+  <div class="ai-image-text-banner__container-{{ ai_gen_id }}">
+    {% if block.settings.clip_image %}
+      <h2 class="ai-image-text-banner__text-{{ ai_gen_id }}">
+        {{ block.settings.announcement_text }}
+      </h2>
+    {% else %}
+      <h2 class="ai-image-text-banner__text-placeholder-{{ ai_gen_id }}">
+        {{ block.settings.announcement_text }}
+      </h2>
+    {% endif %}
+  </div>
+</div>
+
+{% schema %}
+{
+  "name": "Image text banner",
+  "settings": [
+    {
+      "type": "header",
+      "content": "Content"
+    },
+    {
+      "type": "text",
+      "id": "announcement_text",
+      "label": "Announcement text",
+      "default": "Special Offer"
+    },
+    {
+      "type": "image_picker",
+      "id": "clip_image",
+      "label": "Text fill image"
+    },
+    {
+      "type": "header",
+      "content": "Style"
+    },
+    {
+      "type": "range",
+      "id": "text_size",
+      "label": "Text size",
+      "min": 40,
+      "max": 120,
+      "step": 5,
+      "unit": "px",
+      "default": 80
+    },
+    {
+      "type": "range",
+      "id": "vertical_padding",
+      "label": "Vertical padding",
+      "min": 8,
+      "max": 40,
+      "step": 4,
+      "unit": "px",
+      "default": 16
+    },
+    {
+      "type": "color",
+      "id": "background_color",
+      "label": "Background color",
+      "default": "#0e1b4d"
+    },
+    {
+      "type": "color",
+      "id": "fallback_text_color",
+      "label": "Fallback text color",
+      "default": "#ffffff"
+    }
+  ],
+  "presets": [
+    {
+      "name": "Image text banner"
+    }
+  ]
+}
+{% endschema %}

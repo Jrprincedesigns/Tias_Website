@@ -1,0 +1,149 @@
+{% doc %}
+  @prompt
+    Large bold text filled with an image. Include a setting to control the background color.
+{% enddoc %}
+{% assign ai_gen_id = block.id | replace: '_', '' | downcase %}
+
+{% style %}
+  .ai-image-text-{{ ai_gen_id }} {
+    display: block;
+    width: {{ block.settings.desktop_width_percent }}%;
+    max-width: 100%;
+    padding: 40px 20px;
+    background-color: {{ block.settings.background_color }};
+  }
+
+  .ai-image-text__container-{{ ai_gen_id }} {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+  }
+
+  .ai-image-text__heading-{{ ai_gen_id }} {
+    font-size: {{ block.settings.font_size }}px;
+    font-weight: 700;
+    line-height: 1.1;
+    margin: 0;
+    text-align: {{ block.settings.text_alignment }};
+    background: {% if block.settings.fill_image %}url({{ block.settings.fill_image | image_url: width: 2000 }}){% else %}#cccccc{% endif %};
+    background-size: cover;
+    background-position: center;
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: transparent;
+  }
+
+  @media screen and (max-width: 749px) {
+    .ai-image-text__heading-{{ ai_gen_id }} {
+      font-size: calc({{ block.settings.font_size }}px * 0.6);
+    }
+  }
+{% endstyle %}
+
+<image-filled-text-{{ ai_gen_id }}
+  class="ai-image-text-{{ ai_gen_id }}"
+  {{ block.shopify_attributes }}
+>
+  <div class="ai-image-text__container-{{ ai_gen_id }}">
+    <h2 class="ai-image-text__heading-{{ ai_gen_id }}">
+      {{ block.settings.heading_text }}
+    </h2>
+  </div>
+</image-filled-text-{{ ai_gen_id }}>
+
+<script>
+  (function() {
+    class ImageFilledText{{ ai_gen_id }} extends HTMLElement {
+      constructor() {
+        super();
+      }
+    }
+
+    customElements.define('image-filled-text-{{ ai_gen_id }}', ImageFilledText{{ ai_gen_id }});
+  })();
+</script>
+
+{% schema %}
+{
+  "name": "Image filled text",
+  "tag": null,
+  "settings": [
+    {
+      "type": "header",
+      "content": "Text"
+    },
+    {
+      "type": "text",
+      "id": "heading_text",
+      "label": "Heading text",
+      "default": "BOLD STATEMENT"
+    },
+    {
+      "type": "range",
+      "id": "font_size",
+      "label": "Font size",
+      "min": 40,
+      "max": 200,
+      "step": 10,
+      "unit": "px",
+      "default": 100
+    },
+    {
+      "type": "select",
+      "id": "text_alignment",
+      "label": "Text alignment",
+      "options": [
+        {
+          "value": "left",
+          "label": "Left"
+        },
+        {
+          "value": "center",
+          "label": "Center"
+        },
+        {
+          "value": "right",
+          "label": "Right"
+        }
+      ],
+      "default": "center"
+    },
+    {
+      "type": "header",
+      "content": "Image"
+    },
+    {
+      "type": "image_picker",
+      "id": "fill_image",
+      "label": "Fill image"
+    },
+    {
+      "type": "header",
+      "content": "Style"
+    },
+    {
+      "type": "color",
+      "id": "background_color",
+      "label": "Background color",
+      "default": "#ffffff"
+    },
+    {
+      "type": "range",
+      "id": "desktop_width_percent",
+      "label": "Desktop width",
+      "min": 50,
+      "max": 100,
+      "step": 5,
+      "unit": "%",
+      "default": 100
+    }
+  ],
+  "presets": [
+    {
+      "name": "Image filled text"
+    }
+  ]
+}
+{% endschema %}
