@@ -1,0 +1,91 @@
+{{ 'thetcollection.css' | asset_url | stylesheet_tag }}
+
+<section class="tc-section tc-cta">
+  <div class="tc-container">
+    <div class="tc-cta__grid">
+      <div class="tc-reveal">
+        {%- if section.settings.eyebrow != blank -%}
+          <span class="tc-eyebrow" style="color: var(--tc-lavender-mist);">{{ section.settings.eyebrow }}</span>
+        {%- endif -%}
+        {%- if section.settings.title != blank -%}
+          <h2 class="tc-cta__title">{{ section.settings.title }}</h2>
+        {%- endif -%}
+        {%- if section.settings.sub != blank -%}
+          <p class="tc-cta__sub">{{ section.settings.sub }}</p>
+        {%- endif -%}
+      </div>
+
+      <div class="tc-cta__form tc-reveal">
+        {%- if section.settings.show_newsletter -%}
+          {%- form 'customer', class: 'tc-cta__form-inner' -%}
+            <input type="hidden" name="contact[tags]" value="newsletter">
+            <div class="tc-cta__input-wrap">
+              <input
+                type="email"
+                name="contact[email]"
+                placeholder="{{ section.settings.input_placeholder | default: 'your@email.com' }}"
+                aria-label="Email"
+                required
+              >
+              <button type="submit" class="tc-cta__submit">{{ section.settings.submit_label | default: 'Subscribe' }}</button>
+            </div>
+            {%- if form.posted_successfully? -%}
+              <span class="tc-cta__fineprint" style="color: var(--tc-lavender-mist);">Thanks for subscribing.</span>
+            {%- elsif form.errors -%}
+              <span class="tc-cta__fineprint" style="color: #ff9; ">{{ form.errors | default_errors }}</span>
+            {%- elsif section.settings.fineprint != blank -%}
+              <span class="tc-cta__fineprint">{{ section.settings.fineprint }}</span>
+            {%- endif -%}
+          {%- endform -%}
+        {%- else -%}
+          {%- if section.settings.cta1_label != blank -%}
+            <a class="tc-btn tc-btn--lavender" href="{{ section.settings.cta1_link | default: '#' }}" style="justify-content: center;">
+              {{ section.settings.cta1_label }} <span class="tc-arrow">&rarr;</span>
+            </a>
+          {%- endif -%}
+          {%- if section.settings.cta2_label != blank -%}
+            <a class="tc-btn tc-btn--ghost" href="{{ section.settings.cta2_link | default: '#' }}" style="justify-content: center;">
+              {{ section.settings.cta2_label }}
+            </a>
+          {%- endif -%}
+          {%- if section.settings.fineprint != blank -%}
+            <span class="tc-cta__fineprint">{{ section.settings.fineprint }}</span>
+          {%- endif -%}
+        {%- endif -%}
+      </div>
+    </div>
+  </div>
+</section>
+
+{% render 'tc-reveal-script' %}
+
+{% schema %}
+{
+  "name": "TC — CTA / Newsletter",
+  "tag": "section",
+  "settings": [
+    { "type": "text", "id": "eyebrow", "label": "Eyebrow", "default": "Join the list" },
+    { "type": "richtext", "id": "title", "label": "Title", "default": "<p>First access. <em>Quiet</em> sales.</p>" },
+    { "type": "textarea", "id": "sub", "label": "Subtitle", "default": "Twice-monthly drops, members-only previews, and the occasional handwritten note from the studio." },
+    { "type": "header", "content": "Right column" },
+    {
+      "type": "checkbox",
+      "id": "show_newsletter",
+      "label": "Show newsletter signup form",
+      "default": true,
+      "info": "Off = use buttons instead"
+    },
+    { "type": "text", "id": "input_placeholder", "label": "Email placeholder", "default": "your@email.com" },
+    { "type": "text", "id": "submit_label", "label": "Submit button label", "default": "Subscribe" },
+    { "type": "text", "id": "fineprint", "label": "Fine-print line below", "default": "Plus $20 off your first piece. Unsubscribe anytime." },
+    { "type": "header", "content": "Buttons (when newsletter is off)" },
+    { "type": "text", "id": "cta1_label", "label": "Primary button" },
+    { "type": "url", "id": "cta1_link", "label": "Primary button link" },
+    { "type": "text", "id": "cta2_label", "label": "Secondary button" },
+    { "type": "url", "id": "cta2_link", "label": "Secondary button link" }
+  ],
+  "presets": [
+    { "name": "TC — CTA / Newsletter", "category": "TheTCollection" }
+  ]
+}
+{% endschema %}

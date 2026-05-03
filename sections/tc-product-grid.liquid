@@ -1,0 +1,214 @@
+{{ 'thetcollection.css' | asset_url | stylesheet_tag }}
+
+{%- liquid
+  assign products_to_show = section.settings.products_to_show | default: 8
+  assign source = section.settings.source | default: 'blocks'
+-%}
+
+<section class="tc-section tc-products-wrap">
+  <div class="tc-container">
+    {%- if section.settings.eyebrow != blank or section.settings.title != blank or section.settings.intro != blank -%}
+      <div class="tc-section-head tc-reveal">
+        <div>
+          {%- if section.settings.eyebrow != blank -%}
+            <span class="tc-eyebrow">{{ section.settings.eyebrow }}</span>
+          {%- endif -%}
+          {%- if section.settings.title != blank -%}
+            <h2 class="tc-section-title">{{ section.settings.title }}</h2>
+          {%- endif -%}
+        </div>
+        {%- if section.settings.intro != blank -%}
+          <div class="tc-section-head__right">
+            <p>{{ section.settings.intro }}</p>
+          </div>
+        {%- endif -%}
+      </div>
+    {%- endif -%}
+
+    {%- if section.settings.show_filters -%}
+      <div class="tc-filters tc-reveal">
+        <button class="tc-filter-pill is-active" type="button">All</button>
+        {%- for block in section.blocks -%}
+          {%- if block.type == 'filter' -%}
+            <button class="tc-filter-pill" type="button">{{ block.settings.label }}</button>
+          {%- endif -%}
+        {%- endfor -%}
+      </div>
+    {%- endif -%}
+
+    <div class="tc-product-grid">
+      {%- if source == 'collection' and section.settings.collection != blank -%}
+        {%- assign collection = collections[section.settings.collection] -%}
+        {%- for product in collection.products limit: products_to_show -%}
+          {% render 'tc-product-card', product: product, tag: section.settings.default_tag, tag_hot: section.settings.default_tag_hot %}
+        {%- endfor -%}
+
+      {%- else -%}
+        {%- for block in section.blocks -%}
+          {%- if block.type == 'product' and block.settings.product != blank -%}
+            {%- assign product = all_products[block.settings.product] -%}
+            {% render 'tc-product-card',
+              product: product,
+              tag: block.settings.tag,
+              tag_hot: block.settings.tag_hot,
+              custom_title: block.settings.custom_title %}
+          {%- endif -%}
+        {%- endfor -%}
+      {%- endif -%}
+    </div>
+  </div>
+</section>
+
+<script>
+  // Filter pill UI toggle (visual only — wire to real filtering when ready)
+  (function() {
+    document.querySelectorAll('#shopify-section-{{ section.id }} .tc-filter-pill').forEach(function(p) {
+      p.addEventListener('click', function() {
+        document.querySelectorAll('#shopify-section-{{ section.id }} .tc-filter-pill').forEach(function(x) { x.classList.remove('is-active'); });
+        p.classList.add('is-active');
+      });
+    });
+  })();
+</script>
+
+{% render 'tc-reveal-script' %}
+
+{% schema %}
+{
+  "name": "TC — Product grid",
+  "tag": "section",
+  "class": "section",
+  "max_blocks": 16,
+  "settings": [
+    {
+      "type": "header",
+      "content": "Section heading"
+    },
+    {
+      "type": "text",
+      "id": "eyebrow",
+      "label": "Eyebrow",
+      "default": "The Edit"
+    },
+    {
+      "type": "richtext",
+      "id": "title",
+      "label": "Title",
+      "info": "Wrap a word in <em> for italic lavender accent.",
+      "default": "<p>Pieces our clients can\u2019t <em>put down</em>.</p>"
+    },
+    {
+      "type": "textarea",
+      "id": "intro",
+      "label": "Intro paragraph (right column)",
+      "default": "Each bundle is single-donor, hand-wefted, and shade-matched in our studio."
+    },
+    {
+      "type": "header",
+      "content": "Source"
+    },
+    {
+      "type": "select",
+      "id": "source",
+      "label": "How to pick products",
+      "options": [
+        { "value": "blocks", "label": "Hand-pick products (use blocks below)" },
+        { "value": "collection", "label": "Pull from a collection" }
+      ],
+      "default": "blocks"
+    },
+    {
+      "type": "collection",
+      "id": "collection",
+      "label": "Collection (only used if source = collection)"
+    },
+    {
+      "type": "range",
+      "id": "products_to_show",
+      "label": "Max products to display",
+      "min": 4,
+      "max": 16,
+      "step": 1,
+      "default": 8
+    },
+    {
+      "type": "text",
+      "id": "default_tag",
+      "label": "Default badge for collection mode",
+      "default": "New"
+    },
+    {
+      "type": "checkbox",
+      "id": "default_tag_hot",
+      "label": "Show default badge as solid (hot)",
+      "default": false
+    },
+    {
+      "type": "header",
+      "content": "Filters"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_filters",
+      "label": "Show filter pills above grid",
+      "default": false,
+      "info": "Filter pills are visual only \u2014 wire to real filtering with a Shopify app or custom code."
+    }
+  ],
+  "blocks": [
+    {
+      "type": "product",
+      "name": "Product",
+      "settings": [
+        {
+          "type": "product",
+          "id": "product",
+          "label": "Product"
+        },
+        {
+          "type": "text",
+          "id": "custom_title",
+          "label": "Override title (optional)",
+          "info": "Leave blank to use the product's own title."
+        },
+        {
+          "type": "text",
+          "id": "tag",
+          "label": "Badge text",
+          "default": "New"
+        },
+        {
+          "type": "checkbox",
+          "id": "tag_hot",
+          "label": "Solid badge style (filled, dark)",
+          "default": false
+        }
+      ]
+    },
+    {
+      "type": "filter",
+      "name": "Filter pill",
+      "settings": [
+        {
+          "type": "text",
+          "id": "label",
+          "label": "Filter label",
+          "default": "Curly"
+        }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "TC — Product grid",
+      "category": "TheTCollection",
+      "blocks": [
+        { "type": "product" },
+        { "type": "product" },
+        { "type": "product" },
+        { "type": "product" }
+      ]
+    }
+  ]
+}
+{% endschema %}

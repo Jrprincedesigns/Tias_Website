@@ -1,1 +1,292 @@
-{"sections":{"177681881160e7a1d5":{"type":"_blocks","settings":{}},"blocks_CVgMPK":{"type":"_blocks","name":"Image filled text","settings":{}},"1775798741b9c798c6":{"type":"_blocks","blocks":{"ai_gen_block_906c053_GBww3n":{"type":"ai_gen_block_906c053","settings":{"image":"shopify:\/\/shop_images\/IMG_5982_5702ac7a-a801-4232-a0f9-8119c9928da1.jpg","banner_height":800,"mobile_banner_height":500,"desktop_width_percent":100,"border_radius":0,"animation_type":"zoom_in","animation_duration":2.5,"show_overlay":true,"overlay_color":"#000000","overlay_opacity":30,"show_content":true,"heading":"Image banner","heading_size":48,"subheading":"Tell your brand's story through images","subheading_size":18,"text_alignment":"left","text_color":"#ffffff","text_animation":"none","text_animation_duration":1,"text_animation_delay":0.5,"button_text":"Shop now","button_link":"shopify:\/\/collections\/bundles","button_color":"#4770db","button_text_color":"#ffffff","button_hover_color":"#0e1b4d","button_border_radius":40},"blocks":{}}},"block_order":["ai_gen_block_906c053_GBww3n"],"settings":{}},"17757083581086f635":{"type":"_blocks","blocks":{"ai_gen_block_68ea6ca_pJw69Q":{"type":"ai_gen_block_68ea6ca","settings":{"product_1":"burmese-curly-raw-hair","product_2":"color-services","product_3":"straight-virgin-hair","product_4":"wig-reconstruction","desktop_width_percent":100,"card_gap":20,"columns_mobile":"2","text_alignment":"left","card_background":"#ffffff","image_background":"#f4f4f4","border_radius":18,"content_padding":16,"shadow_horizontal":0,"shadow_vertical":8,"shadow_blur":20,"shadow_opacity":0.2,"holographic_intensity":0.5,"title_size":16,"title_color":"#121212","price_size":14,"price_color":"#967bb6"},"blocks":{}}},"block_order":["ai_gen_block_68ea6ca_pJw69Q"],"settings":{}},"17757122872a214173":{"type":"_blocks","settings":{}},"image_banner_RQ4mWR":{"type":"image-banner","blocks":{"heading_6qHqmy":{"type":"heading","settings":{"heading":"NATURAL & LUXURY","heading_size":"h1"}},"text_AtfRnE":{"type":"text","settings":{"text":"Give customers details about the banner image(s) or content on the template.","text_style":"body"}},"buttons_kWkwh9":{"type":"buttons","settings":{"button_label_1":"HAIR CARE TIPS","button_link_1":"shopify:\/\/pages\/hair-tips-faqs","button_style_secondary_1":false,"button_label_2":"","button_link_2":"","button_style_secondary_2":false}}},"block_order":["heading_6qHqmy","text_AtfRnE","buttons_kWkwh9"],"name":"t:sections.image-banner.presets.name","settings":{"image":"shopify:\/\/shop_images\/DSC00096.jpg","image_overlay_opacity":0,"image_height":"medium","image_behavior":"zoom-in","desktop_content_position":"middle-center","desktop_content_alignment":"left","show_text_box":false,"color_scheme":"scheme-2","stack_images_on_mobile":true,"mobile_content_alignment":"center","show_text_below":true}},"1775712433af5e9551":{"type":"_blocks","blocks":{"ai_gen_block_3a736c7_gQKagd":{"type":"ai_gen_block_3a736c7","settings":{"desktop_width_percent":100,"card_gap":16,"card_aspect_ratio":140,"border_radius":12,"card_background":"#ffffff","shadow_horizontal":0,"shadow_vertical":8,"shadow_blur":16,"shadow_opacity":0.2,"video_1":"shopify:\/\/files\/videos\/4D02D16D-06F8-4D03-BA4D-D6B18623E000.MOV","video_2":"shopify:\/\/files\/videos\/IMG_0883 2.mov","video_3":"shopify:\/\/files\/videos\/IMG_1909.MOV","video_4":"shopify:\/\/files\/videos\/IMG_7929.MOV"},"blocks":{}}},"block_order":["ai_gen_block_3a736c7_gQKagd"],"settings":{}},"slideshow_CbB8dn":{"type":"slideshow","name":"t:sections.slideshow.presets.name","settings":{"layout":"full_bleed","slide_height":"medium","slider_visual":"counter","auto_rotate":false,"change_slides_speed":5,"image_behavior":"none","show_text_below":true,"accessibility_info":"Slideshow about our brand"}}},"order":["177681881160e7a1d5","blocks_CVgMPK","1775798741b9c798c6","17757083581086f635","17757122872a214173","image_banner_RQ4mWR","1775712433af5e9551","slideshow_CbB8dn"]}
+{
+  "sections": {
+    "tc_hero": {
+      "type": "tc-hero",
+      "settings": {
+        "kicker": "Spring drop \u00b7 live now",
+        "title": "<p>Hair that <em>becomes</em> you.</p>",
+        "sub": "Hand-tied, single-donor extensions and lace wigs\u2014shaded in 24 tones, hand-blended at our studio. The kind of hair that holds through every season.",
+        "cta1_label": "Shop the drop",
+        "cta1_link": "shopify://collections/all",
+        "cta2_label": "Book the Wig Spa",
+        "cta2_link": "shopify://pages/wig-spa",
+        "image_focal_x": 55,
+        "image_focal_y": 22,
+        "min_height_px": 720
+      }
+    },
+    "tc_stats": {
+      "type": "tc-stats",
+      "blocks": {
+        "s1": {
+          "type": "stat",
+          "settings": {
+            "number": "24",
+            "label": "Hand-blended<br/>shades"
+          }
+        },
+        "s2": {
+          "type": "stat",
+          "settings": {
+            "number": "100%",
+            "label": "Single-donor<br/>Remy"
+          }
+        },
+        "s3": {
+          "type": "stat",
+          "settings": {
+            "number": "4.9",
+            "label": "From 18,400<br/>reviews"
+          }
+        },
+        "s4": {
+          "type": "stat",
+          "settings": {
+            "number": "48h",
+            "label": "Express to<br/>your door"
+          }
+        }
+      },
+      "block_order": [
+        "s1",
+        "s2",
+        "s3",
+        "s4"
+      ]
+    },
+    "tc_bento": {
+      "type": "tc-bento",
+      "settings": {
+        "eyebrow": "The Collection",
+        "title": "<p>Built for every <em>texture</em>, every tone.</p>",
+        "intro": "Six core silhouettes, blended into 24 shades. Find the one that disappears into yours."
+      },
+      "blocks": {
+        "b1": {
+          "type": "cell",
+          "settings": {
+            "kicker": "01 / Bestselling",
+            "name": "Hair Extensions",
+            "meta": "42 styles \u00b7 From $95",
+            "link": "shopify://collections/hair-extensions"
+          }
+        },
+        "b2": {
+          "type": "cell",
+          "settings": {
+            "kicker": "02",
+            "name": "Preorder a Unit",
+            "meta": "14 styles",
+            "style": "mist",
+            "link": "shopify://pages/preorder"
+          }
+        },
+        "b3": {
+          "type": "cell",
+          "settings": {
+            "kicker": "03",
+            "name": "The Wig Spa",
+            "meta": "From $75",
+            "style": "cream",
+            "link": "shopify://pages/wig-spa"
+          }
+        },
+        "b4": {
+          "type": "cell",
+          "settings": {
+            "kicker": "04",
+            "name": "Hair Care",
+            "meta": "12 items",
+            "style": "lavender",
+            "link": "shopify://pages/hair-care"
+          }
+        },
+        "b5": {
+          "type": "cell",
+          "settings": {
+            "kicker": "05",
+            "name": "Add-Ons",
+            "meta": "22 items",
+            "style": "paper",
+            "link": "shopify://pages/add-ons"
+          }
+        }
+      },
+      "block_order": [
+        "b1",
+        "b2",
+        "b3",
+        "b4",
+        "b5"
+      ]
+    },
+    "tc_ticker": {
+      "type": "tc-ticker",
+      "settings": {
+        "words": "Hand-tied, Single-donor Remy, Shade-matched, New drop \u00b7 Spring 26",
+        "separator": "\u2726",
+        "scroll_speed": 35
+      }
+    },
+    "tc_products": {
+      "type": "tc-product-grid",
+      "settings": {
+        "eyebrow": "The Edit",
+        "title": "<p>Pieces our clients can\u2019t <em>put down</em>.</p>",
+        "intro": "Each bundle is single-donor, hand-wefted, and shade-matched in our studio.",
+        "source": "blocks",
+        "products_to_show": 8,
+        "show_filters": false
+      },
+      "blocks": {
+        "p1": {
+          "type": "product",
+          "settings": {
+            "product": "burmese-curly-raw-hair",
+            "tag": "Best seller",
+            "tag_hot": true
+          }
+        },
+        "p2": {
+          "type": "product",
+          "settings": {
+            "product": "color-services",
+            "tag": "Loved"
+          }
+        },
+        "p3": {
+          "type": "product",
+          "settings": {
+            "product": "straight-virgin-hair",
+            "tag": "New"
+          }
+        },
+        "p4": {
+          "type": "product",
+          "settings": {
+            "product": "wig-reconstruction",
+            "tag": "Limited",
+            "tag_hot": true
+          }
+        }
+      },
+      "block_order": [
+        "p1",
+        "p2",
+        "p3",
+        "p4"
+      ]
+    },
+    "tc_process": {
+      "type": "tc-process",
+      "settings": {
+        "eyebrow": "The Process",
+        "title": "<p>Made by hand,<br/><em>matched</em> by eye.</p>",
+        "intro": "Every bundle is single-donor, hand-wefted, and shade-matched in our studio. No machine wefts, no synthetic blends \u2014 just hair that becomes part of yours.",
+        "cta_label": "Read the full process",
+        "cta_link": ""
+      },
+      "blocks": {
+        "st1": {
+          "type": "step",
+          "settings": {
+            "number": "01",
+            "heading": "Source",
+            "body": "Single-donor Remy from traceable, ethically-paid suppliers. Every lot logged, every cuticle aligned."
+          }
+        },
+        "st2": {
+          "type": "step",
+          "settings": {
+            "number": "02",
+            "heading": "Blend",
+            "body": "Twenty-four shades hand-mixed by our colorists for living-tone realism. Shade quizzes available \u2014 we'll never guess."
+          }
+        },
+        "st3": {
+          "type": "step",
+          "settings": {
+            "number": "03",
+            "heading": "Weft & ship",
+            "body": "Hand-wefted, gently washed through 14 steps, and dispatched within 48 hours. Traceable end-to-end."
+          }
+        },
+        "st4": {
+          "type": "step",
+          "settings": {
+            "number": "04",
+            "heading": "First-fit guarantee",
+            "body": "Not perfect? Free shade swap, no questions asked. Because the right match shouldn't be a gamble."
+          }
+        }
+      },
+      "block_order": [
+        "st1",
+        "st2",
+        "st3",
+        "st4"
+      ]
+    },
+    "tc_reviews": {
+      "type": "tc-reviews",
+      "settings": {
+        "eyebrow": "Loved by 18,400+",
+        "title": "<p>Reviewed five stars,<br/><em>worn</em> for years.</p>"
+      },
+      "blocks": {
+        "r1": {
+          "type": "review",
+          "settings": {
+            "stars": "\u2605\u2605\u2605\u2605\u2605",
+            "quote": "I've worn extensions for ten years and these are by far the softest. TheTCollection has my loyalty.",
+            "name": "Imani T.",
+            "meta": "Verified \u00b7 6 months"
+          }
+        },
+        "r2": {
+          "type": "review",
+          "settings": {
+            "stars": "\u2605\u2605\u2605\u2605\u2605",
+            "quote": "The shade match is uncanny. Three salon stylists asked me what I'd done to my own hair.",
+            "name": "Rosa A.",
+            "meta": "Verified \u00b7 1 year"
+          }
+        },
+        "r3": {
+          "type": "review",
+          "settings": {
+            "stars": "\u2605\u2605\u2605\u2605\u2605",
+            "quote": "Worth every cent. They've held up through humidity, heat, and a wedding. Repeat customer.",
+            "name": "Priya M.",
+            "meta": "Verified \u00b7 8 months"
+          }
+        }
+      },
+      "block_order": [
+        "r1",
+        "r2",
+        "r3"
+      ]
+    },
+    "tc_cta": {
+      "type": "tc-cta",
+      "settings": {
+        "eyebrow": "Join the list",
+        "title": "<p>First access. <em>Quiet</em> sales.</p>",
+        "sub": "Twice-monthly drops, members-only previews, and the occasional handwritten note from the studio.",
+        "show_newsletter": true,
+        "fineprint": "Plus $20 off your first piece. Unsubscribe anytime."
+      }
+    }
+  },
+  "order": [
+    "tc_hero",
+    "tc_stats",
+    "tc_bento",
+    "tc_ticker",
+    "tc_products",
+    "tc_process",
+    "tc_reviews",
+    "tc_cta"
+  ]
+}

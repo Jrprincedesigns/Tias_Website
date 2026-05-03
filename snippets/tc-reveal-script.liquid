@@ -1,0 +1,37 @@
+{%- comment -%}
+  TheTCollection scroll-reveal initializer.
+  Idempotent — safe to render from multiple sections on the same page.
+{%- endcomment -%}
+
+<script>
+  (function() {
+    if (window.__tcRevealInit) return;
+    window.__tcRevealInit = true;
+
+    function init() {
+      var els = document.querySelectorAll('.tc-section .tc-reveal');
+      if (!('IntersectionObserver' in window)) {
+        els.forEach(function(el) { el.classList.add('is-in'); });
+        return;
+      }
+      var obs = new IntersectionObserver(function(entries) {
+        entries.forEach(function(entry, i) {
+          if (entry.isIntersecting) {
+            setTimeout(function() { entry.target.classList.add('is-in'); }, i * 60);
+            obs.unobserve(entry.target);
+          }
+        });
+      }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
+      els.forEach(function(el) { obs.observe(el); });
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', init);
+    } else {
+      init();
+    }
+
+    // Re-init on Shopify section reload (theme editor)
+    document.addEventListener('shopify:section:load', init);
+  })();
+</script>

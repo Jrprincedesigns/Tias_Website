@@ -1,0 +1,69 @@
+{{ 'thetcollection.css' | asset_url | stylesheet_tag }}
+
+<section class="tc-section tc-process">
+  <div class="tc-container">
+    <div class="tc-process__grid">
+      <div class="tc-process__intro tc-reveal">
+        {%- if section.settings.eyebrow != blank -%}<span class="tc-eyebrow">{{ section.settings.eyebrow }}</span>{%- endif -%}
+        {%- if section.settings.title != blank -%}<h2 class="tc-section-title">{{ section.settings.title }}</h2>{%- endif -%}
+        {%- if section.settings.intro != blank -%}<p style="margin-top: 24px;">{{ section.settings.intro }}</p>{%- endif -%}
+        {%- if section.settings.cta_label != blank -%}
+          <a class="tc-btn tc-btn--outline" href="{{ section.settings.cta_link | default: '#' }}">
+            {{ section.settings.cta_label }} <span class="tc-arrow">&rarr;</span>
+          </a>
+        {%- endif -%}
+      </div>
+      <div class="tc-process__steps tc-reveal">
+        {%- for block in section.blocks -%}
+          <div class="tc-process__step">
+            <div class="tc-process__num">{{ block.settings.number }}</div>
+            <div class="tc-process__content">
+              <h4 class="tc-process__h">{{ block.settings.heading }}</h4>
+              <p>{{ block.settings.body }}</p>
+            </div>
+          </div>
+        {%- endfor -%}
+      </div>
+    </div>
+  </div>
+</section>
+
+{% render 'tc-reveal-script' %}
+
+{% schema %}
+{
+  "name": "TC — Process",
+  "tag": "section",
+  "max_blocks": 6,
+  "settings": [
+    { "type": "text", "id": "eyebrow", "label": "Eyebrow", "default": "How It Works" },
+    { "type": "richtext", "id": "title", "label": "Title", "default": "<p>Made by hand,<br/><em>matched</em> by eye.</p>" },
+    { "type": "textarea", "id": "intro", "label": "Intro paragraph", "default": "Every bundle is single-donor, hand-wefted, and shade-matched in our studio." },
+    { "type": "text", "id": "cta_label", "label": "Button label", "default": "Read the full process" },
+    { "type": "url", "id": "cta_link", "label": "Button link" }
+  ],
+  "blocks": [
+    {
+      "type": "step",
+      "name": "Step",
+      "settings": [
+        { "type": "text", "id": "number", "label": "Number", "default": "01" },
+        { "type": "text", "id": "heading", "label": "Heading", "default": "Source" },
+        { "type": "textarea", "id": "body", "label": "Body", "default": "Single-donor Remy from traceable, ethically-paid suppliers." }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "TC — Process",
+      "category": "TheTCollection",
+      "blocks": [
+        { "type": "step", "settings": { "number": "01", "heading": "Source", "body": "Single-donor Remy from traceable, ethically-paid suppliers. Every lot logged, every cuticle aligned." } },
+        { "type": "step", "settings": { "number": "02", "heading": "Blend", "body": "Twenty-four shades hand-mixed by our colorists for living-tone realism." } },
+        { "type": "step", "settings": { "number": "03", "heading": "Weft & ship", "body": "Hand-wefted, gently washed through 14 steps, and dispatched within 48 hours." } },
+        { "type": "step", "settings": { "number": "04", "heading": "First-fit guarantee", "body": "Not perfect? Free shade swap, no questions asked." } }
+      ]
+    }
+  ]
+}
+{% endschema %}

@@ -1,0 +1,58 @@
+{
+  "sections": {
+    "header": {
+      "type": "tc-page-header",
+      "settings": {
+        "eyebrow": "Custom Builds",
+        "title": "<p>Preorder a unit,<br/><em>built</em> for you.</p>",
+        "sub": "Tell us your shade, your texture, your lace. We'll hand-build a unit to spec and ship within four to six weeks."
+      }
+    },
+    "process": {
+      "type": "tc-process",
+      "settings": {
+        "eyebrow": "How It Works",
+        "title": "<p>From <em>spec</em> to<br/>your door.</p>",
+        "intro": "Every preorder is built one at a time. Tell us what you want and we'll handle the rest \u2014 no guesswork, no compromise.",
+        "cta_label": "Start your preorder",
+        "cta_link": "shopify://pages/contact"
+      },
+      "blocks": {
+        "st1": { "type": "step", "settings": { "number": "01", "heading": "Submit your spec", "body": "Texture, length, lace, color, density. Fill the form or DM us a reference photo \u2014 we'll match it." } },
+        "st2": { "type": "step", "settings": { "number": "02", "heading": "We confirm & quote", "body": "Within 24 hours you'll have a confirmation, a quote, and an estimated build window. Deposit secures your slot." } },
+        "st3": { "type": "step", "settings": { "number": "03", "heading": "Hand-built in-studio", "body": "Single-donor sourcing, hand-wefting, and shade-matching by our colorists. Average build: four to six weeks." } },
+        "st4": { "type": "step", "settings": { "number": "04", "heading": "Final fitting & ship", "body": "Photographed, packaged, and shipped express. First-fit guarantee \u2014 if it's not right, we make it right." } }
+      },
+      "block_order": ["st1", "st2", "st3", "st4"]
+    },
+    "bento": {
+      "type": "tc-bento",
+      "settings": {
+        "eyebrow": "Customize",
+        "title": "<p>Built to your <em>spec</em>.</p>",
+        "intro": "Four decisions shape your unit. Pick what you want, leave the rest to us."
+      },
+      "blocks": {
+        "b1": { "type": "cell", "settings": { "kicker": "01 / Most asked", "name": "Texture", "meta": "Curly \u00b7 Wavy \u00b7 Straight \u00b7 Kinky" } },
+        "b2": { "type": "cell", "settings": { "kicker": "02", "name": "Length", "meta": "14\" - 30\"", "style": "mist" } },
+        "b3": { "type": "cell", "settings": { "kicker": "03", "name": "Lace", "meta": "HD \u00b7 Transparent", "style": "cream" } },
+        "b4": { "type": "cell", "settings": { "kicker": "04", "name": "Color", "meta": "24 shades", "style": "lavender" } },
+        "b5": { "type": "cell", "settings": { "kicker": "+", "name": "Density & cap size", "meta": "Add-on", "style": "paper" } }
+      },
+      "block_order": ["b1", "b2", "b3", "b4", "b5"]
+    },
+    "cta": {
+      "type": "tc-cta",
+      "settings": {
+        "eyebrow": "Ready to start?",
+        "title": "<p>Let's <em>build</em> it.</p>",
+        "sub": "Send your spec and we'll come back with a quote within twenty-four hours. Deposit secures your build slot.",
+        "show_newsletter": false,
+        "cta1_label": "Begin your preorder",
+        "cta1_link": "shopify://pages/contact",
+        "fineprint": "Most builds ship within 4-6 weeks. Express options available."
+      }
+    }
+  },
+  "order": ["header", "process", "bento", "cta"]
+}

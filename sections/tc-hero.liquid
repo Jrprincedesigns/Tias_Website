@@ -1,0 +1,174 @@
+{{ 'thetcollection.css' | asset_url | stylesheet_tag }}
+
+{%- liquid
+  assign focal_x = section.settings.image_focal_x | default: 55
+  assign focal_y = section.settings.image_focal_y | default: 22
+-%}
+
+<style>
+  #shopify-section-{{ section.id }} .tc-hero__bg img {
+    object-position: {{ focal_x }}% {{ focal_y }}%;
+  }
+  {%- if section.settings.min_height_px -%}
+  #shopify-section-{{ section.id }}.tc-section.tc-hero { min-height: {{ section.settings.min_height_px }}px; }
+  {%- endif -%}
+</style>
+
+<section class="tc-section tc-hero">
+  <div class="tc-hero__bg">
+    {%- if section.settings.image != blank -%}
+      <img
+        src="{{ section.settings.image | image_url: width: 2400 }}"
+        srcset="{{ section.settings.image | image_url: width: 800 }} 800w, {{ section.settings.image | image_url: width: 1400 }} 1400w, {{ section.settings.image | image_url: width: 2000 }} 2000w, {{ section.settings.image | image_url: width: 2400 }} 2400w"
+        sizes="100vw"
+        alt="{{ section.settings.image.alt | escape }}"
+        loading="eager"
+        width="{{ section.settings.image.width }}"
+        height="{{ section.settings.image.height }}"
+      >
+    {%- endif -%}
+  </div>
+  <div class="tc-hero__overlay"></div>
+
+  <div class="tc-hero__content">
+    {%- if section.settings.kicker != blank -%}
+      <div class="tc-hero__kicker tc-reveal">{{ section.settings.kicker }}</div>
+    {%- endif -%}
+
+    {%- if section.settings.title != blank -%}
+      <h1 class="tc-hero__title tc-reveal">{{ section.settings.title }}</h1>
+    {%- endif -%}
+
+    {%- if section.settings.sub != blank -%}
+      <p class="tc-hero__sub tc-reveal">{{ section.settings.sub }}</p>
+    {%- endif -%}
+
+    {%- if section.settings.cta1_label != blank or section.settings.cta2_label != blank -%}
+      <div class="tc-hero__ctas tc-reveal">
+        {%- if section.settings.cta1_label != blank -%}
+          <a class="tc-btn tc-btn--primary" href="{{ section.settings.cta1_link | default: '#' }}">
+            {{ section.settings.cta1_label }} <span class="tc-arrow">&rarr;</span>
+          </a>
+        {%- endif -%}
+        {%- if section.settings.cta2_label != blank -%}
+          <a class="tc-btn tc-btn--ghost" href="{{ section.settings.cta2_link | default: '#' }}">
+            {{ section.settings.cta2_label }}
+          </a>
+        {%- endif -%}
+      </div>
+    {%- endif -%}
+  </div>
+</section>
+
+{% render 'tc-reveal-script' %}
+
+{% schema %}
+{
+  "name": "TC — Hero (image)",
+  "tag": "section",
+  "class": "section",
+  "settings": [
+    {
+      "type": "header",
+      "content": "Background image"
+    },
+    {
+      "type": "image_picker",
+      "id": "image",
+      "label": "Hero image",
+      "info": "Recommended: portrait or landscape photo, at least 2000px wide. Falls back to a lavender gradient if empty."
+    },
+    {
+      "type": "range",
+      "id": "image_focal_x",
+      "label": "Image horizontal focus",
+      "min": 0,
+      "max": 100,
+      "step": 5,
+      "unit": "%",
+      "default": 55,
+      "info": "0% = left of image visible, 100% = right of image visible"
+    },
+    {
+      "type": "range",
+      "id": "image_focal_y",
+      "label": "Image vertical focus",
+      "min": 0,
+      "max": 100,
+      "step": 5,
+      "unit": "%",
+      "default": 22,
+      "info": "0% = top visible, 100% = bottom visible. Lower values keep face/upper body in frame."
+    },
+    {
+      "type": "header",
+      "content": "Text content"
+    },
+    {
+      "type": "text",
+      "id": "kicker",
+      "label": "Kicker (small label)",
+      "default": "Spring drop \u00b7 live now"
+    },
+    {
+      "type": "richtext",
+      "id": "title",
+      "label": "Title",
+      "info": "Wrap a word in <em> for italic lavender accent.",
+      "default": "<p>Hair that <em>becomes</em> you.</p>"
+    },
+    {
+      "type": "textarea",
+      "id": "sub",
+      "label": "Subtitle / supporting copy",
+      "default": "Hand-tied, single-donor extensions and lace wigs\u2014shaded in 24 tones, hand-blended at our studio."
+    },
+    {
+      "type": "header",
+      "content": "Buttons"
+    },
+    {
+      "type": "text",
+      "id": "cta1_label",
+      "label": "Primary button label",
+      "default": "Shop the drop"
+    },
+    {
+      "type": "url",
+      "id": "cta1_link",
+      "label": "Primary button link"
+    },
+    {
+      "type": "text",
+      "id": "cta2_label",
+      "label": "Secondary button label",
+      "default": "Book the Wig Spa"
+    },
+    {
+      "type": "url",
+      "id": "cta2_link",
+      "label": "Secondary button link"
+    },
+    {
+      "type": "header",
+      "content": "Layout"
+    },
+    {
+      "type": "range",
+      "id": "min_height_px",
+      "label": "Minimum height",
+      "min": 400,
+      "max": 1000,
+      "step": 20,
+      "unit": "px",
+      "default": 720
+    }
+  ],
+  "presets": [
+    {
+      "name": "TC — Hero (image)",
+      "category": "TheTCollection"
+    }
+  ]
+}
+{% endschema %}

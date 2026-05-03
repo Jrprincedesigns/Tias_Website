@@ -1,0 +1,62 @@
+{{ 'thetcollection.css' | asset_url | stylesheet_tag }}
+
+<section class="tc-section tc-pillars-wrap">
+  <div class="tc-container">
+    <div class="tc-pillars tc-reveal">
+      {%- for block in section.blocks -%}
+        <div class="tc-pillar">
+          <div class="tc-pillar__num">{{ block.settings.number }}</div>
+          <h3 class="tc-pillar__h">{{ block.settings.heading }}</h3>
+          <p class="tc-pillar__p">{{ block.settings.body }}</p>
+        </div>
+      {%- endfor -%}
+    </div>
+  </div>
+</section>
+
+{% render 'tc-reveal-script' %}
+
+{% schema %}
+{
+  "name": "TC — Pillars",
+  "tag": "section",
+  "max_blocks": 3,
+  "blocks": [
+    {
+      "type": "pillar",
+      "name": "Pillar",
+      "settings": [
+        {
+          "type": "text",
+          "id": "number",
+          "label": "Number or label",
+          "default": "01"
+        },
+        {
+          "type": "text",
+          "id": "heading",
+          "label": "Heading",
+          "default": "Single-donor sourced"
+        },
+        {
+          "type": "textarea",
+          "id": "body",
+          "label": "Body",
+          "default": "Every bundle traces back to one donor. Cuticles aligned, never blended with synthetic or commodity hair."
+        }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "TC — Pillars",
+      "category": "TheTCollection",
+      "blocks": [
+        { "type": "pillar", "settings": { "number": "01", "heading": "Single-donor sourced", "body": "Every bundle traces back to one donor. Cuticles aligned, never blended with synthetic or commodity hair." } },
+        { "type": "pillar", "settings": { "number": "02", "heading": "Hand-wefted in-studio", "body": "No machine wefts. Each strand sewn by hand for a flatter base, lighter wear, and longer life." } },
+        { "type": "pillar", "settings": { "number": "03", "heading": "Shade-matched by eye", "body": "Twenty-four custom-blended shades. Take the quiz or send a photo \u2014 we'll never guess." } }
+      ]
+    }
+  ]
+}
+{% endschema %}

@@ -1,0 +1,51 @@
+{
+  "sections": {
+    "header": {
+      "type": "tc-page-header",
+      "settings": {
+        "eyebrow": "Add-Ons",
+        "title": "<p>The little things,<br/>that <em>do</em> the work.</p>",
+        "sub": "The tools, finishes, and accessories we use ourselves. Everything you need to install, style, protect, and store \u2014 nothing you don't."
+      }
+    },
+    "products": {
+      "type": "tc-product-grid",
+      "settings": {
+        "eyebrow": "Studio-Tested",
+        "title": "<p>Tools we <em>actually</em><br/>use.</p>",
+        "intro": "Every add-on here is one we work with daily. Curated small \u2014 no filler, no commodity tools.",
+        "source": "blocks",
+        "products_to_show": 12,
+        "show_filters": true
+      },
+      "blocks": {
+        "f1": { "type": "filter", "settings": { "label": "Install" } },
+        "f2": { "type": "filter", "settings": { "label": "Style" } },
+        "f3": { "type": "filter", "settings": { "label": "Protect" } },
+        "f4": { "type": "filter", "settings": { "label": "Store" } }
+      },
+      "block_order": ["f1", "f2", "f3", "f4"]
+    },
+    "ticker": {
+      "type": "tc-ticker",
+      "settings": {
+        "words": "Curated, Studio-tested, No filler"
+      }
+    },
+    "cta": {
+      "type": "tc-cta",
+      "settings": {
+        "eyebrow": "First-time installer?",
+        "title": "<p>The <em>install</em> kit.</p>",
+        "sub": "Everything you need for a clean install \u2014 lace tint, hold spray, edge brush, wig cap, melting band. Bundled and saved.",
+        "show_newsletter": false,
+        "cta1_label": "Shop the install kit",
+        "cta1_link": "shopify://collections/all",
+        "cta2_label": "How to install",
+        "cta2_link": "",
+        "fineprint": "Save $24 vs. buying separately."
+      }
+    }
+  },
+  "order": ["header", "products", "ticker", "cta"]
+}

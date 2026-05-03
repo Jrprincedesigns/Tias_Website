@@ -1,0 +1,80 @@
+{{ 'thetcollection.css' | asset_url | stylesheet_tag }}
+
+{%- liquid
+  assign words = section.settings.words | split: ','
+-%}
+
+<style>
+  #shopify-section-{{ section.id }}.tc-section.tc-ticker {
+    background: {{ section.settings.bg_color | default: '#6b4e94' }};
+    color: {{ section.settings.text_color | default: '#faf6ef' }};
+  }
+  #shopify-section-{{ section.id }} .tc-ticker__item--star { color: {{ section.settings.star_color | default: '#dcd0ff' }}; }
+  {%- if section.settings.scroll_speed -%}
+  #shopify-section-{{ section.id }} .tc-ticker__track { animation-duration: {{ section.settings.scroll_speed }}s; }
+  {%- endif -%}
+</style>
+
+<section class="tc-section tc-ticker">
+  <div class="tc-ticker__track">
+    {%- comment -%} Render words twice for seamless loop {%- endcomment -%}
+    {%- for round in (1..2) -%}
+      {%- for word in words -%}
+        <span class="tc-ticker__item">{{ word | strip }}</span>
+        <span class="tc-ticker__item tc-ticker__item--star">{{ section.settings.separator | default: '✦' }}</span>
+      {%- endfor -%}
+    {%- endfor -%}
+  </div>
+</section>
+
+{% schema %}
+{
+  "name": "TC — Ticker",
+  "tag": "section",
+  "settings": [
+    {
+      "type": "text",
+      "id": "words",
+      "label": "Words / phrases (comma-separated)",
+      "default": "Hand-tied, Single-donor Remy, Shade-matched, New drop \u00b7 Spring 26"
+    },
+    {
+      "type": "text",
+      "id": "separator",
+      "label": "Separator character",
+      "default": "\u2726"
+    },
+    {
+      "type": "color",
+      "id": "bg_color",
+      "label": "Background color",
+      "default": "#6b4e94"
+    },
+    {
+      "type": "color",
+      "id": "text_color",
+      "label": "Text color",
+      "default": "#faf6ef"
+    },
+    {
+      "type": "color",
+      "id": "star_color",
+      "label": "Separator color",
+      "default": "#dcd0ff"
+    },
+    {
+      "type": "range",
+      "id": "scroll_speed",
+      "label": "Scroll duration (seconds)",
+      "min": 15,
+      "max": 90,
+      "step": 5,
+      "default": 35,
+      "info": "Lower = faster scroll"
+    }
+  ],
+  "presets": [
+    { "name": "TC — Ticker", "category": "TheTCollection" }
+  ]
+}
+{% endschema %}

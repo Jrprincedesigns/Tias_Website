@@ -1,0 +1,164 @@
+{
+  "sections": {
+    "header": {
+      "type": "tc-page-header",
+      "settings": {
+        "eyebrow": "The Collection",
+        "title": "<p>Hand-tied <em>extensions</em>,<br/>made by hand.</p>",
+        "sub": "Single-donor Remy, hand-wefted in our studio, and shaded across 24 living tones. The hair you forget you're wearing."
+      }
+    },
+    "pillars": {
+      "type": "tc-pillars",
+      "blocks": {
+        "p1": {
+          "type": "pillar",
+          "settings": {
+            "number": "01",
+            "heading": "Single-donor sourced",
+            "body": "Every bundle traces back to one donor. Cuticles aligned, never blended with synthetic or commodity hair."
+          }
+        },
+        "p2": {
+          "type": "pillar",
+          "settings": {
+            "number": "02",
+            "heading": "Hand-wefted in-studio",
+            "body": "No machine wefts. Each strand sewn by hand for a flatter base, lighter wear, and longer life."
+          }
+        },
+        "p3": {
+          "type": "pillar",
+          "settings": {
+            "number": "03",
+            "heading": "Shade-matched by eye",
+            "body": "Twenty-four custom-blended shades, color-matched in our studio. Take the quiz or send a photo \u2014 we'll never guess."
+          }
+        }
+      },
+      "block_order": [
+        "p1",
+        "p2",
+        "p3"
+      ]
+    },
+    "stats": {
+      "type": "tc-stats",
+      "blocks": {
+        "s1": {
+          "type": "stat",
+          "settings": {
+            "number": "24",
+            "label": "Hand-blended<br/>shades"
+          }
+        },
+        "s2": {
+          "type": "stat",
+          "settings": {
+            "number": "100%",
+            "label": "Single-donor<br/>Remy"
+          }
+        },
+        "s3": {
+          "type": "stat",
+          "settings": {
+            "number": "4.9",
+            "label": "From 18,400<br/>reviews"
+          }
+        },
+        "s4": {
+          "type": "stat",
+          "settings": {
+            "number": "48h",
+            "label": "Express to<br/>your door"
+          }
+        }
+      },
+      "block_order": [
+        "s1",
+        "s2",
+        "s3",
+        "s4"
+      ]
+    },
+    "products": {
+      "type": "tc-product-grid",
+      "settings": {
+        "eyebrow": "The Edit",
+        "title": "<p>Bundles, <em>built</em><br/>to live with you.</p>",
+        "intro": "Single-donor Remy across every texture you ask for. Each bundle hand-wefted, gently washed, and ready in 48 hours.",
+        "source": "blocks",
+        "show_filters": true
+      },
+      "blocks": {
+        "p1": {
+          "type": "product",
+          "settings": {
+            "product": "burmese-curly-raw-hair",
+            "tag": "Best seller",
+            "tag_hot": true
+          }
+        },
+        "p2": {
+          "type": "product",
+          "settings": {
+            "product": "straight-virgin-hair",
+            "tag": "New"
+          }
+        },
+        "f1": {
+          "type": "filter",
+          "settings": {
+            "label": "Curly"
+          }
+        },
+        "f2": {
+          "type": "filter",
+          "settings": {
+            "label": "Wavy"
+          }
+        },
+        "f3": {
+          "type": "filter",
+          "settings": {
+            "label": "Straight"
+          }
+        }
+      },
+      "block_order": [
+        "p1",
+        "p2",
+        "f1",
+        "f2",
+        "f3"
+      ]
+    },
+    "ticker": {
+      "type": "tc-ticker",
+      "settings": {
+        "words": "Hand-tied, Single-donor Remy, Shade-matched"
+      }
+    },
+    "cta": {
+      "type": "tc-cta",
+      "settings": {
+        "eyebrow": "Need a hand?",
+        "title": "<p>Find your <em>match</em>.</p>",
+        "sub": "Three questions, one perfect shade. Or send a photo and we'll match it for you in under twenty-four hours.",
+        "show_newsletter": false,
+        "cta1_label": "Take the shade quiz",
+        "cta1_link": "",
+        "cta2_label": "Send a photo instead",
+        "cta2_link": "shopify://pages/contact"
+      }
+    }
+  },
+  "order": [
+    "header",
+    "pillars",
+    "stats",
+    "products",
+    "ticker",
+    "cta"
+  ]
+}

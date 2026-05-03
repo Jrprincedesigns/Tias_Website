@@ -1,0 +1,58 @@
+{
+  "sections": {
+    "header": {
+      "type": "tc-page-header",
+      "settings": {
+        "eyebrow": "Studio Services",
+        "title": "<p>Restored, <em>refreshed</em>,<br/>brought back to life.</p>",
+        "sub": "Drop your unit at the studio (or ship it in). We'll deep clean, repair, recolor, or fully reconstruct \u2014 whatever it needs."
+      }
+    },
+    "services": {
+      "type": "tc-services",
+      "settings": {
+        "eyebrow": "Choose a Service",
+        "title": "<p>Treatments,<br/>by <em>appointment</em>.</p>",
+        "intro": "Every service includes consultation, photo proof of work, and gentle return shipping. Most turnarounds are five to seven days."
+      },
+      "blocks": {
+        "s1": { "type": "service", "settings": { "name": "The Wig Spa", "desc": "Full deep cleanse, condition, and refresh. Removes product buildup, restores softness, returns natural movement.", "price": "$200", "cta_label": "Book" } },
+        "s2": { "type": "service", "settings": { "name": "Wig Reconstruction", "desc": "Re-wefting, density restoration, full polish. For units that need more than a wash.", "price": "$250", "cta_label": "Book" } },
+        "s3": { "type": "service", "settings": { "name": "Lace Replacement", "desc": "Fresh HD or transparent lace, re-tinted to match your skin. Like new, hidden line.", "price": "$75", "cta_label": "Book" } },
+        "s4": { "type": "service", "settings": { "name": "Color Refresh", "desc": "Recolor, gloss, or full transformation. Includes shade consultation.", "price": "$120", "cta_label": "Book" } },
+        "s5": { "type": "service", "settings": { "name": "Bring Your Own Bundles", "desc": "You provide the hair, we'll build the unit. Custom cap construction, lace install, and styling included.", "price": "$300", "cta_label": "Inquire" } }
+      },
+      "block_order": ["s1", "s2", "s3", "s4", "s5"]
+    },
+    "pillars": {
+      "type": "tc-pillars",
+      "blocks": {
+        "p1": { "type": "pillar", "settings": { "number": "01", "heading": "Photo proof at every step", "body": "Before, during, after. You see exactly what we're doing to your investment." } },
+        "p2": { "type": "pillar", "settings": { "number": "02", "heading": "Gentle 14-step wash", "body": "Sulfate-free, pH-balanced, and weighted to preserve cuticle alignment." } },
+        "p3": { "type": "pillar", "settings": { "number": "03", "heading": "Express return shipping", "body": "Insured, tracked, and packaged the way you'd expect us to package it." } }
+      },
+      "block_order": ["p1", "p2", "p3"]
+    },
+    "ticker": {
+      "type": "tc-ticker",
+      "settings": {
+        "words": "Restore, Refresh, Reconstruct, Repair"
+      }
+    },
+    "cta": {
+      "type": "tc-cta",
+      "settings": {
+        "eyebrow": "Ready to book?",
+        "title": "<p>Send us your <em>unit</em>.</p>",
+        "sub": "Tell us what your unit needs, drop a photo, and we'll come back with a timeline and a quote within twenty-four hours.",
+        "show_newsletter": false,
+        "cta1_label": "Book a service",
+        "cta1_link": "shopify://pages/contact",
+        "cta2_label": "See FAQ",
+        "cta2_link": "shopify://pages/contact",
+        "fineprint": "Most services turn around in 5-7 business days."
+      }
+    }
+  },
+  "order": ["header", "services", "pillars", "ticker", "cta"]
+}

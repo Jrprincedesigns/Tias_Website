@@ -1,25 +1,46 @@
 {
   "sections": {
-    "main": {
-      "type": "main-page",
+    "header": {
+      "type": "tc-page-header",
       "settings": {
-        "padding_top": 36,
-        "padding_bottom": 0
+        "eyebrow": "Get In Touch",
+        "title": "<p>Tell us what<br/><em>you're</em> looking for.</p>",
+        "sub": "Custom builds, shade matching, service bookings, repair questions, retail inquiries \u2014 we read every message ourselves."
       }
     },
     "form": {
-      "type": "contact-form",
+      "type": "tc-contact-form",
+      "blocks": {
+        "t1": { "type": "topic", "settings": { "label": "General inquiry" } },
+        "t2": { "type": "topic", "settings": { "label": "Preorder a unit" } },
+        "t3": { "type": "topic", "settings": { "label": "Book the Wig Spa" } },
+        "t4": { "type": "topic", "settings": { "label": "Shade matching" } },
+        "t5": { "type": "topic", "settings": { "label": "Order question" } },
+        "i1": { "type": "info", "settings": { "heading": "Studio", "body": "<p>By appointment only.<br/>Address sent at booking.</p>" } },
+        "i2": { "type": "info", "settings": { "heading": "Hours", "body": "<p>Tues - Sat \u00b7 10am - 6pm<br/>Sun - Mon \u00b7 closed</p>" } },
+        "i3": { "type": "info", "settings": { "heading": "Email", "body": "<p><a href=\"mailto:hello@thetcollection.com\">hello@thetcollection.com</a></p>" } },
+        "i4": { "type": "info", "settings": { "heading": "Response time", "body": "<p>Most messages answered within 24 hours, Tuesday through Saturday.</p>" } },
+        "i5": { "type": "info", "settings": { "heading": "Follow", "body": "<p>Instagram \u00b7 TikTok \u00b7 Pinterest<br/><em>@thetcollection</em></p>" } }
+      },
+      "block_order": ["t1", "t2", "t3", "t4", "t5", "i1", "i2", "i3", "i4", "i5"]
+    },
+    "faq": {
+      "type": "tc-faq",
       "settings": {
-        "heading": "",
-        "heading_size": "h1",
-        "color_scheme": "scheme-1",
-        "padding_top": 0,
-        "padding_bottom": 60
-      }
+        "eyebrow": "Common Questions",
+        "title": "<p>Before you <em>ask</em>.</p>",
+        "intro": "Quick answers to the questions we get most. Still need a hand? Send us a message above."
+      },
+      "blocks": {
+        "q1": { "type": "qa", "settings": { "question": "How long does a custom preorder take?", "answer": "Most builds ship within four to six weeks of deposit. Express slots are sometimes available \u2014 ask in your inquiry." } },
+        "q2": { "type": "qa", "settings": { "question": "What's the difference between Preorder and Ready-to-Ship?", "answer": "Preorder units are built one at a time to your exact spec (texture, length, lace, color, density). Ready-to-Ship pieces are pre-built in our studio standards and leave within 48 hours." } },
+        "q3": { "type": "qa", "settings": { "question": "Do you offer shade matching from a photo?", "answer": "Yes \u2014 send a well-lit photo and our colorists will match within 24 hours. No charge, no commitment." } },
+        "q4": { "type": "qa", "settings": { "question": "What's your return policy?", "answer": "First-fit guarantee on every order. If the shade or fit isn't right, we'll swap it free within 14 days of delivery. Custom preorders are final but we'll work with you on adjustments." } },
+        "q5": { "type": "qa", "settings": { "question": "Can I have you build a unit from my own bundles?", "answer": "Yes \u2014 the BYO Bundles service. You provide the hair, we'll handle cap construction, lace install, and styling. Quote on inquiry." } },
+        "q6": { "type": "qa", "settings": { "question": "Do you ship internationally?", "answer": "Yes. International express shipping is available at checkout. Customs and duties are the buyer's responsibility \u2014 most orders clear within 5-10 business days." } }
+      },
+      "block_order": ["q1", "q2", "q3", "q4", "q5", "q6"]
     }
   },
-  "order": [
-    "main",
-    "form"
-  ]
+  "order": ["header", "form", "faq"]
 }

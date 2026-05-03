@@ -1,0 +1,32 @@
+{{ 'thetcollection.css' | asset_url | stylesheet_tag }}
+
+<section class="tc-section tc-page-header">
+  <div class="tc-container">
+    <div class="tc-page-header__inner">
+      {%- if section.settings.eyebrow != blank -%}
+        <span class="tc-eyebrow">{{ section.settings.eyebrow }}</span>
+      {%- endif -%}
+      {%- if section.settings.title != blank -%}
+        <h1 class="tc-page-title">{{ section.settings.title }}</h1>
+      {%- endif -%}
+      {%- if section.settings.sub != blank -%}
+        <p class="tc-page-sub">{{ section.settings.sub }}</p>
+      {%- endif -%}
+    </div>
+  </div>
+</section>
+
+{% schema %}
+{
+  "name": "TC — Page header",
+  "tag": "section",
+  "settings": [
+    { "type": "text", "id": "eyebrow", "label": "Eyebrow", "default": "The Collection" },
+    { "type": "richtext", "id": "title", "label": "Title", "default": "<p>Hand-tied <em>extensions</em>,<br/>made by hand.</p>" },
+    { "type": "textarea", "id": "sub", "label": "Subtitle", "default": "Single-donor Remy, hand-wefted in our studio, and shaded across 24 living tones." }
+  ],
+  "presets": [
+    { "name": "TC — Page header", "category": "TheTCollection" }
+  ]
+}
+{% endschema %}

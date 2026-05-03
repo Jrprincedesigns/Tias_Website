@@ -1,0 +1,69 @@
+{{ 'thetcollection.css' | asset_url | stylesheet_tag }}
+
+<section class="tc-section tc-services-wrap">
+  <div class="tc-container">
+    {%- if section.settings.eyebrow != blank or section.settings.title != blank or section.settings.intro != blank -%}
+      <div class="tc-section-head tc-reveal">
+        <div>
+          {%- if section.settings.eyebrow != blank -%}<span class="tc-eyebrow">{{ section.settings.eyebrow }}</span>{%- endif -%}
+          {%- if section.settings.title != blank -%}<h2 class="tc-section-title">{{ section.settings.title }}</h2>{%- endif -%}
+        </div>
+        {%- if section.settings.intro != blank -%}
+          <div class="tc-section-head__right"><p>{{ section.settings.intro }}</p></div>
+        {%- endif -%}
+      </div>
+    {%- endif -%}
+
+    <div class="tc-services-list tc-reveal">
+      {%- for block in section.blocks -%}
+        <a href="{{ block.settings.link | default: '#' }}" class="tc-service">
+          <div class="tc-service__name">{{ block.settings.name }}</div>
+          <div class="tc-service__desc">{{ block.settings.desc }}</div>
+          <div class="tc-service__price">{{ block.settings.price }}</div>
+          <span class="tc-service__cta">{{ block.settings.cta_label | default: 'Book' }} <span class="tc-arrow">&rarr;</span></span>
+        </a>
+      {%- endfor -%}
+    </div>
+  </div>
+</section>
+
+{% render 'tc-reveal-script' %}
+
+{% schema %}
+{
+  "name": "TC — Services list",
+  "tag": "section",
+  "max_blocks": 12,
+  "settings": [
+    { "type": "text", "id": "eyebrow", "label": "Eyebrow", "default": "Studio Services" },
+    { "type": "richtext", "id": "title", "label": "Title", "default": "<p>Restored, <em>refreshed</em>,<br/>brought back to life.</p>" },
+    { "type": "textarea", "id": "intro", "label": "Intro paragraph", "default": "Drop your unit at the studio (or ship it in). We'll deep clean, repair, recolor, or fully reconstruct \u2014 whatever it needs." }
+  ],
+  "blocks": [
+    {
+      "type": "service",
+      "name": "Service",
+      "settings": [
+        { "type": "text", "id": "name", "label": "Service name", "default": "The Wig Spa" },
+        { "type": "textarea", "id": "desc", "label": "Description", "default": "Full deep cleanse, condition, and refresh. Removes product buildup and restores softness." },
+        { "type": "text", "id": "price", "label": "Price", "default": "$200" },
+        { "type": "text", "id": "cta_label", "label": "CTA label", "default": "Book" },
+        { "type": "url", "id": "link", "label": "Link to product or page" }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "TC — Services list",
+      "category": "TheTCollection",
+      "blocks": [
+        { "type": "service", "settings": { "name": "The Wig Spa", "desc": "Full deep cleanse, condition, and refresh.", "price": "$200" } },
+        { "type": "service", "settings": { "name": "Wig Reconstruction", "desc": "Re-wefting, density restoration, full polish.", "price": "$250" } },
+        { "type": "service", "settings": { "name": "Lace Replacement", "desc": "Fresh HD or transparent lace, re-tinted to your skin.", "price": "$75" } },
+        { "type": "service", "settings": { "name": "Color Refresh", "desc": "Recolor, gloss, or full transformation.", "price": "$120" } },
+        { "type": "service", "settings": { "name": "Bring Your Own Bundles", "desc": "You provide the hair, we'll build the unit.", "price": "$300" } }
+      ]
+    }
+  ]
+}
+{% endschema %}

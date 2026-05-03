@@ -1,0 +1,63 @@
+{
+  "sections": {
+    "header": {
+      "type": "tc-page-header",
+      "settings": {
+        "eyebrow": "Hair Care",
+        "title": "<p>Made for the <em>way</em><br/>you wear yours.</p>",
+        "sub": "Sulfate-free, salon-grade, and built specifically for natural and worn hair. Our care line keeps your investment soft, long, and full of movement."
+      }
+    },
+    "products": {
+      "type": "tc-product-grid",
+      "settings": {
+        "eyebrow": "The Ritual",
+        "title": "<p>Every step <em>matters</em>.</p>",
+        "intro": "Cleanse, treat, seal, protect. Six core products, formulated in small batches.",
+        "source": "blocks",
+        "products_to_show": 12
+      },
+      "blocks": {},
+      "block_order": []
+    },
+    "process": {
+      "type": "tc-process",
+      "settings": {
+        "eyebrow": "The Ritual",
+        "title": "<p>Four steps,<br/><em>twice</em> a week.</p>",
+        "intro": "Consistency wins. A four-step ritual, repeated twice weekly, keeps natural and worn hair in its softest, fullest state.",
+        "cta_label": "",
+        "cta_link": ""
+      },
+      "blocks": {
+        "st1": { "type": "step", "settings": { "number": "01", "heading": "Cleanse", "body": "Sulfate-free shampoo, double-cleanse for product buildup, single for routine wash." } },
+        "st2": { "type": "step", "settings": { "number": "02", "heading": "Treat", "body": "Weekly mask for protein, weekly mask for moisture. Alternate \u2014 don't combine." } },
+        "st3": { "type": "step", "settings": { "number": "03", "heading": "Seal", "body": "Leave-in for hydration, oil for shine and slip. Mid-shaft to ends, not roots." } },
+        "st4": { "type": "step", "settings": { "number": "04", "heading": "Protect", "body": "Heat shield before any styling. Silk pillowcase or bonnet at night. That's it." } }
+      },
+      "block_order": ["st1", "st2", "st3", "st4"]
+    },
+    "ticker": {
+      "type": "tc-ticker",
+      "settings": {
+        "words": "Sulfate-free, Small-batch, Salon-grade",
+        "scroll_speed": 30
+      }
+    },
+    "cta": {
+      "type": "tc-cta",
+      "settings": {
+        "eyebrow": "Save when you bundle",
+        "title": "<p>Get the <em>full</em> ritual.</p>",
+        "sub": "Cleanse, treat, seal, and protect \u2014 the four products that make up our complete care system. Save 15% when you bundle.",
+        "show_newsletter": false,
+        "cta1_label": "Shop the bundle",
+        "cta1_link": "shopify://collections/all",
+        "cta2_label": "Build my own",
+        "cta2_link": "shopify://collections/all",
+        "fineprint": "Free shipping on orders over $75."
+      }
+    }
+  },
+  "order": ["header", "products", "process", "ticker", "cta"]
+}

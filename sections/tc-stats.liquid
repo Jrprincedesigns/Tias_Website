@@ -1,0 +1,55 @@
+{{ 'thetcollection.css' | asset_url | stylesheet_tag }}
+
+<section class="tc-section tc-stats">
+  <div class="tc-container">
+    <div class="tc-stats__row">
+      {%- for block in section.blocks -%}
+        <div class="tc-stat">
+          <span class="tc-stat__num">{{ block.settings.number }}</span>
+          <span class="tc-stat__label">{{ block.settings.label }}</span>
+        </div>
+      {%- endfor -%}
+    </div>
+  </div>
+</section>
+
+{% schema %}
+{
+  "name": "TC — Stats bar",
+  "tag": "section",
+  "max_blocks": 4,
+  "blocks": [
+    {
+      "type": "stat",
+      "name": "Stat",
+      "settings": [
+        {
+          "type": "text",
+          "id": "number",
+          "label": "Number / value",
+          "default": "24"
+        },
+        {
+          "type": "text",
+          "id": "label",
+          "label": "Label",
+          "default": "Hand-blended shades",
+          "info": "Use <br/> for line break"
+        }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "TC — Stats bar",
+      "category": "TheTCollection",
+      "blocks": [
+        { "type": "stat", "settings": { "number": "24", "label": "Hand-blended<br/>shades" } },
+        { "type": "stat", "settings": { "number": "100%", "label": "Single-donor<br/>Remy" } },
+        { "type": "stat", "settings": { "number": "4.9", "label": "From 18,400<br/>reviews" } },
+        { "type": "stat", "settings": { "number": "48h", "label": "Express to<br/>your door" } }
+      ]
+    }
+  ]
+}
+{% endschema %}

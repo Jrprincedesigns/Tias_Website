@@ -1,0 +1,63 @@
+{{ 'thetcollection.css' | asset_url | stylesheet_tag }}
+
+<section class="tc-section tc-faq-wrap">
+  <div class="tc-container">
+    {%- if section.settings.eyebrow != blank or section.settings.title != blank or section.settings.intro != blank -%}
+      <div class="tc-section-head tc-reveal">
+        <div>
+          {%- if section.settings.eyebrow != blank -%}<span class="tc-eyebrow">{{ section.settings.eyebrow }}</span>{%- endif -%}
+          {%- if section.settings.title != blank -%}<h2 class="tc-section-title">{{ section.settings.title }}</h2>{%- endif -%}
+        </div>
+        {%- if section.settings.intro != blank -%}
+          <div class="tc-section-head__right"><p>{{ section.settings.intro }}</p></div>
+        {%- endif -%}
+      </div>
+    {%- endif -%}
+
+    <div class="tc-faq tc-reveal">
+      {%- for block in section.blocks -%}
+        <details>
+          <summary>{{ block.settings.question }}</summary>
+          <p>{{ block.settings.answer }}</p>
+        </details>
+      {%- endfor -%}
+    </div>
+  </div>
+</section>
+
+{% render 'tc-reveal-script' %}
+
+{% schema %}
+{
+  "name": "TC — FAQ",
+  "tag": "section",
+  "max_blocks": 12,
+  "settings": [
+    { "type": "text", "id": "eyebrow", "label": "Eyebrow", "default": "Common Questions" },
+    { "type": "richtext", "id": "title", "label": "Title", "default": "<p>Before you <em>ask</em>.</p>" },
+    { "type": "textarea", "id": "intro", "label": "Intro paragraph", "default": "Quick answers to the questions we get most." }
+  ],
+  "blocks": [
+    {
+      "type": "qa",
+      "name": "Question",
+      "settings": [
+        { "type": "text", "id": "question", "label": "Question", "default": "How long does a custom preorder take?" },
+        { "type": "textarea", "id": "answer", "label": "Answer", "default": "Most builds ship within four to six weeks of deposit. Express slots are sometimes available \u2014 ask in your inquiry." }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "TC — FAQ",
+      "category": "TheTCollection",
+      "blocks": [
+        { "type": "qa" },
+        { "type": "qa", "settings": { "question": "What's the difference between Preorder and Ready-to-Ship?", "answer": "Preorder units are built one at a time to your exact spec. Ready-to-Ship pieces are pre-built and leave the studio within 48 hours." } },
+        { "type": "qa", "settings": { "question": "Do you offer shade matching from a photo?", "answer": "Yes \u2014 send a well-lit photo and our colorists will match within 24 hours. No charge." } },
+        { "type": "qa", "settings": { "question": "What's your return policy?", "answer": "First-fit guarantee on every order. If the shade or fit isn't right, we'll swap it free within 14 days of delivery." } }
+      ]
+    }
+  ]
+}
+{% endschema %}

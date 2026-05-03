@@ -1,0 +1,84 @@
+{%- comment -%}
+  Renders a single product card.
+  Inputs:
+    product (required) - Shopify product object
+    tag (optional) - badge text, e.g. "Best seller"
+    tag_hot (optional) - bool, if true uses solid badge style
+    custom_title (optional) - override product title
+{%- endcomment -%}
+
+{%- liquid
+  assign card_title = custom_title | default: product.title
+  assign on_sale = product.compare_at_price > product.price
+  assign primary_image = product.featured_image
+  assign hover_image = product.images[1]
+  assign tag_class = 'tc-product__tag'
+  if tag_hot
+    assign tag_class = tag_class | append: ' tc-product__tag--hot'
+  endif
+-%}
+
+<a href="{{ product.url | default: '#' }}" class="tc-product tc-reveal">
+  <div class="tc-product__media">
+    {%- if tag != blank -%}
+      <span class="{{ tag_class }}">{{ tag }}</span>
+    {%- endif -%}
+
+    {%- if primary_image != blank -%}
+      <img
+        class="tc-product__visual tc-product__img--main"
+        src="{{ primary_image | image_url: width: 600 }}"
+        srcset="{{ primary_image | image_url: width: 400 }} 400w, {{ primary_image | image_url: width: 600 }} 600w, {{ primary_image | image_url: width: 800 }} 800w"
+        sizes="(min-width: 980px) 25vw, (min-width: 480px) 50vw, 100vw"
+        alt="{{ primary_image.alt | escape | default: card_title }}"
+        loading="lazy"
+        width="{{ primary_image.width }}"
+        height="{{ primary_image.height }}"
+      >
+      {%- if hover_image != blank -%}
+        <img
+          class="tc-product__visual tc-product__img--hover"
+          src="{{ hover_image | image_url: width: 600 }}"
+          srcset="{{ hover_image | image_url: width: 400 }} 400w, {{ hover_image | image_url: width: 600 }} 600w, {{ hover_image | image_url: width: 800 }} 800w"
+          sizes="(min-width: 980px) 25vw, (min-width: 480px) 50vw, 100vw"
+          alt=""
+          loading="lazy"
+          width="{{ hover_image.width }}"
+          height="{{ hover_image.height }}"
+        >
+      {%- endif -%}
+    {%- else -%}
+      {%- comment -%} Stylized fallback when product has no image {%- endcomment -%}
+      <div class="tc-product__visual" style="background: linear-gradient(155deg, var(--tc-lavender-mist) 0%, var(--tc-lavender) 100%); display: grid; place-items: center;">
+        <span style="font-family: var(--tc-serif); font-style: italic; font-size: clamp(28px, 3vw, 38px); color: var(--tc-lavender-ink); padding: 24px; text-align: center; line-height: 1; letter-spacing: -0.02em;">
+          {{ card_title | truncate: 30 }}
+        </span>
+      </div>
+    {%- endif -%}
+
+    <button type="button" class="tc-product__add" aria-label="Add {{ card_title }} to bag" onclick="event.preventDefault(); window.location.href='{{ product.url }}';">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+    </button>
+  </div>
+
+  <div class="tc-product__info">
+    <div>
+      <h3 class="tc-product__title">{{ card_title }}</h3>
+      {%- if product.metafields.reviews.rating.value != blank -%}
+        <div class="tc-product__rating">
+          {{ product.metafields.reviews.rating.value }}
+          {%- if product.metafields.reviews.rating_count.value != blank %}
+            &middot; {{ product.metafields.reviews.rating_count.value }} reviews
+          {%- endif -%}
+        </div>
+      {%- endif -%}
+    </div>
+    <div class="tc-product__price">
+      {%- if on_sale -%}
+        <s>{{ product.compare_at_price | money }}</s>{{ product.price | money }}
+      {%- else -%}
+        {{ product.price | money }}
+      {%- endif -%}
+    </div>
+  </div>
+</a>
