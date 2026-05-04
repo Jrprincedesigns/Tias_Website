@@ -25,37 +25,51 @@
     <div class="tc-bento tc-reveal">
       {%- for block in section.blocks -%}
         {%- liquid
-          # Position class — caps at 5 even if more blocks somehow exist
           assign position = forloop.index
-          if position > 5
-            assign position = 5
+          if position > 4
+            assign position = 4
           endif
 
-          # href priority: manual link > collection URL > #
+          assign product_obj = block.settings.product
+          assign collection_obj = block.settings.collection
+
           assign href = '#'
           if block.settings.link != blank
             assign href = block.settings.link
-          elsif block.settings.collection != blank
-            assign href = block.settings.collection.url
+          elsif product_obj != blank
+            assign href = product_obj.url
+          elsif collection_obj != blank
+            assign href = collection_obj.url
           endif
 
-          # Image priority: explicit image > collection.featured_image
           assign cell_image = block.settings.image
-          if cell_image == blank and block.settings.collection.image != blank
-            assign cell_image = block.settings.collection.image
+          if cell_image == blank and product_obj.featured_image != blank
+            assign cell_image = product_obj.featured_image
+          endif
+          if cell_image == blank and collection_obj.image != blank
+            assign cell_image = collection_obj.image
           endif
 
-          # Default name: explicit > collection title
           assign cell_name = block.settings.name
-          if cell_name == blank and block.settings.collection.title != blank
-            assign cell_name = block.settings.collection.title
+          if cell_name == blank and product_obj.title != blank
+            assign cell_name = product_obj.title
+          endif
+          if cell_name == blank and collection_obj.title != blank
+            assign cell_name = collection_obj.title
           endif
 
-          # Default meta: explicit > "{count} products"
           assign cell_meta = block.settings.meta
-          if cell_meta == blank and block.settings.collection != blank
-            assign count = block.settings.collection.products_count
+          if cell_meta == blank and product_obj != blank
+            assign cell_meta = product_obj.price | money
+          endif
+          if cell_meta == blank and collection_obj != blank
+            assign count = collection_obj.products_count
             assign cell_meta = count | append: ' products'
+          endif
+
+          assign tag_class = 'tc-bento-cell__tag'
+          if block.settings.tag_hot
+            assign tag_class = tag_class | append: ' tc-bento-cell__tag--hot'
           endif
         -%}
 
@@ -87,7 +101,11 @@
           {%- endif -%}
 
           <div>
-            <span class="tc-bento-meta tc-bento-meta--top">{{ block.settings.kicker }}</span>
+            {%- if block.settings.tag != blank -%}
+              <span class="{{ tag_class }}">{{ block.settings.tag }}</span>
+            {%- elsif block.settings.kicker != blank -%}
+              <span class="tc-bento-meta tc-bento-meta--top">{{ block.settings.kicker }}</span>
+            {%- endif -%}
           </div>
 
           <div>
@@ -113,7 +131,7 @@
 {
   "name": "TC — Bento grid",
   "tag": "section",
-  "max_blocks": 5,
+  "max_blocks": 4,
   "settings": [
     {
       "type": "header",
@@ -141,7 +159,7 @@
     {
       "type": "header",
       "content": "Layout note",
-      "info": "The first block is the large feature cell. Add up to four more blocks for the right side."
+      "info": "The first block is the large feature cell. Add up to three more blocks for the right side."
     }
   ],
   "blocks": [
@@ -150,40 +168,71 @@
       "name": "Cell",
       "settings": [
         {
-          "type": "text",
-          "id": "kicker",
-          "label": "Kicker (top-left)",
-          "default": "01"
+          "type": "header",
+          "content": "Source"
+        },
+        {
+          "type": "product",
+          "id": "product",
+          "label": "Product",
+          "info": "If set, the cell auto-fills with the product's image, title, price, and link. Override fields below take precedence."
         },
         {
           "type": "collection",
           "id": "collection",
-          "label": "Collection",
-          "info": "The cell will link here. The collection's title and product count will be used unless overridden below."
+          "label": "Collection (alternative)",
+          "info": "Used if no product is selected above. Auto-fills with the collection's image, title, and product count."
+        },
+        {
+          "type": "header",
+          "content": "Tag badge"
+        },
+        {
+          "type": "text",
+          "id": "tag",
+          "label": "Tag",
+          "info": "Small pill in the top-left, e.g. \"Best seller\", \"New\", \"Limited\". Replaces the kicker if both are set."
+        },
+        {
+          "type": "checkbox",
+          "id": "tag_hot",
+          "label": "Solid pill style",
+          "default": false,
+          "info": "Solid lavender background instead of the default outlined style."
+        },
+        {
+          "type": "header",
+          "content": "Overrides"
+        },
+        {
+          "type": "text",
+          "id": "kicker",
+          "label": "Kicker (fallback when no tag)",
+          "info": "Plain text label shown only when no tag is set."
         },
         {
           "type": "text",
           "id": "name",
           "label": "Override name",
-          "info": "Leave empty to use the collection's title. Use <br/> for a line break."
+          "info": "Leave empty to use the product/collection title. Use <br/> for a line break."
         },
         {
           "type": "text",
           "id": "meta",
           "label": "Override meta line",
-          "info": "Leave empty to show '{count} products' from the collection."
+          "info": "Leave empty to show the product price or collection product count."
         },
         {
           "type": "image_picker",
           "id": "image",
           "label": "Override image",
-          "info": "Optional. Falls back to the collection image if set, or to a flat color if neither is provided."
+          "info": "Optional. Falls back to the product or collection image if set."
         },
         {
           "type": "url",
           "id": "link",
           "label": "Override link",
-          "info": "Optional. Overrides the collection link."
+          "info": "Optional. Overrides the product/collection link."
         }
       ]
     }
@@ -193,11 +242,10 @@
       "name": "TC — Bento grid",
       "category": "TheTCollection",
       "blocks": [
-        { "type": "cell", "settings": { "kicker": "01 / Bestselling" } },
-        { "type": "cell", "settings": { "kicker": "02" } },
-        { "type": "cell", "settings": { "kicker": "03" } },
-        { "type": "cell", "settings": { "kicker": "04" } },
-        { "type": "cell", "settings": { "kicker": "05" } }
+        { "type": "cell", "settings": { "tag": "Best seller", "tag_hot": true } },
+        { "type": "cell", "settings": { "tag": "Loved" } },
+        { "type": "cell", "settings": { "tag": "New" } },
+        { "type": "cell", "settings": { "tag": "Limited", "tag_hot": true } }
       ]
     }
   ]
