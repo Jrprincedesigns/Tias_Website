@@ -32,28 +32,28 @@
           "type": "stat",
           "settings": {
             "number": "24",
-            "label": "Hand-blended<br/>shades"
+            "label": "Hand-blended<br>shades"
           }
         },
         "s2": {
           "type": "stat",
           "settings": {
             "number": "100%",
-            "label": "Single-donor<br/>Remy"
+            "label": "Single-donor<br>Remy"
           }
         },
         "s3": {
           "type": "stat",
           "settings": {
             "number": "4.9",
-            "label": "From 18,400<br/>reviews"
+            "label": "From 18,400<br>reviews"
           }
         },
         "s4": {
           "type": "stat",
           "settings": {
             "number": "48h",
-            "label": "Express to<br/>your door"
+            "label": "Express to<br>your door"
           }
         }
       },
@@ -65,6 +65,75 @@
       ],
       "settings": {}
     },
+    "tc_products": {
+      "type": "tc-product-grid",
+      "blocks": {
+        "p1": {
+          "type": "product",
+          "settings": {
+            "product": "burmese-curly-raw-hair",
+            "custom_title": "",
+            "tag": "Best seller",
+            "tag_hot": true
+          }
+        },
+        "p2": {
+          "type": "product",
+          "settings": {
+            "product": "color-services",
+            "custom_title": "",
+            "tag": "Loved",
+            "tag_hot": false
+          }
+        },
+        "p3": {
+          "type": "product",
+          "settings": {
+            "product": "straight-virgin-hair",
+            "custom_title": "",
+            "tag": "New",
+            "tag_hot": false
+          }
+        },
+        "p4": {
+          "type": "product",
+          "settings": {
+            "product": "wig-reconstruction",
+            "custom_title": "",
+            "tag": "Limited",
+            "tag_hot": true
+          }
+        }
+      },
+      "block_order": [
+        "p1",
+        "p2",
+        "p3",
+        "p4"
+      ],
+      "settings": {
+        "eyebrow": "The Edit",
+        "title": "<p>Pieces our clients can’t <em>put down</em>.</p>",
+        "intro": "Each bundle is single-donor, hand-wefted, and shade-matched in our studio.",
+        "source": "blocks",
+        "collection": "",
+        "products_to_show": 8,
+        "default_tag": "New",
+        "default_tag_hot": false,
+        "show_filters": false
+      }
+    },
+    "tc_ticker": {
+      "type": "tc-ticker",
+      "settings": {
+        "words": "Hand-tied, Single-donor Remy, Shade-matched, New drop · Spring 26",
+        "separator": "✦",
+        "bg_color": "#6b4e94",
+        "text_color": "#faf6ef",
+        "star_color": "#dcd0ff",
+        "scroll_speed": 35
+      }
+    },
     "tc_bento": {
       "type": "tc-bento",
       "blocks": {
@@ -72,6 +141,7 @@
           "type": "cell",
           "settings": {
             "kicker": "01 / Bestselling",
+            "collection": "bundles",
             "name": "Hair Extensions",
             "meta": "42 styles · From $95",
             "link": "shopify://collections/hair-extensions"
@@ -81,6 +151,7 @@
           "type": "cell",
           "settings": {
             "kicker": "02",
+            "collection": "products",
             "name": "Preorder a Unit",
             "meta": "14 styles",
             "link": "shopify://pages/preorder"
@@ -90,6 +161,7 @@
           "type": "cell",
           "settings": {
             "kicker": "03",
+            "collection": "byoh-service",
             "name": "The Wig Spa",
             "meta": "From $75",
             "link": "shopify://pages/wig-spa"
@@ -99,6 +171,7 @@
           "type": "cell",
           "settings": {
             "kicker": "04",
+            "collection": "",
             "name": "Hair Care",
             "meta": "12 items",
             "link": "shopify://pages/hair-care"
@@ -108,6 +181,7 @@
           "type": "cell",
           "settings": {
             "kicker": "05",
+            "collection": "",
             "name": "Add-Ons",
             "meta": "22 items",
             "link": "shopify://pages/add-ons"
@@ -125,63 +199,6 @@
         "eyebrow": "The Collection",
         "title": "<p>Built for every <em>texture</em>, every tone.</p>",
         "intro": "Six core silhouettes, blended into 24 shades. Find the one that disappears into yours."
-      }
-    },
-    "tc_ticker": {
-      "type": "tc-ticker",
-      "settings": {
-        "words": "Hand-tied, Single-donor Remy, Shade-matched, New drop · Spring 26",
-        "separator": "✦",
-        "scroll_speed": 35
-      }
-    },
-    "tc_products": {
-      "type": "tc-product-grid",
-      "blocks": {
-        "p1": {
-          "type": "product",
-          "settings": {
-            "product": "burmese-curly-raw-hair",
-            "tag": "Best seller",
-            "tag_hot": true
-          }
-        },
-        "p2": {
-          "type": "product",
-          "settings": {
-            "product": "color-services",
-            "tag": "Loved"
-          }
-        },
-        "p3": {
-          "type": "product",
-          "settings": {
-            "product": "straight-virgin-hair",
-            "tag": "New"
-          }
-        },
-        "p4": {
-          "type": "product",
-          "settings": {
-            "product": "wig-reconstruction",
-            "tag": "Limited",
-            "tag_hot": true
-          }
-        }
-      },
-      "block_order": [
-        "p1",
-        "p2",
-        "p3",
-        "p4"
-      ],
-      "settings": {
-        "eyebrow": "The Edit",
-        "title": "<p>Pieces our clients can’t <em>put down</em>.</p>",
-        "intro": "Each bundle is single-donor, hand-wefted, and shade-matched in our studio.",
-        "source": "blocks",
-        "products_to_show": 8,
-        "show_filters": false
       }
     },
     "tc_process": {
@@ -279,9 +296,9 @@
   "order": [
     "tc_hero",
     "tc_stats",
-    "tc_bento",
-    "tc_ticker",
     "tc_products",
+    "tc_ticker",
+    "tc_bento",
     "tc_process",
     "tc_reviews"
   ]
