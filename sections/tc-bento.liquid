@@ -52,12 +52,15 @@
           {{ block.shopify_attributes }}
         >
           {%- if cell_image != blank -%}
-            {{ cell_image | image_url: width: 1200 | image_tag:
-                 class: 'tc-bento-cell__image',
-                 widths: '400, 600, 900, 1200',
-                 sizes: '(min-width: 880px) 50vw, 100vw',
-                 loading: 'lazy',
-                 alt: cell_image.alt | default: cell_name | strip_html }}
+            {%- assign cell_alt = cell_image.alt | default: cell_name | strip_html -%}
+            <img
+              class="tc-bento-cell__image"
+              src="{{ cell_image | image_url: width: 1200 }}"
+              srcset="{{ cell_image | image_url: width: 400 }} 400w, {{ cell_image | image_url: width: 600 }} 600w, {{ cell_image | image_url: width: 900 }} 900w, {{ cell_image | image_url: width: 1200 }} 1200w"
+              sizes="(min-width: 880px) 50vw, 100vw"
+              alt="{{ cell_alt }}"
+              loading="lazy"
+            >
           {%- endif -%}
 
           {%- if position == 1 -%}
