@@ -14,7 +14,7 @@
     "heading_scale": 110,
     "type_body_font": "questrial_n4",
     "body_scale": 105,
-    "page_width": 1200,
+    "page_width": 1300,
     "spacing_sections": 0,
     "spacing_grid_horizontal": 28,
     "spacing_grid_vertical": 28,
@@ -140,6 +140,7 @@
         }
       }
     },
+    "content_for_index": [],
     "color_schemes": {
       "scheme-1": {
         "settings": {
@@ -193,7 +194,7 @@
           "button": "#ffffff",
           "button_label": "#eff0f5",
           "secondary_button_label": "#ffffff",
-          "shadow": "#6A6A6A"
+          "shadow": "#6a6a6a"
         }
       },
       "scheme-c29f4c65-66c1-493e-9e92-427ac29b4aa5": {
