@@ -386,6 +386,8 @@
 
 /* ============================================================
    BENTO
+   Cells use positional class names (--1 through --5) based on
+   forloop.index in tc-bento.liquid. Cell 1 is the dark feature.
    ============================================================ */
 .tc-section.tc-bento-wrap { padding: clamp(70px, 9vw, 130px) 0; }
 .tc-section .tc-bento {
@@ -409,11 +411,45 @@
   text-decoration: none;
 }
 .tc-section .tc-bento-cell:hover { transform: translateY(-3px); }
-.tc-section .tc-bento-cell--feature { grid-row: 1 / 3; background: var(--tc-ink); color: #fff; }
-.tc-section .tc-bento-cell--mist { background: var(--tc-lavender-mist); }
-.tc-section .tc-bento-cell--cream { background: var(--tc-cream-soft); }
-.tc-section .tc-bento-cell--lavender { background: var(--tc-lavender); color: #fff; }
-.tc-section .tc-bento-cell--paper { background: var(--tc-paper); border: 1px solid var(--tc-line); }
+
+/* Layered background — gradient overlays sit behind cell content */
+.tc-section .tc-bento-cell::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  transition: opacity 0.4s ease;
+}
+.tc-section .tc-bento-cell > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* Positional variants */
+.tc-section .tc-bento-cell--1 {
+  grid-row: 1 / 3;
+  background: var(--tc-ink);
+  color: #fff;
+}
+.tc-section .tc-bento-cell--1::before {
+  background: radial-gradient(120% 90% at 0% 100%, var(--tc-lavender-deep) 0%, transparent 60%);
+  opacity: 0.7;
+}
+.tc-section .tc-bento-cell--2 { background: var(--tc-lavender-mist); }
+.tc-section .tc-bento-cell--3 { background: var(--tc-cream-soft); }
+.tc-section .tc-bento-cell--4 {
+  background: var(--tc-lavender);
+  color: #fff;
+}
+.tc-section .tc-bento-cell--4::before {
+  background: linear-gradient(135deg, transparent 50%, rgba(255,255,255,0.15) 100%);
+}
+.tc-section .tc-bento-cell--5 {
+  background: var(--tc-paper);
+  border: 1px solid var(--tc-line);
+}
+
+/* Cell typography */
 .tc-section .tc-bento-name {
   font-family: var(--tc-serif);
   font-size: clamp(22px, 2.4vw, 32px);
@@ -422,7 +458,7 @@
   font-weight: 400;
   margin: 0;
 }
-.tc-section .tc-bento-cell--feature .tc-bento-name {
+.tc-section .tc-bento-cell--1 .tc-bento-name {
   font-size: clamp(36px, 5vw, 56px);
   font-style: italic;
   font-variation-settings: "opsz" 144, "SOFT" 100;
@@ -436,13 +472,47 @@
   text-transform: uppercase;
   opacity: 0.85;
 }
+.tc-section .tc-bento-meta--top { opacity: 0.7; }
+
+/* Decorative SVG inside the feature cell */
+.tc-section .tc-bento-deco {
+  position: absolute;
+  pointer-events: none;
+  opacity: 0.18;
+  z-index: 0;
+}
+.tc-section .tc-bento-cell--1 .tc-bento-deco {
+  right: -50px;
+  top: -50px;
+  width: 320px;
+  opacity: 0.25;
+}
+
+/* Optional collection / block image fill — rendered behind content,
+   blended with the cell color */
+.tc-section .tc-bento-cell__image {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: 0;
+  opacity: 0.55;
+  mix-blend-mode: multiply;
+}
+.tc-section .tc-bento-cell--1 .tc-bento-cell__image,
+.tc-section .tc-bento-cell--4 .tc-bento-cell__image {
+  opacity: 0.4;
+  mix-blend-mode: overlay;
+}
+
 @media (max-width: 880px) {
   .tc-section .tc-bento {
     grid-template-columns: 1fr 1fr;
     grid-template-rows: 280px 200px 200px;
     height: auto;
   }
-  .tc-section .tc-bento-cell--feature { grid-row: 1; grid-column: 1 / 3; }
+  .tc-section .tc-bento-cell--1 { grid-row: 1; grid-column: 1 / 3; }
 }
 
 /* ============================================================

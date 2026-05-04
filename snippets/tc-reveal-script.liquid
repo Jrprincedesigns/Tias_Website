@@ -1,37 +1,49 @@
 {%- comment -%}
-  TheTCollection scroll-reveal initializer.
-  Idempotent — safe to render from multiple sections on the same page.
+  TC reveal-on-scroll. Renders once per page even if multiple TC sections
+  include it (each section calls {% render 'tc-reveal-script' %} so this
+  guard matters). Also re-attaches when blocks are inserted by the
+  Shopify theme editor.
 {%- endcomment -%}
 
 <script>
-  (function() {
-    if (window.__tcRevealInit) return;
-    window.__tcRevealInit = true;
-
-    function init() {
-      var els = document.querySelectorAll('.tc-section .tc-reveal');
-      if (!('IntersectionObserver' in window)) {
-        els.forEach(function(el) { el.classList.add('is-in'); });
-        return;
-      }
-      var obs = new IntersectionObserver(function(entries) {
-        entries.forEach(function(entry, i) {
-          if (entry.isIntersecting) {
-            setTimeout(function() { entry.target.classList.add('is-in'); }, i * 60);
-            obs.unobserve(entry.target);
-          }
-        });
-      }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
-      els.forEach(function(el) { obs.observe(el); });
+  (function () {
+    if (window.__tcReveal) {
+      // Already initialised on this page. Just sweep for any new nodes
+      // (e.g. a section that was just dragged in inside the customizer).
+      window.__tcReveal.scan();
+      return;
     }
+
+    var observer = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry, i) {
+        if (!entry.isIntersecting) return;
+        // Slight cascade so groups of cards reveal in sequence
+        setTimeout(function () {
+          entry.target.classList.add('is-in');
+        }, i * 60);
+        observer.unobserve(entry.target);
+      });
+    }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
+
+    function scan() {
+      document.querySelectorAll('.tc-reveal:not(.is-in)').forEach(function (el) {
+        if (el.dataset.tcRevealBound) return;
+        el.dataset.tcRevealBound = '1';
+        observer.observe(el);
+      });
+    }
+
+    window.__tcReveal = { observer: observer, scan: scan };
 
     if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', init);
+      document.addEventListener('DOMContentLoaded', scan);
     } else {
-      init();
+      scan();
     }
 
-    // Re-init on Shopify section reload (theme editor)
-    document.addEventListener('shopify:section:load', init);
+    // Theme editor: re-scan when sections are loaded or blocks change.
+    document.addEventListener('shopify:section:load', scan);
+    document.addEventListener('shopify:section:reorder', scan);
+    document.addEventListener('shopify:block:select', scan);
   })();
 </script>
