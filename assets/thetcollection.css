@@ -296,6 +296,16 @@
   justify-content: center;
 }
 
+@media (max-width: 760px) {
+  .tc-section.tc-hero { min-height: clamp(480px, 72vh, 640px); }
+  .tc-section .tc-hero__content { padding: 60px 20px; }
+  .tc-section .tc-hero__kicker { margin-bottom: 24px; font-size: 10px; letter-spacing: 0.28em; }
+  .tc-section .tc-hero__title { font-size: clamp(40px, 11vw, 72px); margin-bottom: 22px; }
+  .tc-section .tc-hero__sub { margin-bottom: 32px; }
+  .tc-section .tc-hero__ctas { gap: 10px; }
+  .tc-section .tc-hero__ctas .tc-btn { padding: 14px 22px; font-size: 11px; }
+}
+
 /* ============================================================
    STATS BAR
    ============================================================ */
@@ -585,6 +595,11 @@
 @keyframes tc-marquee {
   from { transform: translateX(0); }
   to { transform: translateX(-50%); }
+}
+
+@media (max-width: 760px) {
+  .tc-section.tc-ticker { padding: 16px 0; }
+  .tc-section .tc-ticker__track { gap: 24px; }
 }
 
 /* ============================================================
@@ -1028,6 +1043,13 @@
   max-width: 64ch;
 }
 
+@media (max-width: 760px) {
+  .tc-section .tc-faq details { padding: 16px 0; }
+  .tc-section .tc-faq summary { gap: 14px; font-size: 16px; }
+  .tc-section .tc-faq summary::after { font-size: 24px; }
+  .tc-section .tc-faq details > p { font-size: 14px; margin-top: 10px; }
+}
+
 /* ============================================================
    CONTACT FORM
    ============================================================ */
@@ -1135,6 +1157,11 @@
   max-width: 56ch;
   margin: 0 auto;
   line-height: 1.6;
+}
+
+@media (max-width: 760px) {
+  .tc-section.tc-page-header { padding: 56px 0 40px; }
+  .tc-section .tc-page-title { font-size: clamp(34px, 9vw, 56px); margin: 14px 0 18px; }
 }
 
 /* ============================================================
