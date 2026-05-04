@@ -9,6 +9,8 @@
     display: block;
     width: {{ block.settings.desktop_width_percent }}%;
     max-width: 100%;
+    padding-top: {{ block.settings.padding_top }}px;
+    padding-bottom: {{ block.settings.padding_bottom }}px;
   }
 
   .ai-video-cards-grid-{{ ai_gen_id }} {
@@ -181,6 +183,26 @@
       "step": 5,
       "unit": "%",
       "default": 100
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "label": "Top padding",
+      "min": 0,
+      "max": 120,
+      "step": 4,
+      "unit": "px",
+      "default": 32
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "label": "Bottom padding",
+      "min": 0,
+      "max": 120,
+      "step": 4,
+      "unit": "px",
+      "default": 32
     },
     {
       "type": "range",
