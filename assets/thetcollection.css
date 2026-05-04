@@ -1384,3 +1384,26 @@
   .tc-nav__utility .tc-label-sm { display: none; }
   .tc-nav__links { gap: 18px; font-size: 10px; }
 }
+
+/* ============================================================
+   PRODUCT CARDS — Dawn override (site-wide)
+   White surface with subtle navy outline so the card edge stays
+   visible against the lavender page bg. Image gets a 12px radius
+   so it reads as inset within the card's 18px outer radius.
+   Targets the product-card-wrapper specifically so non-product
+   cards (article, blog) keep Dawn's color-scheme defaults.
+   ============================================================ */
+.product-card-wrapper .card.card--card,
+.product-card-wrapper .card.card--standard {
+  background: #ffffff;
+  border: 1px solid rgba(14, 27, 77, 0.08);
+}
+
+.product-card-wrapper .card .card__inner,
+.product-card-wrapper .card .card__media,
+.product-card-wrapper .card .media,
+.product-card-wrapper .card .card__media img,
+.product-card-wrapper .card .media img {
+  border-radius: 12px;
+  overflow: hidden;
+}

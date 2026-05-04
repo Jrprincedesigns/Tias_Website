@@ -23,6 +23,9 @@
       rel="stylesheet"
     >
 
+    {%- comment -%} TC design system — loaded site-wide so Dawn-only pages (collection, search, cart) also pick up shared component overrides {%- endcomment -%}
+    {{ 'thetcollection.css' | asset_url | stylesheet_tag }}
+
     <title>
       {{ page_title }}
       {%- if current_tags %} &ndash; tagged "{{ current_tags | join: ', ' }}"{% endif -%}
