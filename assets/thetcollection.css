@@ -419,12 +419,13 @@
   justify-content: space-between;
   transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
   cursor: pointer;
-  color: var(--tc-navy);
+  color: #fff;
   text-decoration: none;
 }
 .tc-section .tc-bento-cell:hover { transform: translateY(-3px); }
 
-/* Layered background — gradient overlays sit behind cell content */
+/* Layered background — gradient overlays sit behind cell content
+   (visible only when no image is set, otherwise the image covers it) */
 .tc-section .tc-bento-cell::before {
   content: '';
   position: absolute;
@@ -432,6 +433,27 @@
   z-index: 0;
   transition: opacity 0.4s ease;
 }
+
+/* Bottom-darkening scrim for text contrast on top of product images.
+   Concentrated in the bottom half of the cell so the top of the
+   image stays clean. Bottom hits ~0.8 opacity so white meta text
+   (the smallest type — clamp 11px) clears WCAG AA 4.5:1 even over
+   a fully bright photo (white luminance darkened to ~0.2). */
+.tc-section .tc-bento-cell::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    to bottom,
+    transparent 0%,
+    transparent 50%,
+    rgba(0, 0, 0, 0.4) 75%,
+    rgba(0, 0, 0, 0.8) 100%
+  );
+}
+
 .tc-section .tc-bento-cell > * {
   position: relative;
   z-index: 1;
@@ -442,7 +464,6 @@
   grid-row: 1 / 3;
   grid-column: 1;
   background: var(--tc-ink);
-  color: #fff;
 }
 .tc-section .tc-bento-cell--1::before {
   background: radial-gradient(120% 90% at 0% 100%, var(--tc-lavender-deep) 0%, transparent 60%);
@@ -462,13 +483,13 @@
   grid-row: 2;
   grid-column: 2 / 4;
   background: var(--tc-lavender);
-  color: #fff;
 }
 .tc-section .tc-bento-cell--4::before {
   background: linear-gradient(135deg, transparent 50%, rgba(255,255,255,0.15) 100%);
 }
 
-/* Cell typography */
+/* Cell typography — text-shadow gives the white text an extra
+   readability buffer on busy or light areas of the image */
 .tc-section .tc-bento-name {
   font-family: var(--tc-serif);
   font-size: clamp(22px, 2.4vw, 32px);
@@ -476,6 +497,7 @@
   letter-spacing: -0.02em;
   font-weight: 400;
   margin: 0;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
 }
 .tc-section .tc-bento-cell--1 .tc-bento-name {
   font-size: clamp(36px, 5vw, 56px);
@@ -489,7 +511,8 @@
   font-size: 11px;
   letter-spacing: 0.18em;
   text-transform: uppercase;
-  opacity: 0.85;
+  opacity: 0.92;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
 }
 .tc-section .tc-bento-meta--top { opacity: 0.7; }
 
