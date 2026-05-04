@@ -63,6 +63,7 @@
         "s3",
         "s4"
       ],
+      "disabled": true,
       "settings": {}
     },
     "tc_ticker": {
@@ -242,6 +243,8 @@
           "type": "ai_gen_block_3a736c7",
           "settings": {
             "desktop_width_percent": 100,
+            "padding_top": 32,
+            "padding_bottom": 32,
             "card_gap": 20,
             "card_aspect_ratio": 140,
             "border_radius": 12,
