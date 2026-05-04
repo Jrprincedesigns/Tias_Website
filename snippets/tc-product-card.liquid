@@ -9,7 +9,10 @@
 
 {%- liquid
   assign card_title = custom_title | default: product.title
-  assign on_sale = product.compare_at_price > product.price
+  assign on_sale = false
+  if product.compare_at_price > product.price
+    assign on_sale = true
+  endif
   assign primary_image = product.featured_image
   assign hover_image = product.images[1]
   assign tag_class = 'tc-product__tag'
