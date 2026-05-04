@@ -32,28 +32,28 @@
           "type": "stat",
           "settings": {
             "number": "24",
-            "label": "Hand-blended<br/>shades"
+            "label": "Hand-blended<br>shades"
           }
         },
         "s2": {
           "type": "stat",
           "settings": {
             "number": "100%",
-            "label": "Single-donor<br/>Remy"
+            "label": "Single-donor<br>Remy"
           }
         },
         "s3": {
           "type": "stat",
           "settings": {
             "number": "4.9",
-            "label": "From 18,400<br/>reviews"
+            "label": "From 18,400<br>reviews"
           }
         },
         "s4": {
           "type": "stat",
           "settings": {
             "number": "48h",
-            "label": "Express to<br/>your door"
+            "label": "Express to<br>your door"
           }
         }
       },
@@ -65,24 +65,53 @@
       ],
       "settings": {}
     },
+    "tc_ticker": {
+      "type": "tc-ticker",
+      "settings": {
+        "words": "Hand-tied, Single-donor Remy, Shade-matched, New drop · Spring 26",
+        "separator": "✦",
+        "bg_color": "#6b4e94",
+        "text_color": "#faf6ef",
+        "star_color": "#dcd0ff",
+        "scroll_speed": 35
+      }
+    },
     "tc_bento": {
       "type": "tc-bento",
+      "settings": {
+        "eyebrow": "The Collection",
+        "title": "<p>Built for every <em>texture</em>, every tone.</p>",
+        "intro": "Six core silhouettes, blended into 24 shades. Find the one that disappears into yours."
+      },
       "blocks": {
         "b1": {
           "type": "cell",
-          "settings": {}
+          "settings": {
+            "product": "burmese-curly-raw-hair",
+            "tag": "Best seller",
+            "tag_hot": true
+          }
         },
         "b2": {
           "type": "cell",
-          "settings": {}
+          "settings": {
+            "product": "color-services",
+            "tag": "Loved"
+          }
         },
         "b3": {
           "type": "cell",
-          "settings": {}
+          "settings": {
+            "product": "straight-virgin-hair",
+            "tag": "New"
+          }
         },
         "b4": {
           "type": "cell",
           "settings": {
+            "product": "wig-reconstruction",
+            "tag": "Limited",
+            "tag_hot": true,
             "name": "Wig Reconstruction"
           }
         }
@@ -92,20 +121,7 @@
         "b2",
         "b3",
         "b4"
-      ],
-      "settings": {
-        "eyebrow": "The Collection",
-        "title": "<p>Built for every <em>texture</em>, every tone.</p>",
-        "intro": "Six core silhouettes, blended into 24 shades. Find the one that disappears into yours."
-      }
-    },
-    "tc_ticker": {
-      "type": "tc-ticker",
-      "settings": {
-        "words": "Hand-tied, Single-donor Remy, Shade-matched, New drop · Spring 26",
-        "separator": "✦",
-        "scroll_speed": 35
-      }
+      ]
     },
     "tc_process": {
       "type": "tc-process",
@@ -202,8 +218,8 @@
   "order": [
     "tc_hero",
     "tc_stats",
-    "tc_bento",
     "tc_ticker",
+    "tc_bento",
     "tc_process",
     "tc_reviews"
   ]
