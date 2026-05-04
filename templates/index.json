@@ -78,50 +78,71 @@
     },
     "tc_bento": {
       "type": "tc-bento",
-      "settings": {
-        "eyebrow": "The Collection",
-        "title": "<p>Built for every <em>texture</em>, every tone.</p>",
-        "intro": "Six core silhouettes, blended into 24 shades. Find the one that disappears into yours."
-      },
       "blocks": {
-        "b1": {
+        "b4": {
           "type": "cell",
           "settings": {
-            "product": "burmese-curly-raw-hair",
-            "tag": "Best seller",
-            "tag_hot": true
+            "product": "wig-reconstruction",
+            "collection": "",
+            "tag": "Limited",
+            "tag_hot": true,
+            "kicker": "",
+            "name": "Wig Reconstruction",
+            "meta": "",
+            "link": ""
           }
         },
         "b2": {
           "type": "cell",
           "settings": {
             "product": "color-services",
-            "tag": "Loved"
+            "collection": "",
+            "tag": "Loved",
+            "tag_hot": false,
+            "kicker": "",
+            "name": "",
+            "meta": "",
+            "link": ""
+          }
+        },
+        "b1": {
+          "type": "cell",
+          "settings": {
+            "product": "burmese-curly-raw-hair",
+            "collection": "",
+            "tag": "Best seller",
+            "tag_hot": true,
+            "kicker": "",
+            "name": "",
+            "meta": "",
+            "link": ""
           }
         },
         "b3": {
           "type": "cell",
           "settings": {
             "product": "straight-virgin-hair",
-            "tag": "New"
-          }
-        },
-        "b4": {
-          "type": "cell",
-          "settings": {
-            "product": "wig-reconstruction",
-            "tag": "Limited",
-            "tag_hot": true,
-            "name": "Wig Reconstruction"
+            "collection": "",
+            "tag": "New",
+            "tag_hot": false,
+            "kicker": "",
+            "name": "",
+            "meta": "",
+            "link": ""
           }
         }
       },
       "block_order": [
-        "b1",
+        "b4",
         "b2",
-        "b3",
-        "b4"
-      ]
+        "b1",
+        "b3"
+      ],
+      "settings": {
+        "eyebrow": "The Collection",
+        "title": "<p>Built for every <em>texture</em>, every tone.</p>",
+        "intro": "Six core silhouettes, blended into 24 shades. Find the one that disappears into yours."
+      }
     },
     "tc_process": {
       "type": "tc-process",
