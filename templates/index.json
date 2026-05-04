@@ -11,7 +11,7 @@
         "cta2_label": "Book the Wig Spa",
         "cta2_link": "shopify://pages/wig-spa",
         "image_focal_x": 55,
-        "image_focal_y": 22,
+        "image_focal_y": 20,
         "min_height_px": 720,
         "image_asset_filename": "hero.jpg"
       }
