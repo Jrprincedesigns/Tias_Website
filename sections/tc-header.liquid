@@ -1,0 +1,155 @@
+{{ 'thetcollection.css' | asset_url | stylesheet_tag }}
+
+{%- liquid
+  assign menu = linklists[section.settings.menu]
+  assign show_search = section.settings.show_search
+  assign show_account = section.settings.show_account
+  assign show_currency = section.settings.show_currency
+-%}
+
+<header class="tc-nav" role="banner">
+  <div class="tc-container">
+    <div class="tc-nav__row">
+
+      {%- comment -%} LEFT UTILITY: search {%- endcomment -%}
+      <div class="tc-nav__utility">
+        {%- if show_search -%}
+          <a href="{{ routes.search_url }}" class="tc-icon-btn" aria-label="{{ 'general.search.search' | t }}">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
+              <circle cx="11" cy="11" r="7"/>
+              <path d="m20 20-3.5-3.5"/>
+            </svg>
+          </a>
+          <a href="{{ routes.search_url }}" class="tc-label-sm">{{ 'general.search.search' | t }}</a>
+        {%- endif -%}
+      </div>
+
+      {%- comment -%}
+        CENTER: wordmark or uploaded logo. Always a plain link — the page's
+        h1 lives in the hero (or main content), not in the header.
+      {%- endcomment -%}
+      <a href="{{ routes.root_url }}" class="tc-wordmark">
+        {%- if settings.logo != blank -%}
+          {%- assign logo_alt = settings.logo.alt | default: shop.name | escape -%}
+          {{ settings.logo | image_url: width: 600 | image_tag:
+               class: 'tc-wordmark__logo',
+               widths: '200, 300, 400, 600',
+               sizes: '(max-width: 760px) 200px, 300px',
+               alt: logo_alt,
+               loading: 'eager' }}
+        {%- else -%}
+          <span class="tc-wordmark__name">{{ shop.name }}</span>
+          {%- if section.settings.tagline != blank -%}
+            <span class="tc-wordmark__sub">{{ section.settings.tagline }}</span>
+          {%- endif -%}
+        {%- endif -%}
+      </a>
+
+      {%- comment -%} RIGHT UTILITY: currency, account, cart {%- endcomment -%}
+      <div class="tc-nav__utility tc-nav__utility--right">
+        {%- if show_currency -%}
+          <span class="tc-label-sm" aria-label="{{ 'localization.currency_label' | t }}">
+            {{ cart.currency.iso_code }}
+          </span>
+        {%- endif -%}
+
+        {%- if show_account and shop.customer_accounts_enabled -%}
+          {%- if customer -%}
+            <a href="{{ routes.account_url }}" class="tc-label-sm">{{ 'customer.account_fallback' | t }}</a>
+          {%- else -%}
+            <a href="{{ routes.account_login_url }}" class="tc-label-sm">{{ 'customer.log_in' | t }}</a>
+          {%- endif -%}
+        {%- endif -%}
+
+        <a
+          href="{{ routes.cart_url }}"
+          class="tc-icon-btn"
+          aria-label="{{ 'templates.cart.cart' | t }} ({{ cart.item_count }})"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
+            <path d="M5 8h14l-1.5 11a2 2 0 0 1-2 1.7H8.5A2 2 0 0 1 6.5 19L5 8z"/>
+            <path d="M9 8V6a3 3 0 0 1 6 0v2"/>
+          </svg>
+          {%- if cart.item_count > 0 -%}
+            <span class="tc-cart-count" aria-hidden="true">{{ cart.item_count }}</span>
+          {%- endif -%}
+        </a>
+      </div>
+    </div>
+
+    {%- if menu != blank and menu.links.size > 0 -%}
+      <nav class="tc-nav__links" aria-label="{{ 'sections.header.primary_navigation' | t }}">
+        {%- for link in menu.links -%}
+          <a
+            href="{{ link.url }}"
+            class="{% if link.active or link.child_active %}is-active{% endif %}"
+          >{{ link.title | escape }}</a>
+        {%- endfor -%}
+      </nav>
+    {%- endif -%}
+  </div>
+</header>
+
+{% schema %}
+{
+  "name": "TC — Header",
+  "class": "tc-header-section",
+  "enabled_on": {
+    "groups": ["header"]
+  },
+  "settings": [
+    {
+      "type": "link_list",
+      "id": "menu",
+      "label": "Menu",
+      "default": "main-menu",
+      "info": "Top-level links only — dropdowns are not supported in this layout."
+    },
+    {
+      "type": "header",
+      "content": "Wordmark"
+    },
+    {
+      "type": "paragraph",
+      "content": "If you set a logo image in Theme settings → Logo, it will replace the typeset wordmark below."
+    },
+    {
+      "type": "text",
+      "id": "tagline",
+      "label": "Tagline",
+      "default": "Premium Custom Hair",
+      "info": "Small uppercase line under the typeset wordmark. Shown only when no logo image is uploaded."
+    },
+    {
+      "type": "header",
+      "content": "Utility"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_search",
+      "label": "Show search",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "show_account",
+      "label": "Show account link",
+      "default": true,
+      "info": "Hidden automatically if customer accounts are disabled."
+    },
+    {
+      "type": "checkbox",
+      "id": "show_currency",
+      "label": "Show currency code",
+      "default": true,
+      "info": "Displays the active currency (e.g. USD). Currency is set automatically by the customer's region."
+    }
+  ],
+  "presets": [
+    {
+      "name": "TC — Header",
+      "category": "TheTCollection"
+    }
+  ]
+}
+{% endschema %}

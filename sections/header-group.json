@@ -1,1 +1,72 @@
-{"name":"t:sections.header.name","type":"header","sections":{"blocks_EYyMbR":{"type":"_blocks","blocks":{"ai_gen_block_850bbcb_YxUPmd":{"type":"ai_gen_block_850bbcb","settings":{"banner_text":"WELCOME TO THE T COLLECTION","separator":"|","text_spacing":40,"scroll_speed":50,"pause_on_hover":"paused","background_color":"#000000","text_color":"#dcd0ff","separator_color":"#ffffff","font_size":16,"font_weight":"600","text_transform":"uppercase","padding_vertical":15},"blocks":{}}},"block_order":["ai_gen_block_850bbcb_YxUPmd"],"name":"Scrolling banner","settings":{}},"announcement-bar":{"type":"announcement-bar","blocks":{"announcement-bar-0":{"type":"announcement","disabled":true,"settings":{"text":"Welcome to TheTCollection!","link":""}}},"block_order":["announcement-bar-0"],"settings":{"auto_rotate":false,"change_slides_speed":5,"color_scheme":"scheme-5","show_line_separator":true,"show_social":false,"enable_country_selector":false,"enable_language_selector":false}},"header":{"type":"header","settings":{"logo_position":"top-center","mobile_logo_position":"center","menu":"main-menu","menu_type_desktop":"dropdown","sticky_header_type":"reduce-logo-size","show_line_separator":true,"color_scheme":"scheme-1","menu_color_scheme":"scheme-2","enable_country_selector":true,"enable_language_selector":true,"enable_customer_avatar":true,"margin_bottom":0,"padding_top":20,"padding_bottom":20}}},"order":["blocks_EYyMbR","announcement-bar","header"]}
+{
+  "name": "t:sections.header.name",
+  "type": "header",
+  "sections": {
+    "tc-announcement": {
+      "type": "tc-announcement",
+      "blocks": {
+        "msg-1": {
+          "type": "message",
+          "settings": {
+            "text": "Welcome to TheTCollection"
+          }
+        },
+        "sep-1": {
+          "type": "separator",
+          "settings": {
+            "symbol": "✦"
+          }
+        },
+        "msg-2": {
+          "type": "message",
+          "settings": {
+            "text": "Spring 26 drop · live now"
+          }
+        },
+        "sep-2": {
+          "type": "separator",
+          "settings": {
+            "symbol": "✦"
+          }
+        },
+        "msg-3": {
+          "type": "message",
+          "settings": {
+            "text": "Free shipping over $120"
+          }
+        },
+        "sep-3": {
+          "type": "separator",
+          "settings": {
+            "symbol": "✦"
+          }
+        }
+      },
+      "block_order": [
+        "msg-1",
+        "sep-1",
+        "msg-2",
+        "sep-2",
+        "msg-3",
+        "sep-3"
+      ],
+      "settings": {
+        "scroll_speed": 50
+      }
+    },
+    "tc-header": {
+      "type": "tc-header",
+      "settings": {
+        "menu": "main-menu",
+        "tagline": "Premium Custom Hair",
+        "show_search": true,
+        "show_account": true,
+        "show_currency": true
+      }
+    }
+  },
+  "order": [
+    "tc-announcement",
+    "tc-header"
+  ]
+}

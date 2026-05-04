@@ -1,0 +1,114 @@
+{{ 'thetcollection.css' | asset_url | stylesheet_tag }}
+
+{%- if section.blocks.size > 0 -%}
+  <div
+    class="tc-announce"
+    role="region"
+    aria-label="{{ 'sections.header.announcement' | t }}"
+    style="--tc-marquee-duration: {{ section.settings.scroll_speed | default: 50 }}s;"
+  >
+    <div class="tc-announce__track">
+      {%- comment -%}
+        Render each block twice (once visible, once aria-hidden) so the
+        translateX(-50%) keyframe produces a seamless loop. The second
+        copy is hidden from screen readers to avoid duplicate announcements.
+      {%- endcomment -%}
+      {%- for pass in (1..2) -%}
+        {%- for block in section.blocks -%}
+          {%- if block.type == 'message' -%}
+            {%- if block.settings.link != blank -%}
+              <a
+                class="tc-announce__item"
+                href="{{ block.settings.link }}"
+                {% if pass == 2 %}aria-hidden="true" tabindex="-1"{% endif %}
+                {{ block.shopify_attributes }}
+              >{{ block.settings.text | escape }}</a>
+            {%- else -%}
+              <span
+                class="tc-announce__item"
+                {% if pass == 2 %}aria-hidden="true"{% endif %}
+                {{ block.shopify_attributes }}
+              >{{ block.settings.text | escape }}</span>
+            {%- endif -%}
+          {%- elsif block.type == 'separator' -%}
+            <span
+              class="tc-announce__item tc-announce__item--dot"
+              {% if pass == 2 %}aria-hidden="true"{% endif %}
+              {{ block.shopify_attributes }}
+            >{{ block.settings.symbol | default: '✦' }}</span>
+          {%- endif -%}
+        {%- endfor -%}
+      {%- endfor -%}
+    </div>
+  </div>
+{%- endif -%}
+
+{% schema %}
+{
+  "name": "TC — Announcement marquee",
+  "class": "tc-announcement-section",
+  "enabled_on": {
+    "groups": ["header"]
+  },
+  "settings": [
+    {
+      "type": "range",
+      "id": "scroll_speed",
+      "label": "Scroll duration (seconds)",
+      "min": 20,
+      "max": 90,
+      "step": 5,
+      "default": 50,
+      "unit": "s",
+      "info": "Lower = faster. The full track of messages takes this long to cross the screen once."
+    }
+  ],
+  "blocks": [
+    {
+      "type": "message",
+      "name": "Message",
+      "settings": [
+        {
+          "type": "text",
+          "id": "text",
+          "label": "Text",
+          "default": "Welcome to TheTCollection"
+        },
+        {
+          "type": "url",
+          "id": "link",
+          "label": "Optional link",
+          "info": "Leaves the message as plain text if blank."
+        }
+      ]
+    },
+    {
+      "type": "separator",
+      "name": "Separator",
+      "settings": [
+        {
+          "type": "text",
+          "id": "symbol",
+          "label": "Symbol",
+          "default": "✦"
+        }
+      ]
+    }
+  ],
+  "max_blocks": 12,
+  "presets": [
+    {
+      "name": "TC — Announcement marquee",
+      "category": "TheTCollection",
+      "blocks": [
+        { "type": "message", "settings": { "text": "Welcome to TheTCollection" } },
+        { "type": "separator" },
+        { "type": "message", "settings": { "text": "Spring 26 drop · live now" } },
+        { "type": "separator" },
+        { "type": "message", "settings": { "text": "Free shipping over $120" } },
+        { "type": "separator" }
+      ]
+    }
+  ]
+}
+{% endschema %}
