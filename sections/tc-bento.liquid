@@ -24,58 +24,31 @@
 
     <div class="tc-bento tc-reveal">
       {%- for block in section.blocks -%}
-        {%- liquid
-          assign position = forloop.index
-          if position > 4
-            assign position = 4
-          endif
+        {%- assign position = forloop.index -%}
+        {%- if position > 4 -%}{%- assign position = 4 -%}{%- endif -%}
 
-          assign product_obj = block.settings.product
-          assign collection_obj = block.settings.collection
+        {%- assign cell_image = block.settings.image | default: block.settings.product.featured_image | default: block.settings.collection.image -%}
+        {%- assign cell_name = block.settings.name | default: block.settings.product.title | default: block.settings.collection.title -%}
 
-          assign href = '#'
-          if block.settings.link != blank
-            assign href = block.settings.link
-          elsif product_obj != blank
-            assign href = product_obj.url
-          elsif collection_obj != blank
-            assign href = collection_obj.url
-          endif
+        {%- assign cell_link = block.settings.link -%}
+        {%- if cell_link == blank and block.settings.product != blank -%}{%- assign cell_link = block.settings.product.url -%}{%- endif -%}
+        {%- if cell_link == blank and block.settings.collection != blank -%}{%- assign cell_link = block.settings.collection.url -%}{%- endif -%}
+        {%- if cell_link == blank -%}{%- assign cell_link = '#' -%}{%- endif -%}
 
-          assign cell_image = block.settings.image
-          if cell_image == blank and product_obj.featured_image != blank
-            assign cell_image = product_obj.featured_image
-          endif
-          if cell_image == blank and collection_obj.image != blank
-            assign cell_image = collection_obj.image
-          endif
+        {%- assign cell_meta = block.settings.meta -%}
+        {%- if cell_meta == blank and block.settings.product != blank -%}
+          {%- assign cell_meta = block.settings.product.price | money -%}
+        {%- endif -%}
+        {%- if cell_meta == blank and block.settings.collection != blank -%}
+          {%- assign cell_meta = block.settings.collection.products_count | append: ' products' -%}
+        {%- endif -%}
 
-          assign cell_name = block.settings.name
-          if cell_name == blank and product_obj.title != blank
-            assign cell_name = product_obj.title
-          endif
-          if cell_name == blank and collection_obj.title != blank
-            assign cell_name = collection_obj.title
-          endif
-
-          assign cell_meta = block.settings.meta
-          if cell_meta == blank and product_obj != blank
-            assign cell_meta = product_obj.price | money
-          endif
-          if cell_meta == blank and collection_obj != blank
-            assign count = collection_obj.products_count
-            assign cell_meta = count | append: ' products'
-          endif
-
-          assign tag_class = 'tc-bento-cell__tag'
-          if block.settings.tag_hot
-            assign tag_class = tag_class | append: ' tc-bento-cell__tag--hot'
-          endif
-        -%}
+        {%- assign tag_class = 'tc-bento-cell__tag' -%}
+        {%- if block.settings.tag_hot -%}{%- assign tag_class = tag_class | append: ' tc-bento-cell__tag--hot' -%}{%- endif -%}
 
         <a
           class="tc-bento-cell tc-bento-cell--{{ position }}"
-          href="{{ href }}"
+          href="{{ cell_link }}"
           {{ block.shopify_attributes }}
         >
           {%- if cell_image != blank -%}
