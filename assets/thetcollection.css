@@ -530,8 +530,9 @@
   opacity: 0.25;
 }
 
-/* Optional product / collection image fill — rendered behind content,
-   blended with the cell color */
+/* Product / collection image fill — rendered at full opacity behind
+   content. The cell's solid background color and ::before gradient
+   only show when no image is set (graceful fallback). */
 .tc-section .tc-bento-cell__image {
   position: absolute;
   inset: 0;
@@ -539,13 +540,6 @@
   height: 100%;
   object-fit: cover;
   z-index: 0;
-  opacity: 0.55;
-  mix-blend-mode: multiply;
-}
-.tc-section .tc-bento-cell--1 .tc-bento-cell__image,
-.tc-section .tc-bento-cell--4 .tc-bento-cell__image {
-  opacity: 0.4;
-  mix-blend-mode: overlay;
 }
 
 @media (max-width: 880px) {
