@@ -29,6 +29,9 @@
     {%- comment -%} TC product-card hover video (idempotent; skips reduced-motion + touch-only) {%- endcomment -%}
     <script src="{{ 'tc-product-card-hover.js' | asset_url }}" defer></script>
 
+    {%- comment -%} TC mobile nav drawer (idempotent; controls hamburger + drawer) {%- endcomment -%}
+    <script src="{{ 'tc-nav-drawer.js' | asset_url }}" defer></script>
+
     <title>
       {{ page_title }}
       {%- if current_tags %} &ndash; tagged "{{ current_tags | join: ', ' }}"{% endif -%}

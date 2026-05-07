@@ -1439,11 +1439,157 @@
 .tc-nav__links a.is-active::after { transform: scaleX(1); }
 .tc-nav__links a.is-active { color: var(--tc-lavender-deep, #6b4e94); }
 
+/* Hamburger button — hidden on desktop, shown on mobile */
+.tc-nav__hamburger {
+  display: none;
+  width: 36px;
+  height: 36px;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  color: var(--tc-navy, #0e1b4d);
+  border-radius: 50%;
+  transition: background 0.2s ease;
+  padding: 0;
+}
+.tc-nav__hamburger:hover { background: var(--tc-lavender-mist, #dcd0ff); }
+.tc-nav__hamburger svg { display: block; }
+
 @media (max-width: 760px) {
   .tc-nav__row { grid-template-columns: auto 1fr auto; }
   .tc-nav__utility { gap: 12px; }
   .tc-nav__utility .tc-label-sm { display: none; }
-  .tc-nav__links { gap: 18px; font-size: 10px; }
+  /* Hide inline nav-links on mobile — drawer takes over */
+  .tc-nav__links { display: none; }
+  /* Show hamburger; hide the search icon link to keep the left utility uncluttered */
+  .tc-nav__hamburger { display: inline-flex; }
+  .tc-nav__utility .tc-icon-btn { display: none; }
+}
+
+/* ============================================================
+   MOBILE NAV DRAWER
+   Slide-in-from-left drawer triggered by the hamburger. Covers
+   the page when open with a backdrop. Closes via close button,
+   backdrop click, ESC key, or by clicking a link inside.
+   ============================================================ */
+.tc-nav-drawer {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  pointer-events: none;
+  visibility: hidden;
+  transition: visibility 0.35s;
+}
+.tc-nav-drawer[aria-hidden='false'] {
+  pointer-events: auto;
+  visibility: visible;
+}
+.tc-nav-drawer__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(14, 12, 32, 0.45);
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+  opacity: 0;
+  transition: opacity 0.35s ease;
+}
+.tc-nav-drawer[aria-hidden='false'] .tc-nav-drawer__backdrop {
+  opacity: 1;
+}
+.tc-nav-drawer__panel {
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 320px;
+  max-width: 85vw;
+  background: var(--tc-cream, #faf6ef);
+  transform: translateX(-100%);
+  transition: transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
+  padding: 24px 28px 32px;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  box-shadow: 16px 0 40px rgba(14, 12, 32, 0.08);
+}
+.tc-nav-drawer[aria-hidden='false'] .tc-nav-drawer__panel {
+  transform: translateX(0);
+}
+.tc-nav-drawer__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 24px;
+  border-bottom: 1px solid var(--tc-line-soft, rgba(14, 27, 77, 0.06));
+}
+.tc-nav-drawer__brand {
+  font-family: var(--tc-serif, 'Fraunces', 'Times New Roman', serif);
+  font-style: italic;
+  font-variation-settings: "opsz" 144, "SOFT" 100;
+  font-size: 22px;
+  color: var(--tc-lavender-deep, #6b4e94);
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+.tc-nav-drawer__close {
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  border-radius: 50%;
+  color: var(--tc-navy, #0e1b4d);
+  transition: background 0.2s ease;
+  padding: 0;
+}
+.tc-nav-drawer__close:hover {
+  background: var(--tc-lavender-mist, #dcd0ff);
+}
+.tc-nav-drawer__close svg { display: block; }
+.tc-nav-drawer__links {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 28px;
+}
+.tc-nav-drawer__links a {
+  font-family: var(--tc-serif, 'Fraunces', serif);
+  font-size: 24px;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  color: var(--tc-navy, #0e1b4d);
+  padding: 12px 0;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+.tc-nav-drawer__links a:hover,
+.tc-nav-drawer__links a.is-active {
+  color: var(--tc-lavender-deep, #6b4e94);
+}
+.tc-nav-drawer__divider {
+  display: block;
+  height: 1px;
+  background: var(--tc-line-soft, rgba(14, 27, 77, 0.06));
+  margin: 18px 0 6px;
+}
+.tc-nav-drawer__util {
+  font-family: 'Hanken Grotesk', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 12px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--tc-mute, #6b6385);
+  padding: 10px 0;
+  text-decoration: none;
+}
+.tc-nav-drawer__util:hover { color: var(--tc-navy, #0e1b4d); }
+
+/* Body scroll-lock when drawer is open */
+body.tc-drawer-open {
+  overflow: hidden;
 }
 
 /* ============================================================

@@ -11,8 +11,21 @@
   <div class="tc-container">
     <div class="tc-nav__row">
 
-      {%- comment -%} LEFT UTILITY: search {%- endcomment -%}
+      {%- comment -%} LEFT UTILITY: hamburger (mobile only) + search {%- endcomment -%}
       <div class="tc-nav__utility">
+        <button
+          type="button"
+          class="tc-nav__hamburger"
+          aria-label="Open menu"
+          aria-expanded="false"
+          aria-controls="tc-nav-drawer"
+        >
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
+            <line x1="3" y1="6" x2="21" y2="6"/>
+            <line x1="3" y1="12" x2="21" y2="12"/>
+            <line x1="3" y1="18" x2="21" y2="18"/>
+          </svg>
+        </button>
         {%- if show_search -%}
           <a href="{{ routes.search_url }}" class="tc-icon-btn" aria-label="{{ 'general.search.search' | t }}">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
@@ -89,6 +102,43 @@
     {%- endif -%}
   </div>
 </header>
+
+{%- if menu != blank and menu.links.size > 0 -%}
+  <div class="tc-nav-drawer" id="tc-nav-drawer" aria-hidden="true">
+    <div class="tc-nav-drawer__backdrop" data-tc-drawer-close></div>
+    <aside class="tc-nav-drawer__panel" role="dialog" aria-modal="true" aria-label="Menu">
+      <div class="tc-nav-drawer__head">
+        <span class="tc-nav-drawer__brand">{{ shop.name }}</span>
+        <button
+          type="button"
+          class="tc-nav-drawer__close"
+          aria-label="Close menu"
+          data-tc-drawer-close
+        >
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
+            <path d="M6 6l12 12M18 6L6 18"/>
+          </svg>
+        </button>
+      </div>
+      <nav class="tc-nav-drawer__links" aria-label="Mobile menu">
+        {%- for link in menu.links -%}
+          <a
+            href="{{ link.url }}"
+            class="{% if link.active or link.child_active %}is-active{% endif %}"
+          >{{ link.title | escape }}</a>
+        {%- endfor -%}
+        {%- if show_account and shop.customer_accounts_enabled -%}
+          <span class="tc-nav-drawer__divider" aria-hidden="true"></span>
+          {%- if customer -%}
+            <a href="{{ routes.account_url }}" class="tc-nav-drawer__util">{{ 'customer.account_fallback' | t }}</a>
+          {%- else -%}
+            <a href="{{ routes.account_login_url }}" class="tc-nav-drawer__util">{{ 'customer.log_in' | t }}</a>
+          {%- endif -%}
+        {%- endif -%}
+      </nav>
+    </aside>
+  </div>
+{%- endif -%}
 
 {% schema %}
 {
