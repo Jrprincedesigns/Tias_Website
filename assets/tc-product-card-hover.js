@@ -15,18 +15,21 @@
     return !reducedMotionMQ.matches && hoverCapableMQ.matches;
   }
 
-  function bind(card) {
-    if (card.dataset.tcVideoBound === '1') return;
-    var video = card.querySelector('.tc-card-hover-video');
-    if (!video) return;
-    card.dataset.tcVideoBound = '1';
+  // Hover containers we want to bind to. Add new ones here as needed.
+  // Each video walks up to its closest matching ancestor — that ancestor
+  // is the hover trigger for that video instance.
+  var HOVER_CONTAINER_SELECTOR = '.product-card-wrapper, .product__media-item';
 
-    card.addEventListener('mouseenter', function () {
+  function bindContainer(container, video) {
+    if (container.dataset.tcVideoBound === '1') return;
+    container.dataset.tcVideoBound = '1';
+
+    container.addEventListener('mouseenter', function () {
       var p = video.play();
       if (p && typeof p.catch === 'function') p.catch(function () {});
     });
 
-    card.addEventListener('mouseleave', function () {
+    container.addEventListener('mouseleave', function () {
       try {
         video.pause();
         video.currentTime = 0;
@@ -38,9 +41,11 @@
 
   function scan() {
     if (!shouldRun()) return;
-    document
-      .querySelectorAll('.product-card-wrapper')
-      .forEach(bind);
+    document.querySelectorAll('.tc-card-hover-video').forEach(function (video) {
+      var container = video.closest(HOVER_CONTAINER_SELECTOR);
+      if (!container) return;
+      bindContainer(container, video);
+    });
   }
 
   if (document.readyState === 'loading') {

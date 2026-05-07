@@ -83,6 +83,7 @@
             constrain_to_viewport: section.settings.constrain_to_viewport,
             lazy_load: false
           %}
+          {% render 'tc-product-card-video', card_product: product %}
         </li>
       {%- endif -%}
       {%- for media in product.media -%}
