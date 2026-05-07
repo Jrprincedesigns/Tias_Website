@@ -56,4 +56,26 @@
 
   // Re-bind when the customizer reloads a section
   document.addEventListener('shopify:section:load', scan);
+
+  // Re-bind when Ajax-loaded surfaces (related products, quick-add modals,
+  // cart drawer, etc.) inject new card-hover-video elements into the DOM.
+  if (typeof MutationObserver === 'function') {
+    var observer = new MutationObserver(function (mutations) {
+      for (var i = 0; i < mutations.length; i++) {
+        var added = mutations[i].addedNodes;
+        for (var j = 0; j < added.length; j++) {
+          var node = added[j];
+          if (node.nodeType !== 1) continue; // element nodes only
+          if (
+            (node.matches && node.matches('.tc-card-hover-video')) ||
+            (node.querySelector && node.querySelector('.tc-card-hover-video'))
+          ) {
+            scan();
+            return;
+          }
+        }
+      }
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
+  }
 })();
