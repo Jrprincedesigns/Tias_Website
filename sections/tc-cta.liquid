@@ -54,6 +54,24 @@
         {%- endif -%}
       </div>
     </div>
+
+    <div class="tc-cta__legal">
+      <small class="tc-cta__copyright">
+        &copy; {{ 'now' | date: '%Y' }}, {{ shop.name }}.
+        {%- if powered_by_link != blank %} {{ powered_by_link }}{% endif -%}
+      </small>
+      {%- if shop.policies.size > 0 -%}
+        <ul class="tc-cta__policies" role="list">
+          {%- for policy in shop.policies -%}
+            {%- if policy != blank -%}
+              <li>
+                <a href="{{ policy.url }}">{{ policy.title }}</a>
+              </li>
+            {%- endif -%}
+          {%- endfor -%}
+        </ul>
+      {%- endif -%}
+    </div>
   </div>
 </section>
 
