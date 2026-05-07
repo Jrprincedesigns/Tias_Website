@@ -26,6 +26,9 @@
     {%- comment -%} TC design system — loaded site-wide so Dawn-only pages (collection, search, cart) also pick up shared component overrides {%- endcomment -%}
     {{ 'thetcollection.css' | asset_url | stylesheet_tag }}
 
+    {%- comment -%} TC product-card hover video (idempotent; skips reduced-motion + touch-only) {%- endcomment -%}
+    <script src="{{ 'tc-product-card-hover.js' | asset_url }}" defer></script>
+
     <title>
       {{ page_title }}
       {%- if current_tags %} &ndash; tagged "{{ current_tags | join: ', ' }}"{% endif -%}

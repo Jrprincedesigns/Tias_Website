@@ -1,0 +1,38 @@
+{%- comment -%}
+  Renders a hover-only <video> overlay inside a product card's media area.
+  Maps the product title to a video file in assets/. If no match, renders nothing.
+
+  Usage:
+    {% render 'tc-product-card-video', card_product: card_product %}
+
+  To add a new product, add a `when` line below.
+{%- endcomment -%}
+{%- liquid
+  assign hover_video_filename = ''
+  case card_product.title
+    when 'Burmese Curly Bundles'
+      assign hover_video_filename = 'burmese-curly.mp4'
+    when 'Raw Wavy Bundles'
+      assign hover_video_filename = 'raw-wavy-bundles.mp4'
+    when 'Straight Raw Bundles'
+      assign hover_video_filename = 'straight-raw-bundles.mp4'
+    when 'Body Wave Virgin Bundles'
+      assign hover_video_filename = 'body-wave-virgin-bundles.mp4'
+    when 'Deep Wave Virgin Bundles'
+      assign hover_video_filename = 'deep-wave-virgin-bundles.mp4'
+    when 'Straight Virgin Bundles'
+      assign hover_video_filename = 'straight-virgin-bundles.mp4'
+  endcase
+-%}
+{%- if hover_video_filename != blank -%}
+  <video
+    class="tc-card-hover-video"
+    src="{{ hover_video_filename | asset_url }}"
+    muted
+    loop
+    playsinline
+    preload="none"
+    aria-hidden="true"
+    tabindex="-1"
+  ></video>
+{%- endif -%}

@@ -1407,3 +1407,41 @@
   border-radius: 12px;
   overflow: hidden;
 }
+
+/* ============================================================
+   PRODUCT CARD HOVER VIDEO
+   Overlays a muted/loop/playsinline <video> on top of the product
+   card image. Hidden by default; fades in on hover. JS handles
+   load + play on mouseenter and pause+reset on mouseleave so we
+   don't fetch the bytes until the user hovers (preload="none" on
+   the element keeps it lazy).
+
+   Disabled for prefers-reduced-motion and touch-only devices —
+   the JS skips bind on those, plus this CSS hides the video as a
+   belt-and-suspenders fallback in case the JS doesn't run.
+   ============================================================ */
+.product-card-wrapper .card .media .tc-card-hover-video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 12px;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  pointer-events: none;
+  z-index: 2;
+}
+.product-card-wrapper:hover .card .media .tc-card-hover-video {
+  opacity: 1;
+}
+@media (prefers-reduced-motion: reduce) {
+  .product-card-wrapper .card .media .tc-card-hover-video {
+    display: none;
+  }
+}
+@media (hover: none) {
+  .product-card-wrapper .card .media .tc-card-hover-video {
+    display: none;
+  }
+}

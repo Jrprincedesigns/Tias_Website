@@ -103,6 +103,8 @@
                   height="{{ card_product.media[1].height }}"
                 >
               {%- endif -%}
+
+              {% render 'tc-product-card-video', card_product: card_product %}
             </div>
           </div>
         {%- endif -%}
