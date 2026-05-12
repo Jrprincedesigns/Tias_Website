@@ -69,7 +69,7 @@
     "tc_ticker": {
       "type": "tc-ticker",
       "settings": {
-        "words": "The Kind of Hair That Turns Heads.",
+        "words": "PREORDERS, BUNDLES,CUSTOM WIGS",
         "separator": "✦",
         "bg_color": "#6b4e94",
         "text_color": "#faf6ef",
@@ -142,7 +142,7 @@
       "settings": {
         "eyebrow": "The Collection",
         "title": "<p>Built for every <em>texture</em>, every tone.</p>",
-        "intro": "Six core silhouettes, blended into 24 shades. Find the one that disappears into yours."
+        "intro": "Featured Products"
       }
     },
     "tc_process": {
