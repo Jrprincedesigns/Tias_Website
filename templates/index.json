@@ -15,13 +15,13 @@
         "image_asset_filename": "hero.jpg",
         "image_focal_x": 55,
         "image_focal_y": 20,
-        "kicker": "Spring drop · live now",
+        "kicker": "live now",
         "title": "<p>Hair that <em>becomes</em> you.</p>",
         "sub": "Hand-tied, single-donor extensions and lace wigs—shaded in 24 tones, hand-blended at our studio. The kind of hair that holds through every season.",
-        "cta1_label": "Shop the drop",
-        "cta1_link": "shopify://collections/all",
+        "cta1_label": "hair extensions",
+        "cta1_link": "shopify://collections/bundles",
         "cta2_label": "Book the Wig Spa",
-        "cta2_link": "shopify://pages/wig-spa",
+        "cta2_link": "shopify://collections/byoh-service",
         "min_height_px": 720
       }
     },
