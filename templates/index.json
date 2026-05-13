@@ -153,31 +153,31 @@
           "settings": {
             "number": "01",
             "heading": "Source",
-            "body": "Single-donor Remy from traceable, ethically-paid suppliers. Every lot logged, every cuticle aligned."
+            "body": "We partner with trusted suppliers to source high-quality raw and virgin hair known for its fullness, softness, and natural beauty. Every bundle is carefully selected to maintain consistency, quality, and longevity."
           }
         },
         "st2": {
           "type": "step",
           "settings": {
             "number": "02",
-            "heading": "Blend",
-            "body": "Twenty-four shades hand-mixed by our colorists for living-tone realism. Shade quizzes available — we'll never guess."
+            "heading": "Customize",
+            "body": "Each wig is customized with intention, from lace preparation to color to styling. Designed to complement your features effortlessly, every unit is crafted to feel polished, natural, and elevated."
           }
         },
         "st3": {
           "type": "step",
           "settings": {
             "number": "03",
-            "heading": "Weft & ship",
-            "body": "Hand-wefted, gently washed through 14 steps, and dispatched within 48 hours. Traceable end-to-end."
+            "heading": "Refine & Style",
+            "body": "Every piece is washed, styled, and quality checked before shipment to ensure a flawless finish. We focus on movement, softness, and wearability so your hair arrives ready to wear and ready to turn heads."
           }
         },
         "st4": {
           "type": "step",
           "settings": {
             "number": "04",
-            "heading": "First-fit guarantee",
-            "body": "Not perfect? Free shade swap, no questions asked. Because the right match shouldn't be a gamble."
+            "heading": "Luxury Experience",
+            "body": "TheTCollection is more than luxury hair. It’s an experience rooted in confidence, femininity, and elevated beauty. We believe the right hair should make you feel powerful, beautiful, and completely unforgettable."
           }
         }
       },
@@ -189,8 +189,8 @@
       ],
       "settings": {
         "eyebrow": "The Process",
-        "title": "<p>Made by hand,<br/><em>matched</em> by eye.</p>",
-        "intro": "Every bundle is single-donor, hand-wefted, and shade-matched in our studio. No machine wefts, no synthetic blends — just hair that becomes part of yours.",
+        "title": "<p>Made with intention,<br/>designed to blend seamlessly.</p>",
+        "intro": "Every unit is thoughtfully curated using premium raw and virgin hair selected for softness, longevity, and effortless movement. From sourcing to customization, each detail is handled with precision to create hair that feels as luxurious as it looks.",
         "cta_label": "Read the full process",
         "cta_link": ""
       }
