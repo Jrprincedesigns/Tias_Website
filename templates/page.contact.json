@@ -138,7 +138,7 @@
           "type": "qa",
           "settings": {
             "question": "Do you ship internationally?",
-            "answer": "Yes. International express shipping is available at checkout. Customers are responsible for any customs or import fees required by their country. We are not liable for customs delays."
+            "answer": "Yes. International shipping is available at checkout. Customers are responsible for any customs or import fees required by their country. We are not liable for customs delays."
           }
         }
       },
