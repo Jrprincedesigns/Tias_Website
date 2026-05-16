@@ -14,7 +14,7 @@
       "settings": {
         "eyebrow": "Get In Touch",
         "title": "<p>Tell us what<br/><em>you're</em> looking for.</p>",
-        "sub": "Submit any custom requests or questions that aren't addressed in the FAQ's. We read every message ourselves!"
+        "sub": "Have a custom request or additional question not covered in our FAQs? Submit your inquiry below. Every message is personally reviewed!"
       }
     },
     "form": {
@@ -54,21 +54,21 @@
           "type": "info",
           "settings": {
             "heading": "Hours",
-            "body": "<p>Mon - Sat · 10am - 6pm<br/>Sun · closed</p>"
+            "body": "<p>Mon - Sat · 10AM- 6PM<br/>Sun · closed</p>"
           }
         },
         "i3": {
           "type": "info",
           "settings": {
             "heading": "Email",
-            "body": "<p><a href=\"mailto:contact@thetcollection.shop\" title=\"mailto:contact@thetcollection.shop\">contact@thetcollection.shop</a></p>"
+            "body": "<p><a href=\"mailto:info@thetcollection.shop\" title=\"mailto:info@thetcollection.shop\">info@thetcollection.shop</a></p>"
           }
         },
         "i4": {
           "type": "info",
           "settings": {
             "heading": "Response time",
-            "body": "<p>Most messages answered within 24 hours, Tuesday through Saturday.</p>"
+            "body": "<p>Most messages answered within 24 hours, Monday through Saturday.</p>"
           }
         },
         "i5": {
@@ -153,7 +153,7 @@
       "settings": {
         "eyebrow": "Common Questions",
         "title": "<p>Before you <em>ask</em>.</p>",
-        "intro": "Quick answers to the questions we get most. Still need a hand? Send us a message above."
+        "intro": "Quick answers to the questions we get most. Still have a question? Send us a message above."
       }
     }
   },
