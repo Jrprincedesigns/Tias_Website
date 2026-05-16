@@ -77,9 +77,9 @@
         "collapsible_row_KK6KtU": {
           "type": "collapsible_row",
           "settings": {
-            "heading": "Collapsible row",
-            "icon": "check_mark",
-            "row_content": "",
+            "heading": "HAIR CARE DO'S",
+            "icon": "star",
+            "row_content": "<p>- Cleanse your hair using sulfate-free and paraben-free products to help maintain its overall quality and appearance.<br/>- Deep condition consistently to keep the hair feeling soft, hydrated, and manageable.<br/>- Whenever possible, allow your wig or extensions to air dry to help minimize unnecessary heat exposure.<br/>- Always apply a heat protectant before using hot tools to help preserve the integrity of the hair.<br/>- Store your wig properly on a wig stand or mannequin head to help maintain its shape and style.<br/>- Gently detangle the hair starting from the ends and working upward to minimize shedding and tension.</p>",
             "page": ""
           }
         },
@@ -100,27 +100,17 @@
             "row_content": "",
             "page": ""
           }
-        },
-        "collapsible_row_4K4jNR": {
-          "type": "collapsible_row",
-          "settings": {
-            "heading": "Collapsible row",
-            "icon": "check_mark",
-            "row_content": "",
-            "page": ""
-          }
         }
       },
       "block_order": [
         "collapsible_row_KK6KtU",
         "collapsible_row_xnFYyc",
-        "collapsible_row_pateyJ",
-        "collapsible_row_4K4jNR"
+        "collapsible_row_pateyJ"
       ],
       "name": "t:sections.collapsible_content.presets.name",
       "settings": {
         "caption": "",
-        "heading": "Collapsible content",
+        "heading": "Do's & Dont's",
         "heading_size": "h1",
         "heading_alignment": "center",
         "layout": "none",
