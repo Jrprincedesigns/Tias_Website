@@ -29,17 +29,10 @@
     "image_banner_NUEqQq": {
       "type": "image-banner",
       "blocks": {
-        "heading_fWaU6w": {
-          "type": "heading",
-          "settings": {
-            "heading": "MAINTAIN YOUR INVESTMENT",
-            "heading_size": "h2"
-          }
-        },
         "text_tWbmca": {
           "type": "text",
           "settings": {
-            "text": "Below is a curated list of products we love and trust, carefully selected to support proper cleansing, moisture balance, and styling. Shop our recommended products through our Amazon storefront by clicking the button below.",
+            "text": "<em>Below is a curated list of products we love and trust, carefully selected to support proper cleansing, moisture balance, and styling. Shop our recommended products through our Amazon storefront by clicking the button below.</em>",
             "text_style": "body"
           }
         },
@@ -56,7 +49,6 @@
         }
       },
       "block_order": [
-        "heading_fWaU6w",
         "text_tWbmca",
         "buttons_8Hweyc"
       ],
