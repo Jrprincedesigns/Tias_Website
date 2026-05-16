@@ -86,9 +86,9 @@
         "collapsible_row_xnFYyc": {
           "type": "collapsible_row",
           "settings": {
-            "heading": "Collapsible row",
-            "icon": "check_mark",
-            "row_content": "",
+            "heading": "HAIR CARE DON'TS",
+            "icon": "star",
+            "row_content": "<p>-Avoid using heavy oils or greasy products that can create buildup and weigh the hair down.<br/>-Avoid sleeping, swimming, or showering in your wig unless the unit is specifically designed for extended wear.<br/>-Do not use excessive heat without applying protection beforehand.<br/>-Avoid pulling, tugging, or aggressively brushing the hair, especially while wet.<br/>-Do not neglect regular maintenance. Consistent washing, conditioning, and styling upkeep will help keep your unit looking its best.</p>",
             "page": ""
           }
         },
