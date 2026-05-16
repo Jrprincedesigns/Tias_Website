@@ -11,9 +11,19 @@
   "sections": {
     "main": {
       "type": "main-page",
+      "disabled": true,
       "settings": {
         "padding_top": 36,
         "padding_bottom": 28
+      }
+    },
+    "tc_page_header_HBdUNU": {
+      "type": "tc-page-header",
+      "name": "TC — Page header",
+      "settings": {
+        "eyebrow": "The T Collection",
+        "title": "<p>Maintain your <em>investment.</em></p>",
+        "sub": "Your extensions are crafted with premium raw and virgin hair and should be cared for as you would your natural hair.Thoughtful care, proper hydration, and intentional styling help maintain their overall quality, appearance, and polished look."
       }
     },
     "image_banner_NUEqQq": {
@@ -29,7 +39,7 @@
         "text_tWbmca": {
           "type": "text",
           "settings": {
-            "text": "Your extensions are crafted with premium raw and virgin hair and should be cared for as you would your natural hair.Thoughtful care, proper hydration, and intentional styling help maintain their overall quality, appearance, and polished look. Below is a curated list of products we love and trust, carefully selected to support proper cleansing, moisture balance, and styling. Shop our recommended products through our Amazon storefront by clicking the button below.",
+            "text": "Below is a curated list of products we love and trust, carefully selected to support proper cleansing, moisture balance, and styling. Shop our recommended products through our Amazon storefront by clicking the button below.",
             "text_style": "body"
           }
         },
@@ -157,6 +167,7 @@
   },
   "order": [
     "main",
+    "tc_page_header_HBdUNU",
     "image_banner_NUEqQq",
     "1777002161fc3d4112",
     "collapsible_content_q3Ur4x"
