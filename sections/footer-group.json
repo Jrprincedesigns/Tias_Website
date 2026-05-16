@@ -1,3 +1,12 @@
+/*
+ * ------------------------------------------------------------
+ * IMPORTANT: The contents of this file are auto-generated.
+ *
+ * This file may be updated by the Shopify admin theme editor
+ * or related systems. Please exercise caution as any changes
+ * made to this file may be overwritten.
+ * ------------------------------------------------------------
+ */
 {
   "name": "t:sections.footer.name",
   "type": "footer",
@@ -5,13 +14,21 @@
     "tc_cta": {
       "type": "tc-cta",
       "settings": {
-        "eyebrow": "Join the list",
-        "title": "<p>First access. <em>Quiet</em> sales.</p>",
-        "sub": "Twice-monthly drops, members-only previews, and the occasional handwritten note from the studio.",
+        "eyebrow": "Join the email list",
+        "title": "<p>Sign Up for Promotions & <em>Special  </em>Offers.</p>",
+        "sub": "New wigs, new products, and digital products.",
         "show_newsletter": true,
-        "fineprint": "Plus $20 off your first piece. Unsubscribe anytime."
+        "input_placeholder": "your@email.com",
+        "submit_label": "Subscribe",
+        "fineprint": "Unsubscribe anytime.",
+        "cta1_label": "",
+        "cta1_link": "",
+        "cta2_label": "",
+        "cta2_link": ""
       }
     }
   },
-  "order": ["tc_cta"]
+  "order": [
+    "tc_cta"
+  ]
 }

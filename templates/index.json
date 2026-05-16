@@ -195,6 +195,37 @@
         "cta_link": ""
       }
     },
+    "blocks_RJzgxN": {
+      "type": "_blocks",
+      "blocks": {
+        "ai_gen_block_3a736c7_weCgrL": {
+          "type": "ai_gen_block_3a736c7",
+          "settings": {
+            "desktop_width_percent": 100,
+            "padding_top": 32,
+            "padding_bottom": 32,
+            "card_gap": 20,
+            "card_aspect_ratio": 140,
+            "border_radius": 12,
+            "card_background": "#ffffff",
+            "shadow_horizontal": 0,
+            "shadow_vertical": 8,
+            "shadow_blur": 16,
+            "shadow_opacity": 0.2,
+            "video_1": "shopify://files/videos/IMG_7929.MOV",
+            "video_2": "shopify://files/videos/IMG_0883 2.mov",
+            "video_3": "shopify://files/videos/4D02D16D-06F8-4D03-BA4D-D6B18623E000.MOV",
+            "video_4": "shopify://files/videos/IMG_1909.MOV"
+          },
+          "blocks": {}
+        }
+      },
+      "block_order": [
+        "ai_gen_block_3a736c7_weCgrL"
+      ],
+      "name": "Video cards",
+      "settings": {}
+    },
     "tc_reviews": {
       "type": "tc-reviews",
       "blocks": {
@@ -235,37 +266,6 @@
         "eyebrow": "Loved by many.",
         "title": "<p>Reviewed five stars,<br/><em>worn</em> for years.</p>"
       }
-    },
-    "blocks_RJzgxN": {
-      "type": "_blocks",
-      "blocks": {
-        "ai_gen_block_3a736c7_weCgrL": {
-          "type": "ai_gen_block_3a736c7",
-          "settings": {
-            "desktop_width_percent": 100,
-            "padding_top": 32,
-            "padding_bottom": 32,
-            "card_gap": 20,
-            "card_aspect_ratio": 140,
-            "border_radius": 12,
-            "card_background": "#ffffff",
-            "shadow_horizontal": 0,
-            "shadow_vertical": 8,
-            "shadow_blur": 16,
-            "shadow_opacity": 0.2,
-            "video_1": "shopify://files/videos/IMG_7929.MOV",
-            "video_2": "shopify://files/videos/IMG_0883 2.mov",
-            "video_3": "shopify://files/videos/4D02D16D-06F8-4D03-BA4D-D6B18623E000.MOV",
-            "video_4": "shopify://files/videos/IMG_1909.MOV"
-          },
-          "blocks": {}
-        }
-      },
-      "block_order": [
-        "ai_gen_block_3a736c7_weCgrL"
-      ],
-      "name": "Video cards",
-      "settings": {}
     }
   },
   "order": [
@@ -274,7 +274,7 @@
     "tc_ticker",
     "tc_bento",
     "tc_process",
-    "tc_reviews",
-    "blocks_RJzgxN"
+    "blocks_RJzgxN",
+    "tc_reviews"
   ]
 }
