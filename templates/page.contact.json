@@ -102,22 +102,22 @@
         "q1": {
           "type": "qa",
           "settings": {
-            "question": "How long does a custom preorder take?",
-            "answer": "Most builds ship within four to six weeks of deposit. Express slots are sometimes available — ask in your inquiry."
+            "question": "How long does a custom pre-order take?",
+            "answer": "Each unit is handcrafted with care and made-to-order unless otherwise stated.\n\nPre-Order Units: Require 14–30 business days for completion (excluding weekends and holidays)."
           }
         },
         "q2": {
           "type": "qa",
           "settings": {
-            "question": "What's the difference between Preorder and Ready-to-Ship?",
-            "answer": "Preorder units are built one at a time to your exact spec (texture, length, lace, color, density). Ready-to-Ship pieces are pre-built in our studio standards and leave within 48 hours."
+            "question": "What's the difference between Pre-order and Ready-to-Ship?",
+            "answer": "Pre-order units are built one at a time to your exact spec (texture, length, lace, color, density). Ready-to-Ship pieces are pre-built and leave within 48 hours."
           }
         },
         "q3": {
           "type": "qa",
           "settings": {
-            "question": "Do you offer shade matching from a photo?",
-            "answer": "Yes — send a well-lit photo and our colorists will match within 24 hours. No charge, no commitment."
+            "question": "If I provide a hair color inspiration photo, will the final custom color match it exactly?",
+            "answer": "Please note that colors of wigs may vary slightly from the photos.\n    •    I strive to match each unit as closely as possible.\n    •    Highlights or unique color patterns may look slightly different due to lighting or dye variations.\nRest assured, we aim to recreate every unit as accurately as possible!"
           }
         },
         "q4": {
