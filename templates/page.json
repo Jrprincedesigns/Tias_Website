@@ -69,29 +69,6 @@
     },
     "1777002161fc3d4112": {
       "type": "_blocks",
-      "blocks": {
-        "ai_gen_block_850bbcb_HwxmLJ": {
-          "type": "ai_gen_block_850bbcb",
-          "settings": {
-            "banner_text": "HAIR IS AN INVESTMENT",
-            "separator": "★",
-            "text_spacing": 40,
-            "scroll_speed": 50,
-            "pause_on_hover": "paused",
-            "background_color": "#967bb6",
-            "text_color": "#ffffff",
-            "separator_color": "#ffffff",
-            "font_size": 18,
-            "font_weight": "600",
-            "text_transform": "uppercase",
-            "padding_vertical": 15
-          },
-          "blocks": {}
-        }
-      },
-      "block_order": [
-        "ai_gen_block_850bbcb_HwxmLJ"
-      ],
       "settings": {}
     },
     "collapsible_content_q3Ur4x": {
