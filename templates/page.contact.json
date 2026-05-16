@@ -134,6 +134,13 @@
             "answer": "Yes — the BYO Bundles service. You provide the hair, we'll handle cap construction, lace install, and styling. Quote on inquiry."
           }
         },
+        "qa_M3axqQ": {
+          "type": "qa",
+          "settings": {
+            "question": "How long does a custom preorder take?",
+            "answer": "Yes! Please refer to the WIG RECONSTRUCTION( NOT PREVIOUSLY MADE BY THE T COLLECTION) service."
+          }
+        },
         "q6": {
           "type": "qa",
           "settings": {
@@ -148,6 +155,7 @@
         "q3",
         "q4",
         "q5",
+        "qa_M3axqQ",
         "q6"
       ],
       "settings": {
