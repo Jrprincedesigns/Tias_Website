@@ -131,13 +131,6 @@
           "type": "qa",
           "settings": {
             "question": "Can I have you build a unit from my own bundles?",
-            "answer": "Yes — the BYO Bundles service. You provide the hair, we'll handle cap construction, lace install, and styling. Quote on inquiry."
-          }
-        },
-        "qa_M3axqQ": {
-          "type": "qa",
-          "settings": {
-            "question": "How long does a custom preorder take?",
             "answer": "Yes! Please refer to the WIG RECONSTRUCTION( NOT PREVIOUSLY MADE BY THE T COLLECTION) service."
           }
         },
@@ -145,7 +138,7 @@
           "type": "qa",
           "settings": {
             "question": "Do you ship internationally?",
-            "answer": "Yes. International express shipping is available at checkout. Customs and duties are the buyer's responsibility — most orders clear within 5-10 business days."
+            "answer": "Yes. International express shipping is available at checkout. Customers are responsible for any customs or import fees required by their country. We are not liable for customs delays."
           }
         }
       },
@@ -155,7 +148,6 @@
         "q3",
         "q4",
         "q5",
-        "qa_M3axqQ",
         "q6"
       ],
       "settings": {
