@@ -14,7 +14,7 @@
       "settings": {
         "image": "shopify://shop_images/websiteBanner.png",
         "image_asset_filename": "hero.jpg",
-        "image_focal_x": 55,
+        "image_focal_x": 80,
         "image_focal_y": 20,
         "kicker": "live now",
         "title": "<p>Hair that <em>becomes</em> you.</p>",
