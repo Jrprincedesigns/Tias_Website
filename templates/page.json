@@ -28,8 +28,6 @@
     },
     "image_banner_NUEqQq": {
       "type": "image-banner",
-      "blocks": {},
-      "block_order": [],
       "name": "t:sections.image-banner.presets.name",
       "settings": {
         "image": "shopify://shop_images/Untitled_design_1.png",
@@ -51,7 +49,6 @@
     },
     "tc_pillars_do_donts": {
       "type": "tc-pillars",
-      "settings": {},
       "blocks": {
         "do": {
           "type": "pillar",
@@ -73,17 +70,11 @@
       "block_order": [
         "do",
         "dont"
-      ]
+      ],
+      "settings": {}
     },
     "tc_curated_amazon": {
       "type": "tc-curated-picks",
-      "settings": {
-        "eyebrow": "Products we trust",
-        "title": "<p>What we use, <em>recommend</em>, and stand behind.</p>",
-        "body": "<p>Below is a curated list of products we love and trust, carefully selected to support proper cleansing, moisture balance, and styling. Shop our recommended products through our Amazon storefront by clicking the button below.</p>",
-        "cta_label": "Shop on amazon",
-        "cta_link": "https://a.co/d/0gsct1n9"
-      },
       "blocks": {
         "c1": {
           "type": "card",
@@ -108,17 +99,24 @@
         "c1",
         "c2",
         "c3"
-      ]
+      ],
+      "settings": {
+        "eyebrow": "Products we trust",
+        "title": "<p>What we use, <em>recommend</em>, and stand behind.</p>",
+        "body": "<p>Below is a curated list of products we love and trust, carefully selected to support proper cleansing, moisture balance, and styling. Shop our recommended products through our Amazon storefront by clicking the button below.</p>",
+        "cta_label": "Shop on amazon",
+        "cta_link": "https://a.co/d/0gsct1n9"
+      }
     },
     "tc_banner_do_donts": {
       "type": "tc-banner",
       "settings": {
+        "image_asset_filename": "tias-birthday.jpg",
+        "image_alt": "Tia, founder of The T Collection",
+        "overlay_opacity": 50,
         "title": "<p>The T Collection's hair care <em>Do's</em> and Don'ts.</p>",
         "text_align": "left",
-        "height": "medium",
-        "overlay_opacity": 50,
-        "image_asset_filename": "tias-birthday.jpg",
-        "image_alt": "Tia, founder of The T Collection"
+        "height": "medium"
       }
     }
   },

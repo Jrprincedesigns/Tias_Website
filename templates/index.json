@@ -12,6 +12,7 @@
     "tc_hero": {
       "type": "tc-hero",
       "settings": {
+        "image": "shopify://shop_images/websiteBanner.png",
         "image_asset_filename": "hero.jpg",
         "image_focal_x": 55,
         "image_focal_y": 20,
