@@ -51,11 +51,7 @@
     },
     "tc_pillars_do_donts": {
       "type": "tc-pillars",
-      "settings": {
-        "eyebrow": "Care Guide",
-        "title": "<p>What to <em>do</em> — and what not to.</p>",
-        "intro": "Treat your unit right. The short list."
-      },
+      "settings": {},
       "blocks": {
         "do": {
           "type": "pillar",
@@ -113,6 +109,16 @@
         "c2",
         "c3"
       ]
+    },
+    "tc_banner_do_donts": {
+      "type": "tc-banner",
+      "settings": {
+        "title": "<p>The T Collection's hair care <em>Do's</em> and Don'ts.</p>",
+        "text_align": "left",
+        "height": "medium",
+        "overlay_opacity": 0,
+        "image_asset_filename": "tias-birthday.jpg"
+      }
     }
   },
   "order": [
@@ -121,6 +127,7 @@
     "image_banner_NUEqQq",
     "tc_curated_amazon",
     "1777002161fc3d4112",
+    "tc_banner_do_donts",
     "tc_pillars_do_donts"
   ]
 }

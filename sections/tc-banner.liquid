@@ -1,0 +1,123 @@
+{{ 'thetcollection.css' | asset_url | stylesheet_tag }}
+
+{%- liquid
+  assign banner_align = section.settings.text_align | default: 'left'
+  assign banner_height = section.settings.height | default: 'medium'
+  assign overlay = section.settings.overlay_opacity | default: 0 | divided_by: 100.00
+-%}
+
+<section class="tc-section tc-banner-wrap">
+  <div class="tc-container">
+    <div class="tc-banner tc-banner--align-{{ banner_align }} tc-banner--{{ banner_height }}">
+      {%- if section.settings.image != blank -%}
+        <img
+          class="tc-banner__image"
+          src="{{ section.settings.image | image_url: width: 2400 }}"
+          srcset="{{ section.settings.image | image_url: width: 800 }} 800w, {{ section.settings.image | image_url: width: 1400 }} 1400w, {{ section.settings.image | image_url: width: 2000 }} 2000w, {{ section.settings.image | image_url: width: 2400 }} 2400w"
+          sizes="(min-width: 1320px) 1320px, 100vw"
+          alt="{{ section.settings.image.alt | escape }}"
+          loading="lazy"
+          width="{{ section.settings.image.width }}"
+          height="{{ section.settings.image.height }}"
+        >
+      {%- elsif section.settings.image_asset_filename != blank -%}
+        <img
+          class="tc-banner__image"
+          src="{{ section.settings.image_asset_filename | asset_url }}"
+          alt=""
+          loading="lazy"
+        >
+      {%- endif -%}
+      {%- if overlay > 0 -%}
+        <div class="tc-banner__overlay" style="opacity: {{ overlay }};"></div>
+      {%- endif -%}
+      {%- if section.settings.eyebrow != blank or section.settings.title != blank -%}
+        <div class="tc-banner__content tc-reveal">
+          {%- if section.settings.eyebrow != blank -%}
+            <span class="tc-eyebrow tc-banner__eyebrow">{{ section.settings.eyebrow }}</span>
+          {%- endif -%}
+          {%- if section.settings.title != blank -%}
+            <h2 class="tc-banner__title">{{ section.settings.title }}</h2>
+          {%- endif -%}
+        </div>
+      {%- endif -%}
+    </div>
+  </div>
+</section>
+
+{% render 'tc-reveal-script' %}
+
+{% schema %}
+{
+  "name": "TC — Banner",
+  "tag": "section",
+  "settings": [
+    { "type": "header", "content": "Image" },
+    {
+      "type": "image_picker",
+      "id": "image",
+      "label": "Background image",
+      "info": "Recommended: at least 2000px wide. If empty, the asset filename below is used as a fallback."
+    },
+    {
+      "type": "text",
+      "id": "image_asset_filename",
+      "label": "Asset filename fallback",
+      "info": "Used only when no image is picked above. Loads from the theme's assets/ folder."
+    },
+    {
+      "type": "range",
+      "id": "overlay_opacity",
+      "label": "Darken overlay",
+      "min": 0,
+      "max": 60,
+      "step": 5,
+      "unit": "%",
+      "default": 0,
+      "info": "Add a dark scrim if text contrast is weak."
+    },
+    { "type": "header", "content": "Text" },
+    {
+      "type": "text",
+      "id": "eyebrow",
+      "label": "Eyebrow",
+      "info": "Optional small label above the title."
+    },
+    {
+      "type": "richtext",
+      "id": "title",
+      "label": "Title",
+      "info": "Wrap a word in <em> for italic accent."
+    },
+    { "type": "header", "content": "Layout" },
+    {
+      "type": "select",
+      "id": "text_align",
+      "label": "Text alignment",
+      "options": [
+        { "value": "left",   "label": "Left" },
+        { "value": "center", "label": "Center" },
+        { "value": "right",  "label": "Right" }
+      ],
+      "default": "left"
+    },
+    {
+      "type": "select",
+      "id": "height",
+      "label": "Banner height",
+      "options": [
+        { "value": "short",  "label": "Short (≈5:1)" },
+        { "value": "medium", "label": "Medium (≈4:1)" },
+        { "value": "tall",   "label": "Tall (≈3:1)" }
+      ],
+      "default": "medium"
+    }
+  ],
+  "presets": [
+    {
+      "name": "TC — Banner",
+      "category": "TheTCollection"
+    }
+  ]
+}
+{% endschema %}

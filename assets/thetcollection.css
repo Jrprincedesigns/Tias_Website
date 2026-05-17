@@ -1174,6 +1174,89 @@
   }
 }
 
+/* ============================================================
+   BANNER
+   Wide editorial image banner — same horizontal extent as the
+   page's tc-container so it sits cleanly above a section like
+   tc-pillars below it. Used on the hair-care page as the
+   "section heading" for the Do's/Don'ts.
+
+   When followed directly by .tc-pillars-wrap, the pillars top
+   padding collapses (CSS :has selector) and the gap between
+   the banner and the cards lands at the intended 24px.
+   ============================================================ */
+.tc-section.tc-banner-wrap {
+  padding: clamp(60px, 8vw, 100px) 0 0;
+}
+.tc-section .tc-banner {
+  position: relative;
+  isolation: isolate;
+  border-radius: var(--tc-radius-lg);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  margin-bottom: 24px;
+}
+.tc-section .tc-banner--short  { aspect-ratio: 5 / 1; min-height: 160px; }
+.tc-section .tc-banner--medium { aspect-ratio: 4 / 1; min-height: 200px; }
+.tc-section .tc-banner--tall   { aspect-ratio: 3 / 1; min-height: 260px; }
+.tc-section .tc-banner__image {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: -2;
+}
+.tc-section .tc-banner__overlay {
+  position: absolute;
+  inset: 0;
+  background: #000;
+  z-index: -1;
+}
+.tc-section .tc-banner__content {
+  position: relative;
+  z-index: 1;
+  padding: clamp(20px, 4vw, 48px);
+  max-width: 50%;
+  color: #fff;
+}
+.tc-section .tc-banner--align-left   .tc-banner__content { margin-right: auto; text-align: left; }
+.tc-section .tc-banner--align-center .tc-banner__content { margin: 0 auto; text-align: center; max-width: 70%; }
+.tc-section .tc-banner--align-right  .tc-banner__content { margin-left: auto; text-align: right; }
+.tc-section .tc-banner__eyebrow {
+  color: rgba(255, 255, 255, 0.78);
+  margin-bottom: 14px;
+}
+.tc-section .tc-banner__title {
+  font-family: var(--tc-serif);
+  font-size: clamp(28px, 4vw, 56px);
+  line-height: 1.05;
+  letter-spacing: -0.025em;
+  font-weight: 350;
+  color: #fff;
+  margin: 0;
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.25);
+}
+.tc-section .tc-banner__title em {
+  font-style: italic;
+  font-variation-settings: "opsz" 144, "SOFT" 100;
+}
+
+/* When a banner sits directly above a pillars section, collapse
+   the pillars top padding so the total gap between the banner
+   bottom and the cards lands at the 24px banner margin-bottom. */
+.shopify-section:has(.tc-banner-wrap) + .shopify-section .tc-pillars-wrap {
+  padding-top: 0;
+}
+
+@media (max-width: 760px) {
+  .tc-section .tc-banner__content { max-width: 80%; padding: 18px 20px; }
+  .tc-section .tc-banner--short,
+  .tc-section .tc-banner--medium,
+  .tc-section .tc-banner--tall { aspect-ratio: auto; min-height: 200px; }
+}
+
 /* Legal strip at the bottom of the CTA section — replaces the
    removed Dawn footer. Copyright + Powered-by-Shopify on the left,
    shop.policies (Refund, Privacy, Terms, Shipping — only those the
