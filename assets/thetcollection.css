@@ -1056,6 +1056,124 @@
 .tc-section.tc-cta.tc-cta--lavender-mist .tc-cta__submit { background: var(--tc-ink); color: var(--tc-cream); }
 .tc-section.tc-cta.tc-cta--lavender-mist .tc-cta__submit:hover { background: var(--tc-lavender-deep); }
 
+/* ============================================================
+   CURATED PICKS
+   Two-column section: editorial copy on the left, a row of
+   linked product cards on the right with a single CTA below.
+   Used on the hair-care page for the Amazon affiliate grid;
+   each card image links out (new tab) to its product page.
+   ============================================================ */
+.tc-section.tc-curated {
+  background: var(--tc-cream);
+  padding: clamp(60px, 8vw, 110px) 0;
+}
+.tc-section .tc-curated__grid {
+  display: grid;
+  grid-template-columns: 1fr 1.6fr;
+  gap: clamp(32px, 5vw, 80px);
+  align-items: center;
+}
+.tc-section .tc-curated__copy {
+  max-width: 36ch;
+}
+.tc-section .tc-curated__copy .tc-eyebrow {
+  color: var(--tc-lavender-deep);
+}
+.tc-section .tc-curated__title {
+  font-family: var(--tc-serif);
+  font-size: clamp(36px, 4.5vw, 56px);
+  line-height: 1.05;
+  letter-spacing: -0.035em;
+  font-weight: 350;
+  color: var(--tc-navy);
+  margin: 6px 0 22px;
+}
+.tc-section .tc-curated__title em {
+  font-style: italic;
+  font-variation-settings: "opsz" 144, "SOFT" 100;
+  color: var(--tc-lavender-deep);
+}
+.tc-section .tc-curated__body {
+  font-size: 14px;
+  line-height: 1.65;
+  color: var(--tc-mute);
+  max-width: 42ch;
+}
+.tc-section .tc-curated__body p { margin: 0 0 0.65em; }
+.tc-section .tc-curated__body p:last-child { margin-bottom: 0; }
+
+.tc-section .tc-curated__media {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(20px, 3vw, 36px);
+  align-items: center;
+}
+.tc-section .tc-curated__cards {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  width: 100%;
+}
+/* Adapt when there are fewer than 3 cards */
+.tc-section .tc-curated__cards[data-count="1"] { grid-template-columns: minmax(0, 320px); justify-content: center; }
+.tc-section .tc-curated__cards[data-count="2"] { grid-template-columns: repeat(2, minmax(0, 1fr)); max-width: 640px; margin: 0 auto; }
+.tc-section .tc-curated__cards[data-count="4"] { grid-template-columns: repeat(4, 1fr); }
+.tc-section .tc-curated__cards[data-count="5"],
+.tc-section .tc-curated__cards[data-count="6"] { grid-template-columns: repeat(3, 1fr); }
+
+.tc-section .tc-curated__card {
+  display: block;
+  aspect-ratio: 1 / 1.1;
+  border-radius: 22px;
+  overflow: hidden;
+  background: var(--tc-paper);
+  box-shadow: 0 8px 22px rgba(14, 12, 32, 0.08);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  text-decoration: none;
+  color: inherit;
+}
+.tc-section .tc-curated__card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 14px 30px rgba(14, 12, 32, 0.14);
+}
+.tc-section .tc-curated__img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.tc-section .tc-curated__placeholder {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(155deg, var(--tc-cream-soft) 0%, var(--tc-lavender-mist) 100%);
+  display: grid;
+  place-items: center;
+  color: var(--tc-lavender-deep);
+  opacity: 0.65;
+}
+
+.tc-section .tc-curated__cta {
+  min-width: 240px;
+  justify-content: center;
+}
+
+@media (max-width: 880px) {
+  .tc-section .tc-curated__grid {
+    grid-template-columns: 1fr;
+    gap: 32px;
+  }
+  .tc-section .tc-curated__copy { max-width: none; }
+  .tc-section .tc-curated__body { max-width: none; }
+}
+@media (max-width: 560px) {
+  .tc-section .tc-curated__cards,
+  .tc-section .tc-curated__cards[data-count="4"],
+  .tc-section .tc-curated__cards[data-count="5"],
+  .tc-section .tc-curated__cards[data-count="6"] {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
 /* Legal strip at the bottom of the CTA section — replaces the
    removed Dawn footer. Copyright + Powered-by-Shopify on the left,
    shop.policies (Refund, Privacy, Terms, Shipping — only those the
