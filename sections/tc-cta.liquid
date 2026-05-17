@@ -39,12 +39,26 @@
           {%- endform -%}
         {%- else -%}
           {%- if section.settings.cta1_label != blank -%}
-            <a class="tc-btn tc-btn--lavender" href="{{ section.settings.cta1_link | default: '#' }}" style="justify-content: center;">
+            {%- assign cta1_external = false -%}
+            {%- if section.settings.cta1_link contains 'http' -%}{%- assign cta1_external = true -%}{%- endif -%}
+            <a
+              class="tc-btn tc-btn--lavender"
+              href="{{ section.settings.cta1_link | default: '#' }}"
+              {% if cta1_external %}target="_blank" rel="noopener"{% endif %}
+              style="justify-content: center;"
+            >
               {{ section.settings.cta1_label }} <span class="tc-arrow">&rarr;</span>
             </a>
           {%- endif -%}
           {%- if section.settings.cta2_label != blank -%}
-            <a class="tc-btn tc-btn--ghost" href="{{ section.settings.cta2_link | default: '#' }}" style="justify-content: center;">
+            {%- assign cta2_external = false -%}
+            {%- if section.settings.cta2_link contains 'http' -%}{%- assign cta2_external = true -%}{%- endif -%}
+            <a
+              class="tc-btn tc-btn--ghost"
+              href="{{ section.settings.cta2_link | default: '#' }}"
+              {% if cta2_external %}target="_blank" rel="noopener"{% endif %}
+              style="justify-content: center;"
+            >
               {{ section.settings.cta2_label }}
             </a>
           {%- endif -%}

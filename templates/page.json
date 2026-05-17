@@ -28,30 +28,8 @@
     },
     "image_banner_NUEqQq": {
       "type": "image-banner",
-      "blocks": {
-        "text_tWbmca": {
-          "type": "text",
-          "settings": {
-            "text": "<em>Below is a curated list of products we love and trust, carefully selected to support proper cleansing, moisture balance, and styling. Shop our recommended products through our Amazon storefront by clicking the button below.</em>",
-            "text_style": "body"
-          }
-        },
-        "buttons_8Hweyc": {
-          "type": "buttons",
-          "settings": {
-            "button_label_1": "AMAZON STOREFRONT",
-            "button_link_1": "https://a.co/d/0gsct1n9",
-            "button_style_secondary_1": true,
-            "button_label_2": "",
-            "button_link_2": "",
-            "button_style_secondary_2": false
-          }
-        }
-      },
-      "block_order": [
-        "text_tWbmca",
-        "buttons_8Hweyc"
-      ],
+      "blocks": {},
+      "block_order": [],
       "name": "t:sections.image-banner.presets.name",
       "settings": {
         "image": "shopify://shop_images/Untitled_design_1.png",
@@ -112,12 +90,25 @@
         "padding_top": 36,
         "padding_bottom": 36
       }
+    },
+    "tc_cta_amazon": {
+      "type": "tc-cta",
+      "settings": {
+        "eyebrow": "Products we trust",
+        "title": "<p>What we use, <em>recommend</em>, and stand behind.</p>",
+        "sub": "Below is a curated list of products we love and trust, carefully selected to support proper cleansing, moisture balance, and styling. Shop our recommended products through our Amazon storefront by clicking the button below.",
+        "show_newsletter": false,
+        "cta1_label": "Shop on Amazon",
+        "cta1_link": "https://a.co/d/0gsct1n9",
+        "fineprint": ""
+      }
     }
   },
   "order": [
     "main",
     "tc_page_header_HBdUNU",
     "image_banner_NUEqQq",
+    "tc_cta_amazon",
     "1777002161fc3d4112",
     "collapsible_content_q3Ur4x"
   ]
