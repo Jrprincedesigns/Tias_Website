@@ -43,54 +43,30 @@
         "show_text_below": true
       }
     },
-    "1777002161fc3d4112": {
-      "type": "_blocks",
-      "settings": {}
-    },
-    "tc_pillars_do_donts": {
-      "type": "tc-pillars",
-      "blocks": {
-        "do": {
-          "type": "pillar",
-          "settings": {
-            "number": "DO",
-            "heading": "Hair Care Do's",
-            "body": "<p><strong>- Cleanse</strong> your hair using sulfate-free and paraben-free products to help maintain its overall quality and appearance.<br/><strong>- Deep condition</strong> consistently to keep the hair feeling soft, hydrated, and manageable.<br/><strong>- Air dry</strong> your wig or extensions whenever possible to minimize unnecessary heat exposure.<br/><strong>- Heat protectant</strong> first — always apply before using hot tools to preserve the integrity of the hair.<br/><strong>- Store properly</strong> on a wig stand or mannequin head to help maintain shape and style.<br/><strong>- Detangle gently</strong> starting from the ends and working upward to minimize shedding and tension.</p>"
-          }
-        },
-        "dont": {
-          "type": "pillar",
-          "settings": {
-            "number": "DON'T",
-            "heading": "Hair Care Don'ts",
-            "body": "<p><strong>- Avoid heavy oils</strong> or greasy products that create buildup and weigh the hair down.<br/><strong>- Don't sleep, swim, or shower</strong> in your wig unless the unit is specifically designed for extended wear.<br/><strong>- Skip heat protection</strong> — never use excessive heat without applying protection first.<br/><strong>- No pulling or tugging</strong>, especially while wet — aggressive brushing causes damage.<br/><strong>- Don't neglect maintenance</strong> — consistent washing, conditioning, and upkeep keeps your unit looking its best.</p>"
-          }
-        }
-      },
-      "block_order": [
-        "do",
-        "dont"
-      ],
-      "settings": {}
-    },
     "tc_curated_amazon": {
       "type": "tc-curated-picks",
       "blocks": {
         "c1": {
           "type": "card",
           "settings": {
+            "image": "shopify://shop_images/Screenshot_2026-05-17_at_3.26.05_PM.png",
+            "link": "",
             "alt": "Featured product 1"
           }
         },
         "c2": {
           "type": "card",
           "settings": {
+            "image": "shopify://shop_images/Screenshot_2026-05-17_at_3.27.23_PM.png",
+            "link": "",
             "alt": "Featured product 2"
           }
         },
         "c3": {
           "type": "card",
           "settings": {
+            "image": "shopify://shop_images/Screenshot_2026-05-17_at_3.28.59_PM.png",
+            "link": "",
             "alt": "Featured product 3"
           }
         }
@@ -103,10 +79,14 @@
       "settings": {
         "eyebrow": "Products we trust",
         "title": "<p>What we use, <em>recommend</em>, and stand behind.</p>",
-        "body": "<p>Below is a curated list of products we love and trust, carefully selected to support proper cleansing, moisture balance, and styling. Shop our recommended products through our Amazon storefront by clicking the button below.</p>",
-        "cta_label": "Shop on amazon",
+        "body": "<p>Here is a curated list of products we love and trust, carefully selected to support proper cleansing, moisture balance, and styling. Shop our recommended products through our Amazon storefront by clicking the button below.</p>",
+        "cta_label": "Shop amazon storefront",
         "cta_link": "https://a.co/d/0gsct1n9"
       }
+    },
+    "1777002161fc3d4112": {
+      "type": "_blocks",
+      "settings": {}
     },
     "tc_banner_do_donts": {
       "type": "tc-banner",
@@ -114,10 +94,37 @@
         "image_asset_filename": "tias-birthday.jpg",
         "image_alt": "Tia, founder of The T Collection",
         "overlay_opacity": 50,
+        "eyebrow": "",
         "title": "<p>The T Collection's hair care <em>Do's</em> and Don'ts.</p>",
         "text_align": "left",
         "height": "medium"
       }
+    },
+    "tc_pillars_do_donts": {
+      "type": "tc-pillars",
+      "blocks": {
+        "do": {
+          "type": "pillar",
+          "settings": {
+            "number": "DO",
+            "heading": "Hair Care Do's",
+            "body": "<p><strong>- Cleanse</strong> your hair using sulfate-free and paraben-free products to help maintain its overall quality and appearance.<br><strong>- Deep condition</strong> consistently to keep the hair feeling soft, hydrated, and manageable.<br><strong>- Air dry</strong> your wig or extensions whenever possible to minimize unnecessary heat exposure.<br><strong>- Heat protectant</strong> first — always apply before using hot tools to preserve the integrity of the hair.<br><strong>- Store properly</strong> on a wig stand or mannequin head to help maintain shape and style.<br><strong>- Detangle gently</strong> starting from the ends and working upward to minimize shedding and tension.</p>"
+          }
+        },
+        "dont": {
+          "type": "pillar",
+          "settings": {
+            "number": "DON'T",
+            "heading": "Hair Care Don'ts",
+            "body": "<p><strong>- Avoid heavy oils</strong> or greasy products that create buildup and weigh the hair down.<br><strong>- Don't sleep, swim, or shower</strong> in your wig unless the unit is specifically designed for extended wear.<br><strong>- Skip heat protection</strong> — never use excessive heat without applying protection first.<br><strong>- No pulling or tugging</strong>, especially while wet — aggressive brushing causes damage.<br><strong>- Don't neglect maintenance</strong> — consistent washing, conditioning, and upkeep keeps your unit looking its best.</p>"
+          }
+        }
+      },
+      "block_order": [
+        "do",
+        "dont"
+      ],
+      "settings": {}
     }
   },
   "order": [
