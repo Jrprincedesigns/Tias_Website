@@ -116,7 +116,7 @@
         "title": "<p>The T Collection's hair care <em>Do's</em> and Don'ts.</p>",
         "text_align": "left",
         "height": "medium",
-        "overlay_opacity": 35,
+        "overlay_opacity": 50,
         "image_asset_filename": "tias-birthday.jpg"
       }
     }
