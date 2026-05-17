@@ -49,48 +49,6 @@
       "type": "_blocks",
       "settings": {}
     },
-    "collapsible_content_q3Ur4x": {
-      "type": "collapsible-content",
-      "blocks": {
-        "collapsible_row_KK6KtU": {
-          "type": "collapsible_row",
-          "settings": {
-            "heading": "HAIR CARE DO'S",
-            "icon": "star",
-            "row_content": "<p>- Cleanse your hair using sulfate-free and paraben-free products to help maintain its overall quality and appearance.<br/>- Deep condition consistently to keep the hair feeling soft, hydrated, and manageable.<br/>- Whenever possible, allow your wig or extensions to air dry to help minimize unnecessary heat exposure.<br/>- Always apply a heat protectant before using hot tools to help preserve the integrity of the hair.<br/>- Store your wig properly on a wig stand or mannequin head to help maintain its shape and style.<br/>- Gently detangle the hair starting from the ends and working upward to minimize shedding and tension.</p>",
-            "page": ""
-          }
-        },
-        "collapsible_row_xnFYyc": {
-          "type": "collapsible_row",
-          "settings": {
-            "heading": "HAIR CARE DON'TS",
-            "icon": "star",
-            "row_content": "<p>-Avoid using heavy oils or greasy products that can create buildup and weigh the hair down.<br/>-Avoid sleeping, swimming, or showering in your wig unless the unit is specifically designed for extended wear.<br/>-Do not use excessive heat without applying protection beforehand.<br/>-Avoid pulling, tugging, or aggressively brushing the hair, especially while wet.<br/>-Do not neglect regular maintenance. Consistent washing, conditioning, and styling upkeep will help keep your unit looking its best.</p>",
-            "page": ""
-          }
-        }
-      },
-      "block_order": [
-        "collapsible_row_KK6KtU",
-        "collapsible_row_xnFYyc"
-      ],
-      "name": "t:sections.collapsible_content.presets.name",
-      "settings": {
-        "caption": "",
-        "heading": "Do's & Dont's",
-        "heading_size": "h1",
-        "heading_alignment": "center",
-        "layout": "none",
-        "container_color_scheme": "",
-        "color_scheme": "",
-        "open_first_collapsible_row": false,
-        "image_ratio": "adapt",
-        "desktop_layout": "image_second",
-        "padding_top": 36,
-        "padding_bottom": 36
-      }
-    },
     "tc_cta_amazon": {
       "type": "tc-cta",
       "settings": {
@@ -100,8 +58,35 @@
         "show_newsletter": false,
         "cta1_label": "Shop on Amazon",
         "cta1_link": "https://a.co/d/0gsct1n9",
-        "fineprint": ""
+        "fineprint": "",
+        "color_scheme": "cream"
       }
+    },
+    "tc_pillars_do_donts": {
+      "type": "tc-pillars",
+      "settings": {},
+      "blocks": {
+        "do": {
+          "type": "pillar",
+          "settings": {
+            "number": "DO",
+            "heading": "Hair Care Do's",
+            "body": "<p><strong>- Cleanse</strong> your hair using sulfate-free and paraben-free products to help maintain its overall quality and appearance.<br/><strong>- Deep condition</strong> consistently to keep the hair feeling soft, hydrated, and manageable.<br/><strong>- Air dry</strong> your wig or extensions whenever possible to minimize unnecessary heat exposure.<br/><strong>- Heat protectant</strong> first — always apply before using hot tools to preserve the integrity of the hair.<br/><strong>- Store properly</strong> on a wig stand or mannequin head to help maintain shape and style.<br/><strong>- Detangle gently</strong> starting from the ends and working upward to minimize shedding and tension.</p>"
+          }
+        },
+        "dont": {
+          "type": "pillar",
+          "settings": {
+            "number": "DON'T",
+            "heading": "Hair Care Don'ts",
+            "body": "<p><strong>- Avoid heavy oils</strong> or greasy products that create buildup and weigh the hair down.<br/><strong>- Don't sleep, swim, or shower</strong> in your wig unless the unit is specifically designed for extended wear.<br/><strong>- Skip heat protection</strong> — never use excessive heat without applying protection first.<br/><strong>- No pulling or tugging</strong>, especially while wet — aggressive brushing causes damage.<br/><strong>- Don't neglect maintenance</strong> — consistent washing, conditioning, and upkeep keeps your unit looking its best.</p>"
+          }
+        }
+      },
+      "block_order": [
+        "do",
+        "dont"
+      ]
     }
   },
   "order": [
@@ -110,6 +95,6 @@
     "image_banner_NUEqQq",
     "tc_cta_amazon",
     "1777002161fc3d4112",
-    "collapsible_content_q3Ur4x"
+    "tc_pillars_do_donts"
   ]
 }

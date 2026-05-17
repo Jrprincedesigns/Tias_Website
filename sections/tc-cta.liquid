@@ -1,11 +1,12 @@
 {{ 'thetcollection.css' | asset_url | stylesheet_tag }}
 
-<section class="tc-section tc-cta">
+{%- assign cta_scheme = section.settings.color_scheme | default: 'ink' -%}
+<section class="tc-section tc-cta tc-cta--{{ cta_scheme }}">
   <div class="tc-container">
     <div class="tc-cta__grid">
       <div class="tc-reveal">
         {%- if section.settings.eyebrow != blank -%}
-          <span class="tc-eyebrow" style="color: var(--tc-lavender-mist);">{{ section.settings.eyebrow }}</span>
+          <span class="tc-eyebrow">{{ section.settings.eyebrow }}</span>
         {%- endif -%}
         {%- if section.settings.title != blank -%}
           <h2 class="tc-cta__title">{{ section.settings.title }}</h2>
@@ -96,6 +97,18 @@
   "name": "TC — CTA / Newsletter",
   "tag": "section",
   "settings": [
+    {
+      "type": "select",
+      "id": "color_scheme",
+      "label": "Color scheme",
+      "options": [
+        { "value": "ink",            "label": "Ink (dark)" },
+        { "value": "cream",          "label": "Cream (light)" },
+        { "value": "lavender-mist",  "label": "Lavender mist (very light)" }
+      ],
+      "default": "ink",
+      "info": "Ink is the original dark variant used in the footer."
+    },
     { "type": "text", "id": "eyebrow", "label": "Eyebrow", "default": "Join the list" },
     { "type": "richtext", "id": "title", "label": "Title", "default": "<p>First access. <em>Quiet</em> sales.</p>" },
     { "type": "textarea", "id": "sub", "label": "Subtitle", "default": "Twice-monthly drops, members-only previews, and the occasional handwritten note from the studio." },

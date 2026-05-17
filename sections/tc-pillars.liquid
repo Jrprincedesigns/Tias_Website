@@ -7,7 +7,7 @@
         <div class="tc-pillar">
           <div class="tc-pillar__num">{{ block.settings.number }}</div>
           <h3 class="tc-pillar__h">{{ block.settings.heading }}</h3>
-          <p class="tc-pillar__p">{{ block.settings.body }}</p>
+          <div class="tc-pillar__p">{{ block.settings.body }}</div>
         </div>
       {%- endfor -%}
     </div>
@@ -39,10 +39,11 @@
           "default": "Single-donor sourced"
         },
         {
-          "type": "textarea",
+          "type": "richtext",
           "id": "body",
           "label": "Body",
-          "default": "Every bundle traces back to one donor. Cuticles aligned, never blended with synthetic or commodity hair."
+          "info": "Rich text — paragraphs, line breaks, bullet lists.",
+          "default": "<p>Every bundle traces back to one donor. Cuticles aligned, never blended with synthetic or commodity hair.</p>"
         }
       ]
     }

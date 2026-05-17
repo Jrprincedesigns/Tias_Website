@@ -354,7 +354,7 @@
 .tc-section.tc-pillars-wrap { padding: clamp(60px, 8vw, 100px) 0; }
 .tc-section .tc-pillars {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 0;
   border-top: 1px solid var(--tc-line);
   border-bottom: 1px solid var(--tc-line);
@@ -1016,6 +1016,45 @@
 }
 .tc-section .tc-cta__submit:hover { background: #fff; }
 .tc-section .tc-cta__fineprint { font-size: 12px; color: rgba(250, 246, 239, 0.5); letter-spacing: 0.04em; }
+
+/* tc-cta default eyebrow color on the dark ink scheme */
+.tc-section.tc-cta.tc-cta--ink .tc-eyebrow { color: var(--tc-lavender-mist); }
+
+/* tc-cta — light cream scheme (additive override on top of the
+   dark-ink base styling above). Used on the hair-care page's
+   Amazon storefront CTA — softer surface, navy text. */
+.tc-section.tc-cta.tc-cta--cream {
+  background: var(--tc-cream);
+  color: var(--tc-navy);
+}
+.tc-section.tc-cta.tc-cta--cream::before { opacity: 0.35; }
+.tc-section.tc-cta.tc-cta--cream .tc-eyebrow { color: var(--tc-lavender-deep); }
+.tc-section.tc-cta.tc-cta--cream .tc-cta__title { color: var(--tc-navy); }
+.tc-section.tc-cta.tc-cta--cream .tc-cta__title em { color: var(--tc-lavender-deep); }
+.tc-section.tc-cta.tc-cta--cream .tc-cta__sub { color: var(--tc-mute); }
+.tc-section.tc-cta.tc-cta--cream .tc-cta__fineprint { color: rgba(14, 27, 77, 0.55); }
+.tc-section.tc-cta.tc-cta--cream .tc-cta__input-wrap {
+  background: rgba(255, 255, 255, 0.6);
+  border-color: rgba(14, 27, 77, 0.12);
+}
+.tc-section.tc-cta.tc-cta--cream .tc-cta__input-wrap input { color: var(--tc-navy); }
+.tc-section.tc-cta.tc-cta--cream .tc-cta__input-wrap input::placeholder { color: rgba(14, 27, 77, 0.5); }
+.tc-section.tc-cta.tc-cta--cream .tc-cta__submit { background: var(--tc-ink); color: var(--tc-cream); }
+.tc-section.tc-cta.tc-cta--cream .tc-cta__submit:hover { background: var(--tc-lavender-deep); color: #fff; }
+
+/* tc-cta — lavender-mist scheme (very light lavender) */
+.tc-section.tc-cta.tc-cta--lavender-mist {
+  background: var(--tc-lavender-mist);
+  color: var(--tc-navy);
+}
+.tc-section.tc-cta.tc-cta--lavender-mist::before { opacity: 0.3; }
+.tc-section.tc-cta.tc-cta--lavender-mist .tc-eyebrow { color: var(--tc-lavender-deep); }
+.tc-section.tc-cta.tc-cta--lavender-mist .tc-cta__title { color: var(--tc-navy); }
+.tc-section.tc-cta.tc-cta--lavender-mist .tc-cta__title em { color: var(--tc-lavender-deep); }
+.tc-section.tc-cta.tc-cta--lavender-mist .tc-cta__sub { color: var(--tc-mute); }
+.tc-section.tc-cta.tc-cta--lavender-mist .tc-cta__fineprint { color: rgba(14, 27, 77, 0.55); }
+.tc-section.tc-cta.tc-cta--lavender-mist .tc-cta__submit { background: var(--tc-ink); color: var(--tc-cream); }
+.tc-section.tc-cta.tc-cta--lavender-mist .tc-cta__submit:hover { background: var(--tc-lavender-deep); }
 
 /* Legal strip at the bottom of the CTA section — replaces the
    removed Dawn footer. Copyright + Powered-by-Shopify on the left,
