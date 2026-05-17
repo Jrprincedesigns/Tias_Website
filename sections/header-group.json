@@ -59,6 +59,12 @@
             "text": "shop wig reconstruction sale",
             "link": ""
           }
+        },
+        "separator_txj4KC": {
+          "type": "separator",
+          "settings": {
+            "symbol": "✦"
+          }
         }
       },
       "block_order": [
@@ -68,7 +74,8 @@
         "sep-2",
         "msg-3",
         "sep-3",
-        "message_H3ziDd"
+        "message_H3ziDd",
+        "separator_txj4KC"
       ],
       "settings": {
         "scroll_speed": 50
