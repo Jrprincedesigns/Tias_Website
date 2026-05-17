@@ -27,6 +27,19 @@
             "symbol": "✦"
           }
         },
+        "message_H3ziDd": {
+          "type": "message",
+          "settings": {
+            "text": "shop wig reconstruction sale",
+            "link": ""
+          }
+        },
+        "separator_txj4KC": {
+          "type": "separator",
+          "settings": {
+            "symbol": "✦"
+          }
+        },
         "msg-2": {
           "type": "message",
           "settings": {
@@ -52,30 +65,17 @@
           "settings": {
             "symbol": "✦"
           }
-        },
-        "message_H3ziDd": {
-          "type": "message",
-          "settings": {
-            "text": "shop wig reconstruction sale",
-            "link": ""
-          }
-        },
-        "separator_txj4KC": {
-          "type": "separator",
-          "settings": {
-            "symbol": "✦"
-          }
         }
       },
       "block_order": [
         "msg-1",
         "sep-1",
+        "message_H3ziDd",
+        "separator_txj4KC",
         "msg-2",
         "sep-2",
         "msg-3",
-        "sep-3",
-        "message_H3ziDd",
-        "separator_txj4KC"
+        "sep-3"
       ],
       "settings": {
         "scroll_speed": 50
