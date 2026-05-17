@@ -64,7 +64,11 @@
     },
     "tc_pillars_do_donts": {
       "type": "tc-pillars",
-      "settings": {},
+      "settings": {
+        "eyebrow": "Care Guide",
+        "title": "<p>What to <em>do</em> — and what not to.</p>",
+        "intro": "Treat your unit right. The short list."
+      },
       "blocks": {
         "do": {
           "type": "pillar",

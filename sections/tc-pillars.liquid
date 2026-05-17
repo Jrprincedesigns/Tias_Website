@@ -2,6 +2,26 @@
 
 <section class="tc-section tc-pillars-wrap">
   <div class="tc-container">
+    {%- if section.settings.eyebrow != blank
+       or section.settings.title != blank
+       or section.settings.intro != blank -%}
+      <div class="tc-section-head tc-reveal">
+        <div>
+          {%- if section.settings.eyebrow != blank -%}
+            <span class="tc-eyebrow">{{ section.settings.eyebrow }}</span>
+          {%- endif -%}
+          {%- if section.settings.title != blank -%}
+            <h2 class="tc-section-title">{{ section.settings.title }}</h2>
+          {%- endif -%}
+        </div>
+        {%- if section.settings.intro != blank -%}
+          <div class="tc-section-head__right">
+            <p>{{ section.settings.intro }}</p>
+          </div>
+        {%- endif -%}
+      </div>
+    {%- endif -%}
+
     <div class="tc-pillars tc-reveal">
       {%- for block in section.blocks -%}
         <div class="tc-pillar">
@@ -21,6 +41,12 @@
   "name": "TC — Pillars",
   "tag": "section",
   "max_blocks": 3,
+  "settings": [
+    { "type": "header", "content": "Heading" },
+    { "type": "text", "id": "eyebrow", "label": "Eyebrow" },
+    { "type": "richtext", "id": "title", "label": "Title", "info": "Wrap a word in <em> for italic lavender accent." },
+    { "type": "textarea", "id": "intro", "label": "Intro paragraph" }
+  ],
   "blocks": [
     {
       "type": "pillar",
