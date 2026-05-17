@@ -52,6 +52,13 @@
           "settings": {
             "symbol": "✦"
           }
+        },
+        "message_H3ziDd": {
+          "type": "message",
+          "settings": {
+            "text": "shop wig reconstruction sale",
+            "link": ""
+          }
         }
       },
       "block_order": [
@@ -60,7 +67,8 @@
         "msg-2",
         "sep-2",
         "msg-3",
-        "sep-3"
+        "sep-3",
+        "message_H3ziDd"
       ],
       "settings": {
         "scroll_speed": 50
@@ -72,8 +80,7 @@
         "menu": "main-menu",
         "tagline": "Premium Custom Hair",
         "show_search": true,
-        "show_account": true,
-        "show_currency": true
+        "show_account": true
       }
     }
   },
