@@ -888,7 +888,7 @@
 /* ============================================================
    REVIEWS
    ============================================================ */
-.tc-section.tc-reviews { background: #ffffff; padding: clamp(70px, 9vw, 130px) 0; }
+.tc-section.tc-reviews { background: #eff0f5; padding: clamp(70px, 9vw, 130px) 0; }
 .tc-section .tc-review-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
