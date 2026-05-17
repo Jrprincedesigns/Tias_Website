@@ -1186,7 +1186,7 @@
    the banner and the cards lands at the intended 24px.
    ============================================================ */
 .tc-section.tc-banner-wrap {
-  padding: clamp(60px, 8vw, 100px) 0 0;
+  padding: clamp(24px, 4vw, 40px) 0 0;
 }
 .tc-section .tc-banner {
   position: relative;
@@ -1241,6 +1241,7 @@
 .tc-section .tc-banner__title em {
   font-style: italic;
   font-variation-settings: "opsz" 144, "SOFT" 100;
+  color: var(--tc-lavender);
 }
 
 /* When a banner sits directly above a pillars section, collapse
