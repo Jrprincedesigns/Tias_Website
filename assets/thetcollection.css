@@ -714,7 +714,7 @@
   gap: 16px;
 }
 .tc-section .tc-product__title {
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 500;
   color: var(--tc-navy);
   letter-spacing: -0.005em;
@@ -1016,7 +1016,7 @@
   cursor: pointer;
 }
 .tc-section .tc-cta__submit:hover { background: #fff; }
-.tc-section .tc-cta__fineprint { font-size: 12px; color: rgba(250, 246, 239, 0.5); letter-spacing: 0.04em; }
+.tc-section .tc-cta__fineprint { font-size: 12px; color: rgba(250, 246, 239, 0.7); letter-spacing: 0.04em; }
 
 /* tc-cta default eyebrow color on the dark ink scheme */
 .tc-section.tc-cta.tc-cta--ink .tc-eyebrow { color: var(--tc-lavender-mist); }
@@ -1706,9 +1706,20 @@
   .tc-nav__utility .tc-label-sm { display: none; }
   /* Hide inline nav-links on mobile — drawer takes over */
   .tc-nav__links { display: none; }
-  /* Show hamburger; hide the search icon link to keep the left utility uncluttered */
+  /* Show hamburger; hide ONLY the left-utility search icon link
+     (the right utility's cart icon must stay accessible). */
   .tc-nav__hamburger { display: inline-flex; }
-  .tc-nav__utility .tc-icon-btn { display: none; }
+  .tc-nav__utility:not(.tc-nav__utility--right) .tc-icon-btn { display: none; }
+
+  /* Touch-target bump for icon buttons on mobile — WCAG 2.5.5
+     recommends ≥ 44×44 (AAA) and ≥ 24×24 (AA). Going 40×40 as a
+     middle ground that still fits the editorial proportions. */
+  .tc-nav__utility--right .tc-icon-btn,
+  .tc-nav__hamburger,
+  .tc-nav-drawer__close {
+    width: 40px;
+    height: 40px;
+  }
 }
 
 /* ============================================================

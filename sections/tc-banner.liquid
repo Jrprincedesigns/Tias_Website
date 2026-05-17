@@ -9,13 +9,14 @@
 <section class="tc-section tc-banner-wrap">
   <div class="tc-container">
     <div class="tc-banner tc-banner--align-{{ banner_align }} tc-banner--{{ banner_height }}">
+      {%- assign banner_alt = section.settings.image_alt | default: section.settings.image.alt | default: '' -%}
       {%- if section.settings.image != blank -%}
         <img
           class="tc-banner__image"
           src="{{ section.settings.image | image_url: width: 2400 }}"
           srcset="{{ section.settings.image | image_url: width: 800 }} 800w, {{ section.settings.image | image_url: width: 1400 }} 1400w, {{ section.settings.image | image_url: width: 2000 }} 2000w, {{ section.settings.image | image_url: width: 2400 }} 2400w"
           sizes="(min-width: 1320px) 1320px, 100vw"
-          alt="{{ section.settings.image.alt | escape }}"
+          alt="{{ banner_alt | escape }}"
           loading="lazy"
           width="{{ section.settings.image.width }}"
           height="{{ section.settings.image.height }}"
@@ -24,7 +25,7 @@
         <img
           class="tc-banner__image"
           src="{{ section.settings.image_asset_filename | asset_url }}"
-          alt=""
+          alt="{{ banner_alt | escape }}"
           loading="lazy"
         >
       {%- endif -%}
@@ -64,6 +65,12 @@
       "id": "image_asset_filename",
       "label": "Asset filename fallback",
       "info": "Used only when no image is picked above. Loads from the theme's assets/ folder."
+    },
+    {
+      "type": "text",
+      "id": "image_alt",
+      "label": "Image alt text",
+      "info": "Describe the image for screen readers. Required for accessibility when the image isn't purely decorative. Falls back to the image's stored alt attribute."
     },
     {
       "type": "range",

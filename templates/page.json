@@ -117,7 +117,8 @@
         "text_align": "left",
         "height": "medium",
         "overlay_opacity": 50,
-        "image_asset_filename": "tias-birthday.jpg"
+        "image_asset_filename": "tias-birthday.jpg",
+        "image_alt": "Tia, founder of The T Collection"
       }
     }
   },

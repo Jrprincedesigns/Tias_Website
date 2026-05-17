@@ -4,7 +4,6 @@
   assign menu = linklists[section.settings.menu]
   assign show_search = section.settings.show_search
   assign show_account = section.settings.show_account
-  assign show_currency = section.settings.show_currency
 -%}
 
 <header class="tc-nav" role="banner">
@@ -58,14 +57,8 @@
         {%- endif -%}
       </a>
 
-      {%- comment -%} RIGHT UTILITY: currency, account, cart {%- endcomment -%}
+      {%- comment -%} RIGHT UTILITY: account, cart {%- endcomment -%}
       <div class="tc-nav__utility tc-nav__utility--right">
-        {%- if show_currency -%}
-          <span class="tc-label-sm" aria-label="{{ 'localization.currency_label' | t }}">
-            {{ cart.currency.iso_code }}
-          </span>
-        {%- endif -%}
-
         {%- if show_account and shop.customer_accounts_enabled -%}
           {%- if customer -%}
             <a href="{{ routes.account_url }}" class="tc-label-sm">{{ 'customer.account_fallback' | t }}</a>
@@ -186,13 +179,6 @@
       "label": "Show account link",
       "default": true,
       "info": "Hidden automatically if customer accounts are disabled."
-    },
-    {
-      "type": "checkbox",
-      "id": "show_currency",
-      "label": "Show currency code",
-      "default": true,
-      "info": "Displays the active currency (e.g. USD). Currency is set automatically by the customer's region."
     }
   ],
   "presets": [
