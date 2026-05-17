@@ -1939,3 +1939,169 @@ body.tc-drawer-open {
     display: none;
   }
 }
+
+/* ============================================================
+   CUSTOMER PAGES (login / register / account / order / addresses
+   / reset-password / activate)
+
+   Dawn ships these with its default customer.css, which doesn't
+   match our editorial design system. We override scoped to the
+   .customer wrapper Dawn already puts on every page, so nothing
+   leaks into product/collection/cart UI.
+
+   Layout: frost page background (#eff0f5), centered cream card.
+   Continue button uses the brand lavender so the primary action
+   matches the same color identity as CTAs elsewhere on the site.
+   Headings shift to Fraunces, body + form labels to Hanken
+   Grotesk, both via design-system tokens.
+   ============================================================ */
+
+/* Page background — frost — applied via :has() when any .customer
+   wrapper renders on the page (login, register, account, etc.) */
+body:has(.customer) {
+  background: #eff0f5;
+}
+
+/* Centered cream card — the .customer wrapper becomes the surface */
+.customer {
+  max-width: 480px;
+  margin: clamp(48px, 7vw, 96px) auto;
+  background: var(--tc-cream, #faf6ef);
+  padding: clamp(32px, 5vw, 56px);
+  border-radius: var(--tc-radius-lg, 18px);
+  box-shadow: 0 4px 24px rgba(14, 27, 77, 0.06);
+  font-family: var(--tc-sans, 'Hanken Grotesk', -apple-system, BlinkMacSystemFont, sans-serif);
+  color: var(--tc-navy, #0e1b4d);
+  font-size: 16px;
+  line-height: 1.55;
+}
+
+/* Headings — Fraunces serif */
+.customer h1,
+.customer h2,
+.customer h3 {
+  font-family: var(--tc-serif, 'Fraunces', 'Times New Roman', serif);
+  font-weight: 400;
+  letter-spacing: -0.025em;
+  color: var(--tc-navy, #0e1b4d);
+  line-height: 1.1;
+  margin: 0 0 14px;
+}
+.customer h1 { font-size: clamp(32px, 4vw, 44px); }
+.customer h2 { font-size: clamp(22px, 2.5vw, 28px); }
+.customer h3 { font-size: 20px; }
+
+.customer p,
+.customer label,
+.customer .form__message,
+.customer span {
+  font-family: var(--tc-sans, 'Hanken Grotesk', sans-serif);
+}
+
+.customer p {
+  font-size: 16px;
+  line-height: 1.55;
+  color: var(--tc-mute, #6b6385);
+  margin: 0 0 24px;
+}
+
+.customer a {
+  color: var(--tc-lavender-deep, #6b4e94);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-thickness: 1px;
+  transition: color 0.2s ease;
+}
+.customer a:hover { color: var(--tc-navy, #0e1b4d); }
+
+/* Form fields */
+.customer .field {
+  position: relative;
+  margin-bottom: 16px;
+}
+.customer .field input {
+  width: 100%;
+  font: inherit;
+  font-size: 16px;
+  padding: 22px 16px 12px;
+  background: #ffffff;
+  border: 1px solid rgba(14, 27, 77, 0.12);
+  border-radius: 12px;
+  color: var(--tc-navy, #0e1b4d);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  outline: none;
+}
+.customer .field input::placeholder { color: transparent; }
+.customer .field input:focus {
+  border-color: var(--tc-lavender-deep, #6b4e94);
+  box-shadow: 0 0 0 3px rgba(150, 123, 182, 0.18);
+}
+.customer .field label {
+  position: absolute;
+  left: 16px;
+  top: 18px;
+  font-size: 15px;
+  color: var(--tc-mute, #6b6385);
+  pointer-events: none;
+  transition: transform 0.2s ease, color 0.2s ease, font-size 0.2s ease;
+  background: transparent;
+}
+.customer .field input:focus + label,
+.customer .field input:not(:placeholder-shown) + label {
+  transform: translateY(-12px);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--tc-lavender-deep, #6b4e94);
+}
+
+/* Continue / submit buttons — brand lavender pill */
+.customer form button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 16px 24px;
+  background: var(--tc-lavender, #967bb6);
+  color: #ffffff;
+  font-family: var(--tc-sans, 'Hanken Grotesk', sans-serif);
+  font-size: 12px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  font-weight: 500;
+  border: 0;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.2s ease;
+  margin-top: 8px;
+}
+.customer form button:hover {
+  background: var(--tc-lavender-deep, #6b4e94);
+  transform: translateY(-1px);
+}
+.customer form button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Form messages (errors / success) */
+.customer .form__message {
+  font-size: 14px;
+  color: var(--tc-lavender-deep, #6b4e94);
+  margin: 12px 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Mobile — full-bleed card with smaller side padding */
+@media (max-width: 560px) {
+  .customer {
+    margin: 32px 16px;
+    padding: 32px 24px;
+    max-width: none;
+  }
+  .customer h1 { font-size: 28px; }
+}
