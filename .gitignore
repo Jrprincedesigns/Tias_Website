@@ -1,0 +1,12 @@
+# Node — the theme itself has no build step; this covers spa-app/
+node_modules/
+.env
+.env.*
+!.env.example
+
+# Supabase CLI scratch
+supabase/.temp/
+supabase/.branches/
+
+# OS noise
+.DS_Store

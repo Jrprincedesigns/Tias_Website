@@ -1,0 +1,9 @@
+{
+  "name": "tc-wig-spa-app",
+  "private": true,
+  "type": "module",
+  "description": "The Wig Spa service-management app for The T Collection",
+  "scripts": {
+    "test": "node --test \"test/*.test.js\""
+  }
+}
