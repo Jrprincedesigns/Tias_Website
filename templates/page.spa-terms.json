@@ -1,0 +1,34 @@
+{
+  "sections": {
+    "header": {
+      "type": "tc-page-header",
+      "settings": {
+        "eyebrow": "Wig Spa Service Terms",
+        "title": "<p>Sending a unit<br/>to the <em>studio</em>.</p>",
+        "sub": "Mail-in service works differently from buying a product. These terms cover shipping, condition, approval and turnaround for every unit that comes through The Wig Spa."
+      }
+    },
+    "body": {
+      "type": "main-page",
+      "settings": {
+        "padding_top": 28,
+        "padding_bottom": 40
+      }
+    },
+    "cta": {
+      "type": "tc-cta",
+      "settings": {
+        "eyebrow": "Still unsure?",
+        "title": "<p>Ask before you <em>ship</em>.</p>",
+        "sub": "If you're not certain whether your unit is a candidate for service, send us photos first. We'd rather tell you honestly than have you post it.",
+        "show_newsletter": false,
+        "cta1_label": "Ask a question",
+        "cta1_link": "shopify://pages/contact",
+        "cta2_label": "See Spa services",
+        "cta2_link": "shopify://pages/wig-spa",
+        "fineprint": "Most services turn around in 5-7 business days."
+      }
+    }
+  },
+  "order": ["header", "body", "cta"]
+}

@@ -1,5 +1,13 @@
 {{ 'thetcollection.css' | asset_url | stylesheet_tag }}
 
+{%- liquid
+  assign services_collection = collections[section.settings.collection]
+  assign use_collection = false
+  if section.settings.source == 'collection' and services_collection != blank and services_collection.products.size > 0
+    assign use_collection = true
+  endif
+-%}
+
 <section class="tc-section tc-services-wrap">
   <div class="tc-container">
     {%- if section.settings.eyebrow != blank or section.settings.title != blank or section.settings.intro != blank -%}
@@ -15,14 +23,43 @@
     {%- endif -%}
 
     <div class="tc-services-list tc-reveal">
-      {%- for block in section.blocks -%}
-        <a href="{{ block.settings.link | default: '#' }}" class="tc-service">
-          <div class="tc-service__name">{{ block.settings.name }}</div>
-          <div class="tc-service__desc">{{ block.settings.desc }}</div>
-          <div class="tc-service__price">{{ block.settings.price }}</div>
-          <span class="tc-service__cta">{{ block.settings.cta_label | default: 'Book' }} <span class="tc-arrow">&rarr;</span></span>
-        </a>
-      {%- endfor -%}
+      {%- if use_collection -%}
+        {%- comment -%}
+          Sourced from a collection: price, description and images are edited in
+          Shopify admin under Products, so the site can never disagree with the
+          real price. Product order follows the collection's own sort order.
+        {%- endcomment -%}
+        {%- for product in services_collection.products limit: section.settings.products_to_show -%}
+          <a href="{{ product.url }}" class="tc-service">
+            <div class="tc-service__name">{{ product.title }}</div>
+            <div class="tc-service__desc">{{ product.description | strip_html | truncatewords: 26 }}</div>
+            <div class="tc-service__price">
+              {%- if product.price_varies -%}
+                {{ 'products.product.price.from_price_html' | t: price: product.price_min | money }}
+              {%- else -%}
+                {{ product.price | money }}
+              {%- endif -%}
+            </div>
+            <span class="tc-service__cta">
+              {%- if product.available -%}
+                {{ section.settings.cta_label | default: 'Book' }}
+              {%- else -%}
+                {{ section.settings.cta_label_unavailable | default: 'Inquire' }}
+              {%- endif -%}
+              <span class="tc-arrow">&rarr;</span>
+            </span>
+          </a>
+        {%- endfor -%}
+      {%- else -%}
+        {%- for block in section.blocks -%}
+          <a href="{{ block.settings.link | default: '#' }}" class="tc-service" {{ block.shopify_attributes }}>
+            <div class="tc-service__name">{{ block.settings.name }}</div>
+            <div class="tc-service__desc">{{ block.settings.desc }}</div>
+            <div class="tc-service__price">{{ block.settings.price }}</div>
+            <span class="tc-service__cta">{{ block.settings.cta_label | default: 'Book' }} <span class="tc-arrow">&rarr;</span></span>
+          </a>
+        {%- endfor -%}
+      {%- endif -%}
     </div>
   </div>
 </section>
@@ -37,12 +74,28 @@
   "settings": [
     { "type": "text", "id": "eyebrow", "label": "Eyebrow", "default": "Studio Services" },
     { "type": "richtext", "id": "title", "label": "Title", "default": "<p>Restored, <em>refreshed</em>,<br/>brought back to life.</p>" },
-    { "type": "textarea", "id": "intro", "label": "Intro paragraph", "default": "Drop your unit at the studio (or ship it in). We'll deep clean, repair, recolor, or fully reconstruct \u2014 whatever it needs." }
+    { "type": "textarea", "id": "intro", "label": "Intro paragraph", "default": "Drop your unit at the studio (or ship it in). We'll deep clean, repair, recolor, or fully reconstruct — whatever it needs." },
+    { "type": "header", "content": "Where the services come from" },
+    {
+      "type": "select",
+      "id": "source",
+      "label": "Source",
+      "options": [
+        { "value": "collection", "label": "A collection of service products" },
+        { "value": "blocks", "label": "Manually written blocks" }
+      ],
+      "default": "collection",
+      "info": "Choose a collection so prices, descriptions and photos are edited in Products — no code, and the page can never show a stale price. Falls back to blocks if the collection is empty."
+    },
+    { "type": "collection", "id": "collection", "label": "Service collection" },
+    { "type": "range", "id": "products_to_show", "min": 3, "max": 16, "step": 1, "label": "Services to show", "default": 8 },
+    { "type": "text", "id": "cta_label", "label": "CTA label", "default": "Book" },
+    { "type": "text", "id": "cta_label_unavailable", "label": "CTA label when unavailable", "default": "Inquire" }
   ],
   "blocks": [
     {
       "type": "service",
-      "name": "Service",
+      "name": "Service (manual)",
       "settings": [
         { "type": "text", "id": "name", "label": "Service name", "default": "The Wig Spa" },
         { "type": "textarea", "id": "desc", "label": "Description", "default": "Full deep cleanse, condition, and refresh. Removes product buildup and restores softness." },
@@ -56,13 +109,7 @@
     {
       "name": "TC — Services list",
       "category": "TheTCollection",
-      "blocks": [
-        { "type": "service", "settings": { "name": "The Wig Spa", "desc": "Full deep cleanse, condition, and refresh.", "price": "$200" } },
-        { "type": "service", "settings": { "name": "Wig Reconstruction", "desc": "Re-wefting, density restoration, full polish.", "price": "$250" } },
-        { "type": "service", "settings": { "name": "Lace Replacement", "desc": "Fresh HD or transparent lace, re-tinted to your skin.", "price": "$75" } },
-        { "type": "service", "settings": { "name": "Color Refresh", "desc": "Recolor, gloss, or full transformation.", "price": "$120" } },
-        { "type": "service", "settings": { "name": "Bring Your Own Bundles", "desc": "You provide the hair, we'll build the unit.", "price": "$300" } }
-      ]
+      "settings": { "source": "collection" }
     }
   ]
 }

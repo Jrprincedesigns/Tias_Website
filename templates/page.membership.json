@@ -1,0 +1,125 @@
+{
+  "sections": {
+    "header": {
+      "type": "tc-page-header",
+      "settings": {
+        "eyebrow": "The Wig Spa Membership",
+        "title": "<p>Your wig wardrobe,<br/>professionally <em>maintained</em>.</p>",
+        "sub": "Send your units in for scheduled care, keep a record of every service, and pay member rates on everything else. Care that keeps pace with how often you actually wear them."
+      }
+    },
+    "tiers": {
+      "type": "tc-membership-tiers",
+      "settings": {
+        "eyebrow": "Choose your care",
+        "title": "<p>Three ways to<br/>be <em>looked after</em>.</p>",
+        "intro": "Every membership includes a set number of Wig Spa services each year, member pricing beyond that, and priority in the studio queue.",
+        "footnote": "Pricing is being finalised. Membership will renew automatically and can be cancelled from your account."
+      },
+      "blocks": {
+        "t1": {
+          "type": "tier",
+          "settings": {
+            "name": "Essential Care",
+            "summary": "For one or two units that need routine upkeep.",
+            "price": "$—",
+            "cadence": "per month",
+            "inclusions": "<p>Wig Spa services included each year<br/>Wash, deep condition and detangle<br/>Standard styling<br/>Wig health assessment<br/>Member pricing on additional services<br/>Priority booking over non-members</p>",
+            "cta_label": "Join",
+            "unavailable_label": "Coming soon"
+          }
+        },
+        "t2": {
+          "type": "tier",
+          "settings": {
+            "name": "Signature Care",
+            "badge": "Most popular",
+            "featured": true,
+            "summary": "For a rotation of units worn throughout the year.",
+            "price": "$—",
+            "cadence": "per month",
+            "inclusions": "<p>Everything in Essential Care<br/>More included services each year<br/>Minor maintenance and repairs<br/>Priority turnaround<br/>Discounted reconstruction<br/>Service history for every unit</p>",
+            "cta_label": "Join",
+            "unavailable_label": "Coming soon"
+          }
+        },
+        "t3": {
+          "type": "tier",
+          "settings": {
+            "name": "Collection Care",
+            "summary": "For a full wardrobe of high-value units.",
+            "price": "$—",
+            "cadence": "per month",
+            "inclusions": "<p>Everything in Signature Care<br/>Reconstruction credit each year<br/>Priority service queue<br/>Advanced styling<br/>Prepaid return shipping<br/>Early access to new releases</p>",
+            "cta_label": "Join",
+            "unavailable_label": "Coming soon"
+          }
+        }
+      },
+      "block_order": ["t1", "t2", "t3"]
+    },
+    "process": {
+      "type": "tc-process",
+      "settings": {
+        "eyebrow": "How membership works",
+        "title": "<p>Wear it. Send it.<br/><em>Restored</em>.</p>",
+        "intro": "The same studio process you already know — just scheduled, tracked, and covered by your membership.",
+        "cta_label": "See what we do in the Spa",
+        "cta_link": "shopify://pages/wig-spa"
+      },
+      "blocks": {
+        "s1": { "type": "step", "settings": { "number": "01", "heading": "Join", "body": "Choose your membership. Your included services are available from day one of your membership year." } },
+        "s2": { "type": "step", "settings": { "number": "02", "heading": "Add your wigs", "body": "Register each unit — brand, length, texture, cap. Every service is recorded against the wig it was done to." } },
+        "s3": { "type": "step", "settings": { "number": "03", "heading": "Send it in", "body": "Tell us what it needs, send photos, and ship it to the studio. We confirm the moment it arrives." } },
+        "s4": { "type": "step", "settings": { "number": "04", "heading": "We inspect first", "body": "Nothing happens without your approval. If a unit needs work beyond what you asked for, we show you the price before we begin." } },
+        "s5": { "type": "step", "settings": { "number": "05", "heading": "Restored and returned", "body": "Serviced, quality-checked, and shipped home with tracking — and added to your unit's service history." } }
+      },
+      "block_order": ["s1", "s2", "s3", "s4", "s5"]
+    },
+    "pillars": {
+      "type": "tc-pillars",
+      "settings": {
+        "eyebrow": "Why members stay",
+        "title": "<p>Care that <em>remembers</em>.</p>"
+      },
+      "blocks": {
+        "p1": { "type": "pillar", "settings": { "number": "01", "heading": "A record for every unit", "body": "What was done, when, and by whom. No more guessing how long ago a unit was last serviced." } },
+        "p2": { "type": "pillar", "settings": { "number": "02", "heading": "Nothing without approval", "body": "We document every unit on arrival and quote any additional work before we touch it." } },
+        "p3": { "type": "pillar", "settings": { "number": "03", "heading": "First in the queue", "body": "Member units are scheduled ahead of one-off bookings, especially in the busy weeks." } }
+      },
+      "block_order": ["p1", "p2", "p3"]
+    },
+    "faq": {
+      "type": "tc-faq",
+      "settings": {
+        "eyebrow": "Membership questions",
+        "title": "<p>Before you <em>join</em>.</p>",
+        "intro": "The details worth knowing up front."
+      },
+      "blocks": {
+        "q1": { "type": "qa", "settings": { "question": "What if I don't send a wig every month?", "answer": "You aren't expected to. Membership includes a set number of services per membership year, not per month — use them whenever your units need them." } },
+        "q2": { "type": "qa", "settings": { "question": "Do unused services roll over?", "answer": "Rollover terms are being finalised and will be stated here before membership opens." } },
+        "q3": { "type": "qa", "settings": { "question": "Can I send in wigs that aren't from The T Collection?", "answer": "Yes. Outside units are welcome, though some services are priced differently because their construction and history are unknown to us." } },
+        "q4": { "type": "qa", "settings": { "question": "Who pays for shipping?", "answer": "Full mail-in shipping terms — including packaging, tracking, insurance and declared value — are set out in the Wig Spa service terms." } },
+        "q5": { "type": "qa", "settings": { "question": "What happens if my unit needs more work than I asked for?", "answer": "We stop and tell you. You'll see the recommendation and the price, and nothing proceeds until you approve it. You can always ask for the unit back instead." } },
+        "q6": { "type": "qa", "settings": { "question": "Can I cancel?", "answer": "Yes, from your account. Any minimum term will be stated clearly at checkout before you join." } }
+      },
+      "block_order": ["q1", "q2", "q3", "q4", "q5", "q6"]
+    },
+    "cta": {
+      "type": "tc-cta",
+      "settings": {
+        "eyebrow": "Not ready to join?",
+        "title": "<p>Book a single <em>visit</em>.</p>",
+        "sub": "Membership isn't the only way in. Send us a unit for a one-off service and see how we work first.",
+        "show_newsletter": false,
+        "cta1_label": "See Spa services",
+        "cta1_link": "shopify://pages/wig-spa",
+        "cta2_label": "Ask a question",
+        "cta2_link": "shopify://pages/contact",
+        "fineprint": "Most services turn around in 5-7 business days."
+      }
+    }
+  },
+  "order": ["header", "tiers", "process", "pillars", "faq", "cta"]
+}

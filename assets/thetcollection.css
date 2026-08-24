@@ -2105,3 +2105,115 @@ body:has(.customer) {
   }
   .customer h1 { font-size: 28px; }
 }
+
+/* ============================================================
+   MEMBERSHIP TIERS (The Wig Spa Membership)
+   ============================================================ */
+.tc-section.tc-tiers-wrap { padding: clamp(70px, 9vw, 130px) 0; }
+.tc-section .tc-tiers {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
+  gap: 24px;
+  align-items: stretch;
+}
+.tc-section .tc-tier {
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  padding: 40px 32px;
+  background: var(--tc-paper);
+  border: 1px solid var(--tc-line);
+  border-radius: var(--tc-radius-lg);
+}
+.tc-section .tc-tier--featured {
+  background: var(--tc-cream);
+  border-color: var(--tc-lavender-soft);
+}
+.tc-section .tc-tier__badge {
+  align-self: flex-start;
+  font-size: 10px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  font-weight: 500;
+  color: var(--tc-lavender-deep);
+  background: var(--tc-lavender-mist);
+  border-radius: 999px;
+  padding: 6px 14px;
+  margin-bottom: 18px;
+}
+.tc-section .tc-tier__name {
+  font-family: var(--tc-serif);
+  font-size: clamp(24px, 2.4vw, 30px);
+  line-height: 1.1;
+  letter-spacing: -0.015em;
+  font-weight: 400;
+  margin: 0 0 10px;
+}
+.tc-section .tc-tier__summary {
+  font-size: 15px;
+  line-height: 1.55;
+  color: var(--tc-mute);
+  margin: 0 0 26px;
+}
+.tc-section .tc-tier__pricing {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding-bottom: 26px;
+  border-bottom: 1px solid var(--tc-line);
+}
+.tc-section .tc-tier__price {
+  font-family: var(--tc-serif);
+  font-size: clamp(34px, 3.6vw, 44px);
+  line-height: 1;
+  letter-spacing: -0.03em;
+  color: var(--tc-lavender-deep);
+}
+.tc-section .tc-tier__cadence {
+  font-size: 12px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--tc-mute);
+}
+.tc-section .tc-tier__inclusions {
+  padding: 24px 0 30px;
+  flex: 1 1 auto;
+}
+.tc-section .tc-tier__inclusions p {
+  margin: 0;
+  font-size: 15px;
+  line-height: 2;
+  color: var(--tc-mute);
+}
+.tc-section .tc-tier__cta { align-self: stretch; justify-content: center; }
+.tc-section .tc-tier__soon {
+  display: inline-flex;
+  align-self: stretch;
+  justify-content: center;
+  padding: 16px 28px;
+  border-radius: 999px;
+  border: 1px dashed var(--tc-line);
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  font-weight: 500;
+  color: var(--tc-mute);
+}
+.tc-section .tc-tier__fineprint {
+  margin: 14px 0 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--tc-mute);
+  text-align: center;
+}
+.tc-section .tc-tiers__footnote {
+  margin: 34px 0 0;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--tc-mute);
+  text-align: center;
+}
+@media (max-width: 760px) {
+  .tc-section .tc-tiers { grid-template-columns: 1fr; gap: 18px; }
+  .tc-section .tc-tier { padding: 32px 24px; }
+}
