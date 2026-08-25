@@ -30,8 +30,10 @@ Nothing here is store-specific, but four things must exist before it runs.
    app has no app-proxy configuration.
 
 2. **Configure the app proxy**: subpath prefix `apps`, subpath `spa`, pointing
-   at this app's deployment. Shopify then forwards storefront requests with a
-   `signature` and, for logged-in visitors, `logged_in_customer_id`.
+   at this app's deployment root. Shopify forwards `/apps/spa/<rest>` to
+   `<url>/<rest>` with a `signature` and, for logged-in visitors,
+   `logged_in_customer_id`. Do not add a path suffix to the proxy URL —
+   `shopify app dev` overwrites it with the bare tunnel host each run.
 
 3. **Create the Supabase project** and apply `supabase/migrations`. RLS is on
    with no permissive policies — reads and writes go through the service role
@@ -86,14 +88,23 @@ in the theme tests that chain and prints a verdict per link.
 
 A and C decide the architecture. B and D are configuration:
 
-- **B fails** — nothing at `/apps/spa`. Usually `shopify app dev` rewrote
-  `app_proxy.url` and dropped the `/proxy` suffix the route names depend on.
+- **B fails** — nothing at `/apps/spa`. Check that `shopify app dev` is still
+  running and that its tunnel URL matches `app_proxy.url`. The proxy endpoints
+  live at the app root (`whoami.ts`, `closet.ts`, `service-request.ts`) because
+  the CLI sets `app_proxy.url` to the bare tunnel host on every run.
 - **D fails** — `DATABASE_URL` is unset or pointed at direct Postgres rather
   than the pooler.
 
 Delete `sections/tc-phase0-probe.liquid` and `templates/page.phase0.json` once
 the answer is recorded. `/apps/spa/whoami` is worth keeping — it reads no
 database, so it isolates a Shopify problem from a Supabase one.
+
+## The app will not start without DATABASE_URL
+
+`app/shopify.server.ts` throws at boot when it is missing, by design — the
+alternative is an opaque URL parse error deep in the session store. If
+`shopify app dev` reports "App isn't responding yet" and then gives up, an
+unset `DATABASE_URL` is the first thing to check.
 
 ## Two things that will bite
 

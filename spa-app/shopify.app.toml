@@ -19,6 +19,11 @@ scopes = "read_customers,write_customers,write_products,read_own_subscription_co
 # The storefront reaches the app through here. Shopify signs each request and,
 # for a signed-in visitor, appends logged_in_customer_id — the only trustworthy
 # statement of who is asking.
+# The URL is the app ROOT, not a /proxy subpath. Shopify forwards
+# /apps/spa/<rest> to <url>/<rest>, and `shopify app dev` overwrites this with
+# the bare tunnel host — so the routes live at the root (whoami.ts, closet.ts,
+# service-request.ts) to match what the CLI actually configures. Keeping a
+# /proxy suffix here would work until the next `app dev` silently removed it.
 [app_proxy]
 url = "https://example.com"
 subpath = "spa"

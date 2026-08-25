@@ -23,9 +23,9 @@ let whoamiLoader: any;
 before(async () => {
   if (!CONNECTION) return;
   pool = new pg.Pool({ connectionString: CONNECTION, max: 4 });
-  ({ loader: closetLoader } = await import('../app/routes/proxy.closet.ts'));
-  ({ action: serviceRequestAction } = await import('../app/routes/proxy.service-request.ts'));
-  ({ loader: whoamiLoader } = await import('../app/routes/proxy.whoami.ts'));
+  ({ loader: closetLoader } = await import('../app/routes/closet.ts'));
+  ({ action: serviceRequestAction } = await import('../app/routes/service-request.ts'));
+  ({ loader: whoamiLoader } = await import('../app/routes/whoami.ts'));
 });
 
 after(async () => {
@@ -73,7 +73,7 @@ async function seed() {
 
 test('a signed request from a member returns their closet', { skip }, async () => {
   const seeded = await seed();
-  const request = new Request(signedUrl('/proxy/closet', {
+  const request = new Request(signedUrl('/closet', {
     shop: 'theetcollection.myshopify.com',
     logged_in_customer_id: '7401',
     timestamp: '1700000000',
@@ -92,7 +92,7 @@ test('a signed request from a member returns their closet', { skip }, async () =
 
 test('closet responses are never cached', { skip }, async () => {
   await seed();
-  const request = new Request(signedUrl('/proxy/closet', { shop: 's', logged_in_customer_id: '7401' }));
+  const request = new Request(signedUrl('/closet', { shop: 's', logged_in_customer_id: '7401' }));
   const response = await closetLoader({ request, params: {}, context: {} });
   assert.match(response.headers.get('cache-control') ?? '', /private/);
   assert.match(response.headers.get('cache-control') ?? '', /no-store/);
@@ -109,14 +109,14 @@ test('a forged signature is rejected', { skip }, async () => {
 
 test('changing the customer id invalidates the signature', { skip }, async () => {
   await seed();
-  const url = new URL(signedUrl('/proxy/closet', { shop: 's', logged_in_customer_id: '7401' }));
+  const url = new URL(signedUrl('/closet', { shop: 's', logged_in_customer_id: '7401' }));
   url.searchParams.set('logged_in_customer_id', '9999'); // impersonation attempt
   const response = await closetLoader({ request: new Request(url), params: {}, context: {} });
   assert.equal(response.status, 401);
 });
 
 test('a signed but logged-out visitor gets a normal answer, not an error', { skip }, async () => {
-  const request = new Request(signedUrl('/proxy/closet', { shop: 's', timestamp: '1700000000' }));
+  const request = new Request(signedUrl('/closet', { shop: 's', timestamp: '1700000000' }));
   const response = await closetLoader({ request, params: {}, context: {} });
   assert.equal(response.status, 200);
   assert.deepEqual(await response.json(), { signedIn: false });
@@ -124,7 +124,7 @@ test('a signed but logged-out visitor gets a normal answer, not an error', { ski
 
 test('a member with no membership still gets their wigs', { skip }, async () => {
   await pool.query(`insert into members (shopify_customer_id) values ('gid://shopify/Customer/7401')`);
-  const request = new Request(signedUrl('/proxy/closet', { shop: 's', logged_in_customer_id: '7401' }));
+  const request = new Request(signedUrl('/closet', { shop: 's', logged_in_customer_id: '7401' }));
   const body = await (await closetLoader({ request, params: {}, context: {} })).json();
   assert.equal(body.signedIn, true);
   assert.equal(body.membership, null);
@@ -134,7 +134,7 @@ test('a member with no membership still gets their wigs', { skip }, async () => 
 test('a service request against your own wig is created and marked covered', { skip }, async () => {
   const seeded = await seed();
   const request = new Request(
-    signedUrl('/proxy/service-request', { shop: 's', logged_in_customer_id: '7401' }),
+    signedUrl('/service-request', { shop: 's', logged_in_customer_id: '7401' }),
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -160,7 +160,7 @@ test("a service request against someone else's wig is refused", { skip }, async 
   );
 
   const request = new Request(
-    signedUrl('/proxy/service-request', { shop: 's', logged_in_customer_id: '7401' }),
+    signedUrl('/service-request', { shop: 's', logged_in_customer_id: '7401' }),
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -183,7 +183,7 @@ test('a member out of services gets a reason, not a silent charge', { skip }, as
   );
 
   const request = new Request(
-    signedUrl('/proxy/service-request', { shop: 's', logged_in_customer_id: '7401' }),
+    signedUrl('/service-request', { shop: 's', logged_in_customer_id: '7401' }),
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -198,7 +198,7 @@ test('a member out of services gets a reason, not a silent charge', { skip }, as
 test('a malformed body is refused with the reasons why', { skip }, async () => {
   await seed();
   const request = new Request(
-    signedUrl('/proxy/service-request', { shop: 's', logged_in_customer_id: '7401' }),
+    signedUrl('/service-request', { shop: 's', logged_in_customer_id: '7401' }),
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -214,7 +214,7 @@ test('whoami confirms a signed-in visitor without touching the database', { skip
   // Deliberately no seeding — whoami must isolate the Shopify half of the
   // chain from the Supabase half, so a database problem cannot masquerade as
   // an identity problem.
-  const request = new Request(signedUrl('/proxy/whoami', {
+  const request = new Request(signedUrl('/whoami', {
     shop: 'theetcollection.myshopify.com',
     logged_in_customer_id: '7401',
   }));
@@ -229,14 +229,14 @@ test('whoami confirms a signed-in visitor without touching the database', { skip
 });
 
 test('whoami reports an anonymous visitor as signed out, not as an error', { skip }, async () => {
-  const request = new Request(signedUrl('/proxy/whoami', { shop: 's' }));
+  const request = new Request(signedUrl('/whoami', { shop: 's' }));
   const response = await whoamiLoader({ request, params: {}, context: {} });
   assert.equal(response.status, 200);
   assert.deepEqual(await response.json(), { signedIn: false });
 });
 
 test('whoami rejects a forged signature', { skip }, async () => {
-  const request = new Request('https://app.example.com/proxy/whoami?shop=s&logged_in_customer_id=1&signature=bad');
+  const request = new Request('https://app.example.com/whoami?shop=s&logged_in_customer_id=1&signature=bad');
   const response = await whoamiLoader({ request, params: {}, context: {} });
   assert.equal(response.status, 401);
 });

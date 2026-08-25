@@ -3,5 +3,9 @@ roles = ["frontend", "backend"]
 webhooks_path = "/webhooks/app/uninstalled"
 
 [commands]
-predev = "npx prisma generate"
-dev = "npx prisma migrate deploy && npm exec react-router dev"
+# The template ran `prisma generate` here and chained `prisma migrate deploy`
+# ahead of the dev server. Prisma is gone — the schema lives in
+# supabase/migrations and is applied with psql or the Supabase CLI — and the
+# chained `&&` meant a failing migrate silently prevented the app from starting
+# at all.
+dev = "npm exec react-router dev"
