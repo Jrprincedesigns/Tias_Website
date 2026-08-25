@@ -1,0 +1,396 @@
+import { assertTransition, consumesAllowanceOn, type ServiceStatus } from './service-status.ts';
+import { balanceOf, consumptionEntry, type LedgerEntry, type MembershipWindow } from './allowance.ts';
+
+/**
+ * Data access for the Wig Spa.
+ *
+ * Every function takes its connection rather than reaching for a module-level
+ * pool, so a route can hand in the shared pool, a transaction can hand in its
+ * own client, and a test can hand in a throwaway database. Nothing here knows
+ * about Shopify beyond the customer GID it is given.
+ *
+ * Rules live in service-status.ts and allowance.ts and are called from here.
+ * They are never re-implemented in SQL — one statement of the rule, so what a
+ * member is told and what they are charged cannot drift.
+ */
+
+export interface Queryable {
+  query(text: string, values?: unknown[]): Promise<{ rows: any[]; rowCount: number | null }>;
+}
+
+export interface Transactable extends Queryable {
+  connect(): Promise<PoolClientLike>;
+}
+
+interface PoolClientLike extends Queryable {
+  release(): void;
+}
+
+export interface Member {
+  id: string;
+  shopifyCustomerId: string;
+  email: string | null;
+  firstName: string | null;
+  lastName: string | null;
+}
+
+export interface Wig {
+  id: string;
+  nickname: string;
+  isTCollection: boolean;
+  brand: string | null;
+  lengthInches: number | null;
+  texture: string | null;
+  color: string | null;
+  photoPath: string | null;
+  lastServicedAt: string | null;
+}
+
+export interface Membership extends MembershipWindow {
+  id: string;
+  tier: string;
+  nextBillingAt: Date | null;
+}
+
+export interface ServiceRequestSummary {
+  id: string;
+  wigId: string;
+  wigNickname: string;
+  serviceType: string;
+  status: ServiceStatus;
+  coveredByAllowance: boolean;
+  submittedAt: Date;
+  statusSince: Date;
+}
+
+/** Run `fn` inside a transaction, rolling back on any throw. */
+export async function withTransaction<T>(
+  pool: Transactable,
+  fn: (tx: Queryable) => Promise<T>,
+): Promise<T> {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const result = await fn(client);
+    await client.query('COMMIT');
+    return result;
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
+/**
+ * The member behind a proxy request.
+ *
+ * Upserts because the first time a customer reaches the app they exist in
+ * Shopify but not here. The GID is the join key — it is what the signed proxy
+ * request gives us, and unlike an email it never changes.
+ */
+export async function findOrCreateMember(
+  db: Queryable,
+  input: { shopifyCustomerId: string; email?: string | null; firstName?: string | null; lastName?: string | null },
+): Promise<Member> {
+  const { rows } = await db.query(
+    `insert into members (shopify_customer_id, email, first_name, last_name)
+     values ($1, $2, $3, $4)
+     on conflict (shopify_customer_id) do update
+       set email      = coalesce(excluded.email, members.email),
+           first_name = coalesce(excluded.first_name, members.first_name),
+           last_name  = coalesce(excluded.last_name, members.last_name)
+     returning id, shopify_customer_id, email, first_name, last_name`,
+    [input.shopifyCustomerId, input.email ?? null, input.firstName ?? null, input.lastName ?? null],
+  );
+  const row = rows[0];
+  return {
+    id: row.id,
+    shopifyCustomerId: row.shopify_customer_id,
+    email: row.email,
+    firstName: row.first_name,
+    lastName: row.last_name,
+  };
+}
+
+export async function listWigs(db: Queryable, memberId: string): Promise<Wig[]> {
+  const { rows } = await db.query(
+    `select w.id, w.nickname, w.is_t_collection, w.brand, w.length_inches,
+            w.texture, w.color, w.photo_path,
+            (select max(sr.completed_at)
+               from service_requests sr
+              where sr.wig_id = w.id and sr.status = 'completed') as last_serviced_at
+       from wigs w
+      where w.member_id = $1 and w.retired_at is null
+      order by w.created_at`,
+    [memberId],
+  );
+  return rows.map((row) => ({
+    id: row.id,
+    nickname: row.nickname,
+    isTCollection: row.is_t_collection,
+    brand: row.brand,
+    lengthInches: row.length_inches,
+    texture: row.texture,
+    color: row.color,
+    photoPath: row.photo_path,
+    lastServicedAt: row.last_serviced_at ? new Date(row.last_serviced_at).toISOString() : null,
+  }));
+}
+
+/**
+ * The membership to charge allowances against.
+ *
+ * Returns the active one if there is one. A lapsed membership is deliberately
+ * still returned when nothing is active, so the closet can say "your
+ * membership is past due" rather than "you have no membership" — those are
+ * very different messages to send someone who is still being billed.
+ */
+export async function getMembership(db: Queryable, memberId: string): Promise<Membership | null> {
+  const { rows } = await db.query(
+    `select id, tier, status, membership_year_start, membership_year_end, next_billing_at
+       from memberships
+      where member_id = $1
+      order by (status = 'active') desc, membership_year_end desc
+      limit 1`,
+    [memberId],
+  );
+  const row = rows[0];
+  if (!row) return null;
+  return {
+    id: row.id,
+    tier: row.tier,
+    status: row.status,
+    membershipYearStart: new Date(row.membership_year_start),
+    membershipYearEnd: new Date(row.membership_year_end),
+    nextBillingAt: row.next_billing_at ? new Date(row.next_billing_at) : null,
+  };
+}
+
+export async function getAllowanceEntries(db: Queryable, membershipId: string): Promise<LedgerEntry[]> {
+  const { rows } = await db.query(
+    `select kind, delta, service_request_id, reason
+       from allowance_ledger
+      where membership_id = $1
+      order by created_at`,
+    [membershipId],
+  );
+  return rows.map((row) => ({
+    kind: row.kind,
+    delta: row.delta,
+    serviceRequestId: row.service_request_id,
+    reason: row.reason,
+  }));
+}
+
+export async function getAllowanceBalance(db: Queryable, membershipId: string): Promise<number> {
+  const { rows } = await db.query(
+    `select coalesce(balance, 0) as balance
+       from membership_allowance_balance
+      where membership_id = $1`,
+    [membershipId],
+  );
+  return rows[0]?.balance ?? 0;
+}
+
+export async function createServiceRequest(
+  db: Queryable,
+  input: {
+    memberId: string;
+    wigId: string;
+    membershipId: string | null;
+    serviceType: string;
+    coveredByAllowance: boolean;
+    intake?: Record<string, unknown>;
+    customerNotes?: string | null;
+  },
+): Promise<{ id: string; status: ServiceStatus }> {
+  const { rows } = await db.query(
+    `insert into service_requests
+       (member_id, wig_id, membership_id, service_type, covered_by_allowance, intake, customer_notes)
+     values ($1, $2, $3, $4, $5, $6, $7)
+     returning id, status`,
+    [
+      input.memberId,
+      input.wigId,
+      input.membershipId,
+      input.serviceType,
+      input.coveredByAllowance,
+      JSON.stringify(input.intake ?? {}),
+      input.customerNotes ?? null,
+    ],
+  );
+  return { id: rows[0].id, status: rows[0].status };
+}
+
+/**
+ * Move a work order to its next status.
+ *
+ * Everything happens in one transaction: the row is locked, the move is
+ * checked against the status graph, the status is written, an events row
+ * records who did it, and — if this is the moment the work is authorised —
+ * the allowance is spent. A rejected move leaves nothing behind.
+ *
+ * The lock matters. Two people clicking "advance" at once would otherwise
+ * both read `in_service` and both write `quality_check`, producing two events
+ * for one move.
+ */
+export async function advanceStatus(
+  pool: Transactable,
+  input: { serviceRequestId: string; to: string; actor: string; note?: string },
+): Promise<{ from: ServiceStatus; to: ServiceStatus; allowanceSpent: boolean }> {
+  return withTransaction(pool, async (tx) => {
+    const { rows } = await tx.query(
+      `select id, member_id, membership_id, status, covered_by_allowance
+         from service_requests
+        where id = $1
+        for update`,
+      [input.serviceRequestId],
+    );
+    const request = rows[0];
+    if (!request) throw new Error(`No service request ${input.serviceRequestId}`);
+
+    const from = request.status as ServiceStatus;
+    assertTransition(from, input.to);
+    const to = input.to;
+
+    let allowanceSpent = false;
+
+    if (consumesAllowanceOn(to) && request.covered_by_allowance) {
+      if (!request.membership_id) {
+        throw new Error('Request is marked covered by allowance but has no membership attached');
+      }
+      const membership = await getMembershipById(tx, request.membership_id);
+      const entries = await getAllowanceEntries(tx, request.membership_id);
+
+      // Throws when the request was promised as covered but no longer is —
+      // a lapsed membership, or an allowance spent elsewhere since. Better
+      // Tia finds out now than after $200 of labour.
+      const entry = consumptionEntry({
+        membership,
+        entries,
+        serviceRequestId: request.id,
+      });
+
+      await tx.query(
+        `insert into allowance_ledger (membership_id, service_request_id, kind, delta, created_by)
+         values ($1, $2, $3, $4, $5)`,
+        [request.membership_id, request.id, entry.kind, entry.delta, input.actor],
+      );
+      allowanceSpent = true;
+    }
+
+    await tx.query(
+      // Every use of $2 is cast to the enum. Without the casts Postgres sees it
+      // as an enum in one clause and text in the others and refuses to deduce
+      // a single type for the parameter.
+      `update service_requests
+          set status = $2::service_status,
+              received_at  = case when $2::service_status = 'received'  then now() else received_at  end,
+              completed_at = case when $2::service_status = 'completed' then now() else completed_at end
+        where id = $1`,
+      [request.id, to],
+    );
+
+    await tx.query(
+      `insert into events (service_request_id, kind, from_status, to_status, actor, payload)
+       values ($1, 'status_changed', $2::service_status, $3::service_status, $4, $5::jsonb)`,
+      [request.id, from, to, input.actor, JSON.stringify(input.note ? { note: input.note } : {})],
+    );
+
+    return { from, to, allowanceSpent };
+  });
+}
+
+async function getMembershipById(db: Queryable, membershipId: string): Promise<Membership | null> {
+  const { rows } = await db.query(
+    `select id, tier, status, membership_year_start, membership_year_end, next_billing_at
+       from memberships where id = $1`,
+    [membershipId],
+  );
+  const row = rows[0];
+  if (!row) return null;
+  return {
+    id: row.id,
+    tier: row.tier,
+    status: row.status,
+    membershipYearStart: new Date(row.membership_year_start),
+    membershipYearEnd: new Date(row.membership_year_end),
+    nextBillingAt: row.next_billing_at ? new Date(row.next_billing_at) : null,
+  };
+}
+
+/** Everything the Wig Closet renders, in one round trip's worth of queries. */
+export async function getCloset(
+  db: Queryable,
+  shopifyCustomerId: string,
+): Promise<{
+  member: Member;
+  membership: Membership | null;
+  allowanceRemaining: number;
+  wigs: Wig[];
+  activeServices: ServiceRequestSummary[];
+}> {
+  const member = await findOrCreateMember(db, { shopifyCustomerId });
+  const membership = await getMembership(db, member.id);
+  const [wigs, activeServices, allowanceRemaining] = await Promise.all([
+    listWigs(db, member.id),
+    listActiveServices(db, member.id),
+    membership ? getAllowanceBalance(db, membership.id) : Promise.resolve(0),
+  ]);
+  return { member, membership, allowanceRemaining, wigs, activeServices };
+}
+
+export async function listActiveServices(db: Queryable, memberId: string): Promise<ServiceRequestSummary[]> {
+  const { rows } = await db.query(
+    `select sr.id, sr.wig_id, w.nickname as wig_nickname, sr.service_type, sr.status,
+            sr.covered_by_allowance, sr.submitted_at,
+            coalesce((select max(e.created_at) from events e where e.service_request_id = sr.id),
+                     sr.submitted_at) as status_since
+       from service_requests sr
+       join wigs w on w.id = sr.wig_id
+      where sr.member_id = $1
+        and sr.status not in ('completed', 'cancelled')
+      order by sr.submitted_at desc`,
+    [memberId],
+  );
+  return rows.map(toSummary);
+}
+
+function toSummary(row: any): ServiceRequestSummary {
+  return {
+    id: row.id,
+    wigId: row.wig_id,
+    wigNickname: row.wig_nickname,
+    serviceType: row.service_type,
+    status: row.status,
+    coveredByAllowance: row.covered_by_allowance,
+    submittedAt: new Date(row.submitted_at),
+    statusSince: new Date(row.status_since),
+  };
+}
+
+/**
+ * Everything currently open in the studio, oldest-waiting first.
+ *
+ * `statusSince` is when the work order last moved, not when it was submitted —
+ * that is what "sitting too long" actually means. A wig submitted in January
+ * that moved yesterday is fine; one that moved three weeks ago is not.
+ */
+export async function listOpenWorkOrders(db: Queryable): Promise<ServiceRequestSummary[]> {
+  const { rows } = await db.query(
+    `select sr.id, sr.wig_id, w.nickname as wig_nickname, sr.service_type, sr.status,
+            sr.covered_by_allowance, sr.submitted_at,
+            coalesce((select max(e.created_at) from events e where e.service_request_id = sr.id),
+                     sr.submitted_at) as status_since
+       from service_requests sr
+       join wigs w on w.id = sr.wig_id
+      where sr.status not in ('completed', 'cancelled')
+      order by status_since asc`,
+  );
+  return rows.map(toSummary);
+}
+
+export function balanceFromEntries(entries: readonly LedgerEntry[]): number {
+  return balanceOf(entries);
+}

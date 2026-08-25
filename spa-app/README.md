@@ -42,16 +42,34 @@ Nothing here is store-specific, but four things must exist before it runs.
 ## Running the checks
 
 ```
-npm test        # 48 unit tests
+npm test
 npm run typecheck
+npm run build
 ```
-
-Covers app-proxy and webhook signature verification (including impersonation
-and forged-signature attempts), the service status machine, and the membership
-allowance rules.
 
 Source is TypeScript run directly by Node's type stripping — no build step for
 tests. `tsc` runs in `--noEmit` mode purely as a checker.
+
+`npm test` alone runs the unit tests: signature verification (including
+impersonation and forged-signature attempts), the status machine, the
+allowance rules, and intake validation.
+
+The integration tests need a real PostgreSQL — mocks accept SQL the database
+rejects, which is how the missing enum casts in `advanceStatus` were found. They
+skip when `TEST_DATABASE_URL` is unset:
+
+```
+createdb wigspa && psql -d wigspa -f ../supabase/migrations/0001_wig_spa_core.sql
+TEST_DATABASE_URL=postgresql://localhost/wigspa npm test
+```
+
+Note the role you connect as must bypass row level security, the way Supabase's
+`service_role` does — every table has RLS on with no permissive policies, so an
+ordinary role reads nothing and the tests fail in a confusing way. Locally:
+`alter role <you> bypassrls;`
+
+Tests run with `--test-concurrency=1` because the integration files share one
+database and truncate between cases.
 
 ## Two things that will bite
 
