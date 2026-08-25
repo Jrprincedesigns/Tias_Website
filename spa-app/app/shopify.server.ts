@@ -5,16 +5,29 @@ import {
   shopifyApp,
 } from "@shopify/shopify-app-react-router/server";
 import { PostgreSQLSessionStorage } from "@shopify/shopify-app-session-storage-postgresql";
+import type { SessionStorage } from "@shopify/shopify-app-session-storage";
+import { databaseUrl } from "./db.server";
 
-function requireDatabaseUrl(): string {
-  const url = process.env.DATABASE_URL;
-  if (!url) {
-    // Fail loudly at boot. Without this the session store throws an opaque
-    // URL parse error and the app looks like an auth bug instead of a
-    // missing environment variable.
-    throw new Error("DATABASE_URL is not set — the app cannot reach Supabase");
-  }
-  return url;
+/**
+ * Session storage that connects on first use, not at import.
+ *
+ * Building the store eagerly meant an unset DATABASE_URL threw while the
+ * module graph was still loading, which killed the entire server — every
+ * route, including the ones that never touch the database. Deferring it lets
+ * the app boot and answer, and lets the routes that genuinely need Postgres
+ * be the only ones that fail.
+ */
+function lazySessionStorage(): SessionStorage {
+  let store: PostgreSQLSessionStorage | undefined;
+  const connected = () => (store ??= new PostgreSQLSessionStorage(databaseUrl()));
+
+  return {
+    storeSession: (session) => connected().storeSession(session),
+    loadSession: (id) => connected().loadSession(id),
+    deleteSession: (id) => connected().deleteSession(id),
+    deleteSessions: (ids) => connected().deleteSessions(ids),
+    findSessionsByShop: (shop) => connected().findSessionsByShop(shop),
+  };
 }
 
 const shopify = shopifyApp({
@@ -29,7 +42,7 @@ const shopify = shopifyApp({
   // session on deploy.
   // The store creates its own session table on first connect, so there is no
   // migration to run for it.
-  sessionStorage: new PostgreSQLSessionStorage(requireDatabaseUrl()),
+  sessionStorage: lazySessionStorage(),
   // Custom distribution — installed on one store, not listed on the App
   // Store. The template ships AppStore, which changes how auth behaves.
   distribution: AppDistribution.SingleMerchant,
