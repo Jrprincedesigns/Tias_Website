@@ -35,8 +35,9 @@
     "target": "ES2022",
     "types": [
       "@react-router/node",
-      "vite/client",
-      "@shopify/polaris-types"
+      "@shopify/app-bridge-types",
+      "@shopify/polaris-types",
+      "vite/client"
     ]
   }
 }
