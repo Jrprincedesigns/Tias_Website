@@ -1,0 +1,57 @@
+# Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
+
+client_id = "b379f3423f17d23f5eb220cd611824d6"
+name = "tc-wig-spa"
+application_url = "https://example.com"
+embedded = true
+
+[access_scopes]
+# read_customers / write_customers — read the member behind a proxy request and
+#   maintain the membership tag that gates member pricing.
+# write_products — selling plan groups live under products; this is what lets
+#   the app create the membership plan with its minCycles commitment.
+# write_own_subscription_contracts — create and manage the contracts themselves.
+# write_draft_orders — the "approve additional work" flow: inspection finds
+#   more work, the app raises a draft order, the customer pays the invoice.
+# read_orders — reconcile paid service orders back to work orders.
+scopes = "read_customers,write_customers,write_products,read_own_subscription_contracts,write_own_subscription_contracts,write_draft_orders,read_orders"
+
+# The storefront reaches the app through here. Shopify signs each request and,
+# for a signed-in visitor, appends logged_in_customer_id — the only trustworthy
+# statement of who is asking.
+[app_proxy]
+url = "https://example.com"
+subpath = "spa"
+prefix = "apps"
+
+[webhooks]
+api_version = "2026-10"
+
+  [[webhooks.subscriptions]]
+  uri = "/webhooks/app/uninstalled"
+  topics = [ "app/uninstalled" ]
+
+  [[webhooks.subscriptions]]
+  uri = "/webhooks/app/scopes_update"
+  topics = [ "app/scopes_update" ]
+
+  # Membership state. Without these the app cannot know that a member
+  # cancelled, lapsed, or renewed, and would keep honouring allowances that
+  # are no longer paid for.
+  [[webhooks.subscriptions]]
+  uri = "/webhooks/subscriptions/update"
+  topics = [
+    "subscription_contracts/create",
+    "subscription_contracts/update",
+  ]
+
+  [[webhooks.subscriptions]]
+  uri = "/webhooks/orders/paid"
+  topics = [ "orders/paid" ]
+
+[auth]
+redirect_urls = [ "https://example.com/api/auth" ]
+
+[build]
+include_config_on_deploy = true
+automatically_update_urls_on_dev = true
