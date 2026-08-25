@@ -18,12 +18,14 @@ if (CONNECTION) process.env.DATABASE_URL = CONNECTION;
 let pool: pg.Pool;
 let closetLoader: any;
 let serviceRequestAction: any;
+let whoamiLoader: any;
 
 before(async () => {
   if (!CONNECTION) return;
   pool = new pg.Pool({ connectionString: CONNECTION, max: 4 });
   ({ loader: closetLoader } = await import('../app/routes/proxy.closet.ts'));
   ({ action: serviceRequestAction } = await import('../app/routes/proxy.service-request.ts'));
+  ({ loader: whoamiLoader } = await import('../app/routes/proxy.whoami.ts'));
 });
 
 after(async () => {
@@ -206,4 +208,35 @@ test('a malformed body is refused with the reasons why', { skip }, async () => {
   const response = await serviceRequestAction({ request, params: {}, context: {} });
   assert.equal(response.status, 422);
   assert.equal((await response.json()).details.length, 2);
+});
+
+test('whoami confirms a signed-in visitor without touching the database', { skip }, async () => {
+  // Deliberately no seeding — whoami must isolate the Shopify half of the
+  // chain from the Supabase half, so a database problem cannot masquerade as
+  // an identity problem.
+  const request = new Request(signedUrl('/proxy/whoami', {
+    shop: 'theetcollection.myshopify.com',
+    logged_in_customer_id: '7401',
+  }));
+  const response = await whoamiLoader({ request, params: {}, context: {} });
+  assert.equal(response.status, 200);
+
+  const body = await response.json();
+  assert.equal(body.signatureValid, true);
+  assert.equal(body.signedIn, true);
+  assert.equal(body.shopifyCustomerId, 'gid://shopify/Customer/7401');
+  assert.equal(body.shop, 'theetcollection.myshopify.com');
+});
+
+test('whoami reports an anonymous visitor as signed out, not as an error', { skip }, async () => {
+  const request = new Request(signedUrl('/proxy/whoami', { shop: 's' }));
+  const response = await whoamiLoader({ request, params: {}, context: {} });
+  assert.equal(response.status, 200);
+  assert.deepEqual(await response.json(), { signedIn: false });
+});
+
+test('whoami rejects a forged signature', { skip }, async () => {
+  const request = new Request('https://app.example.com/proxy/whoami?shop=s&logged_in_customer_id=1&signature=bad');
+  const response = await whoamiLoader({ request, params: {}, context: {} });
+  assert.equal(response.status, 401);
 });

@@ -71,6 +71,30 @@ ordinary role reads nothing and the tests fail in a confusing way. Locally:
 Tests run with `--test-concurrency=1` because the integration files share one
 database and truncate between cases.
 
+## Phase 0 — proving the storefront can reach this app
+
+Under new customer accounts the account portal runs on a different origin from
+the storefront, and everything the Wig Closet does assumes a signed-in visitor
+still arrives here with an identity Shopify vouches for. `sections/tc-phase0-probe.liquid`
+in the theme tests that chain and prints a verdict per link.
+
+1. `npm run dev` here (`shopify app dev`) — note the tunnel URL it prints.
+2. Set `DATABASE_URL` in `.env` to the Supabase **pooler** string (port 6543).
+3. In Shopify admin, create a page using the **page.phase0** template on the
+   duplicated unpublished theme.
+4. Sign in on the storefront, open that page, read the four rows.
+
+A and C decide the architecture. B and D are configuration:
+
+- **B fails** — nothing at `/apps/spa`. Usually `shopify app dev` rewrote
+  `app_proxy.url` and dropped the `/proxy` suffix the route names depend on.
+- **D fails** — `DATABASE_URL` is unset or pointed at direct Postgres rather
+  than the pooler.
+
+Delete `sections/tc-phase0-probe.liquid` and `templates/page.phase0.json` once
+the answer is recorded. `/apps/spa/whoami` is worth keeping — it reads no
+database, so it isolates a Shopify problem from a Supabase one.
+
 ## Two things that will bite
 
 - **Uninstalling this app deletes the selling plans 48 hours later.** Shopify

@@ -1,0 +1,207 @@
+{%- comment -%}
+  TEMPORARY — Phase 0 diagnostic.
+
+  Answers whether the Wig Closet can live on the storefront at all. Under new
+  customer accounts the account portal runs on a different origin, and the
+  whole design assumes a signed-in visitor still reaches the app proxy with an
+  identity Shopify vouches for. This page proves it or disproves it.
+
+  Delete this file and templates/page.phase0.json once the answer is recorded.
+  It shows a viewer nothing about anyone but themselves.
+{%- endcomment -%}
+
+{{ 'thetcollection.css' | asset_url | stylesheet_tag }}
+
+<section class="tc-section tc-probe-wrap">
+  <div class="tc-container">
+    <div class="tc-probe-flag">Temporary diagnostic — delete after Phase 0</div>
+
+    <h1 class="tc-section-title">Phase 0 <em>probe</em></h1>
+    <p class="tc-probe-lede">
+      Four links in one chain. A and C decide whether the Wig Closet can be a themed page on this
+      storefront. B and D are configuration, and are fixable without changing the design.
+    </p>
+
+    {%- comment -%} A — does Liquid see the customer on the online store? {%- endcomment -%}
+    <div class="tc-probe-row" id="check-a">
+      <div class="tc-probe-row__id">A</div>
+      <div class="tc-probe-row__body">
+        <div class="tc-probe-row__name">Storefront knows who is signed in</div>
+        {%- if customer -%}
+          <div class="tc-probe-badge tc-probe-badge--pass">PASS</div>
+          <p class="tc-probe-detail">
+            Liquid sees customer <code>{{ customer.id }}</code>{% if customer.email %} ({{ customer.email }}){% endif %}.
+            The closet can be a theme page in the T Collection design system.
+          </p>
+        {%- else -%}
+          <div class="tc-probe-badge tc-probe-badge--fail">FAIL</div>
+          <p class="tc-probe-detail">
+            The <code>customer</code> object is empty. If you are signed in and seeing this, the
+            storefront session is not reaching Liquid — the closet would have to become a customer
+            account UI extension, which cannot carry this site's styling.
+            <strong>If you are not signed in, sign in first and reload.</strong>
+          </p>
+        {%- endif -%}
+      </div>
+    </div>
+
+    {%- comment -%} B, C, D — the proxy and the app behind it {%- endcomment -%}
+    <div class="tc-probe-row" id="check-b">
+      <div class="tc-probe-row__id">B</div>
+      <div class="tc-probe-row__body">
+        <div class="tc-probe-row__name">App proxy is reachable</div>
+        <div class="tc-probe-badge tc-probe-badge--wait" data-probe-badge="b">CHECKING</div>
+        <p class="tc-probe-detail" data-probe-detail="b">Requesting <code>{{ section.settings.proxy_base }}/whoami</code>…</p>
+      </div>
+    </div>
+
+    <div class="tc-probe-row" id="check-c">
+      <div class="tc-probe-row__id">C</div>
+      <div class="tc-probe-row__body">
+        <div class="tc-probe-row__name">Proxy carries your identity to the app</div>
+        <div class="tc-probe-badge tc-probe-badge--wait" data-probe-badge="c">CHECKING</div>
+        <p class="tc-probe-detail" data-probe-detail="c">Waiting on B…</p>
+      </div>
+    </div>
+
+    <div class="tc-probe-row" id="check-d">
+      <div class="tc-probe-row__id">D</div>
+      <div class="tc-probe-row__body">
+        <div class="tc-probe-row__name">App reaches the database</div>
+        <div class="tc-probe-badge tc-probe-badge--wait" data-probe-badge="d">CHECKING</div>
+        <p class="tc-probe-detail" data-probe-detail="d">Requesting <code>{{ section.settings.proxy_base }}/closet</code>…</p>
+      </div>
+    </div>
+
+    <details class="tc-probe-raw">
+      <summary>Raw responses</summary>
+      <pre data-probe-raw>(running)</pre>
+    </details>
+  </div>
+</section>
+
+<script>
+  (function () {
+    var base = {{ section.settings.proxy_base | json }};
+    var raw = document.querySelector('[data-probe-raw]');
+    var log = [];
+
+    function record(label, value) {
+      log.push(label + ':\n' + value + '\n');
+      raw.textContent = log.join('\n');
+    }
+
+    function set(key, state, message) {
+      var badge = document.querySelector('[data-probe-badge="' + key + '"]');
+      var detail = document.querySelector('[data-probe-detail="' + key + '"]');
+      badge.textContent = state.toUpperCase();
+      badge.className = 'tc-probe-badge tc-probe-badge--' + state;
+      detail.innerHTML = message;
+    }
+
+    fetch(base + '/whoami', { headers: { Accept: 'application/json' }, credentials: 'same-origin' })
+      .then(function (response) {
+        return response.text().then(function (text) {
+          record('GET ' + base + '/whoami → ' + response.status, text);
+
+          if (response.status === 404) {
+            set('b', 'fail',
+              'Nothing is served at <code>' + base + '</code>. The proxy subpath or its URL is wrong. ' +
+              'Most likely <code>shopify app dev</code> rewrote <code>app_proxy.url</code> and dropped the ' +
+              '<code>/proxy</code> suffix the route names depend on.');
+            set('c', 'fail', 'Cannot run — B failed.');
+            return;
+          }
+          if (!response.ok && response.status !== 401) {
+            set('b', 'fail', 'The proxy answered <code>' + response.status + '</code>. The app is reachable but erroring — check the <code>shopify app dev</code> console.');
+            set('c', 'fail', 'Cannot run — B failed.');
+            return;
+          }
+
+          set('b', 'pass', 'The storefront reached the app and Shopify signed the request.');
+
+          var data;
+          try { data = JSON.parse(text); } catch (e) {
+            set('c', 'fail', 'The proxy replied with something that is not JSON. Check the app logs.');
+            return;
+          }
+
+          if (response.status === 401 || data.error === 'invalid_signature') {
+            set('c', 'fail',
+              'The signature did not verify. <code>SHOPIFY_API_SECRET</code> in the app’s environment ' +
+              'does not match the app Shopify signed with.');
+            return;
+          }
+          if (data.signedIn === false) {
+            set('c', 'fail',
+              'Shopify forwarded the request but attached no <code>logged_in_customer_id</code>. ' +
+              'If check A passed, the storefront session is not surviving the proxy — the closet would have ' +
+              'to become a customer account UI extension, and would lose this site’s styling.');
+            return;
+          }
+          set('c', 'pass', 'The app was told you are <code>' + (data.shopifyCustomerId || 'unknown') + '</code>, signed by Shopify.');
+        });
+      })
+      .catch(function (error) {
+        record('GET ' + base + '/whoami → network error', String(error));
+        set('b', 'fail', 'The request never completed: <code>' + String(error) + '</code>');
+        set('c', 'fail', 'Cannot run — B failed.');
+      });
+
+    fetch(base + '/closet', { headers: { Accept: 'application/json' }, credentials: 'same-origin' })
+      .then(function (response) {
+        return response.text().then(function (text) {
+          record('GET ' + base + '/closet → ' + response.status, text);
+
+          if (response.status === 404) {
+            set('d', 'fail', 'Not reachable — same cause as B.');
+            return;
+          }
+          if (response.status >= 500) {
+            set('d', 'fail',
+              'The app errored. Almost always <code>DATABASE_URL</code>: unset, or pointed at the direct ' +
+              'Postgres port instead of the Supabase pooler on 6543. This is configuration, not architecture.');
+            return;
+          }
+          var data;
+          try { data = JSON.parse(text); } catch (e) {
+            set('d', 'fail', 'The response was not JSON.');
+            return;
+          }
+          if (data.signedIn === false) {
+            set('d', 'fail', 'Reached the app, but as an anonymous visitor — see C.');
+            return;
+          }
+          if (Object.prototype.hasOwnProperty.call(data, 'wigs')) {
+            set('d', 'pass',
+              'The app queried Supabase and returned a closet: ' + data.wigs.length + ' wig(s), ' +
+              (data.membership ? 'membership <code>' + data.membership.tier + '</code>' : 'no membership yet') +
+              '. The whole chain works.');
+            return;
+          }
+          set('d', 'fail', 'Reached the app but the response was not the closet shape.');
+        });
+      })
+      .catch(function (error) {
+        record('GET ' + base + '/closet → network error', String(error));
+        set('d', 'fail', 'The request never completed: <code>' + String(error) + '</code>');
+      });
+  })();
+</script>
+
+{% schema %}
+{
+  "name": "TC — Phase 0 probe",
+  "tag": "section",
+  "settings": [
+    {
+      "type": "text",
+      "id": "proxy_base",
+      "label": "App proxy base path",
+      "default": "/apps/spa",
+      "info": "Must match the prefix and subpath in shopify.app.toml. Default is /apps/spa."
+    }
+  ],
+  "presets": [{ "name": "TC — Phase 0 probe", "category": "TheTCollection" }]
+}
+{% endschema %}

@@ -2217,3 +2217,96 @@ body:has(.customer) {
   .tc-section .tc-tiers { grid-template-columns: 1fr; gap: 18px; }
   .tc-section .tc-tier { padding: 32px 24px; }
 }
+
+/* ============================================================
+   PHASE 0 PROBE — temporary diagnostic, delete with the section
+   ============================================================ */
+.tc-section.tc-probe-wrap { padding: clamp(48px, 6vw, 90px) 0; }
+.tc-section .tc-probe-flag {
+  display: inline-block;
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  font-weight: 500;
+  color: #8a5a00;
+  background: #fff3d6;
+  border: 1px dashed #d9a520;
+  border-radius: 999px;
+  padding: 8px 16px;
+  margin-bottom: 26px;
+}
+.tc-section .tc-probe-lede {
+  max-width: 62ch;
+  margin: 18px 0 40px;
+  color: var(--tc-mute);
+  font-size: 16px;
+  line-height: 1.6;
+}
+.tc-section .tc-probe-row {
+  display: grid;
+  grid-template-columns: 48px 1fr;
+  gap: 20px;
+  padding: 26px 0;
+  border-top: 1px solid var(--tc-line);
+}
+.tc-section .tc-probe-row__id {
+  font-family: var(--tc-serif);
+  font-size: 26px;
+  line-height: 1;
+  color: var(--tc-lavender-deep);
+}
+.tc-section .tc-probe-row__name {
+  font-family: var(--tc-serif);
+  font-size: 21px;
+  line-height: 1.2;
+  margin-bottom: 12px;
+}
+.tc-section .tc-probe-badge {
+  display: inline-block;
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  font-weight: 600;
+  border-radius: 999px;
+  padding: 5px 12px;
+  margin-bottom: 12px;
+}
+.tc-section .tc-probe-badge--pass { background: #d8f3e0; color: #14663a; }
+.tc-section .tc-probe-badge--fail { background: #ffe0e0; color: #9b1c1c; }
+.tc-section .tc-probe-badge--wait { background: var(--tc-lavender-mist); color: var(--tc-lavender-ink); }
+.tc-section .tc-probe-detail {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--tc-mute);
+  max-width: 70ch;
+}
+.tc-section .tc-probe-detail code,
+.tc-section .tc-probe-raw pre {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 13px;
+  background: rgba(14, 27, 77, 0.06);
+  border-radius: 4px;
+  padding: 1px 5px;
+}
+.tc-section .tc-probe-raw { margin-top: 34px; }
+.tc-section .tc-probe-raw summary {
+  cursor: pointer;
+  font-size: 12px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--tc-lavender-deep);
+}
+.tc-section .tc-probe-raw pre {
+  margin-top: 14px;
+  padding: 16px;
+  overflow-x: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+  line-height: 1.5;
+}
+@media (max-width: 760px) {
+  .tc-section .tc-probe-row { grid-template-columns: 32px 1fr; gap: 12px; }
+  .tc-section .tc-probe-row__id { font-size: 20px; }
+  .tc-section .tc-probe-row__name { font-size: 18px; }
+}
