@@ -16,6 +16,11 @@ export class ProxyAuthError extends Error {
   readonly status = 401;
 }
 
+/** The app is misconfigured — distinct from a bad request. */
+export class ProxyConfigError extends Error {
+  readonly status = 500;
+}
+
 export function json(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {
     status,
@@ -30,8 +35,24 @@ export function json(body: unknown, status = 200): Response {
 
 function appSecret(): string {
   const secret = process.env.SHOPIFY_API_SECRET;
-  if (!secret) throw new Error('SHOPIFY_API_SECRET is not set — proxy requests cannot be verified');
+  if (!secret) {
+    throw new ProxyConfigError(
+      'SHOPIFY_API_SECRET is not set, so proxy signatures cannot be verified',
+    );
+  }
   return secret;
+}
+
+/**
+ * Whether to put error detail in the response body.
+ *
+ * Off by default: these endpoints are reachable from any storefront visitor,
+ * and internal error text is not something to hand out. On in development,
+ * where an opaque "error in the third-party application" page costs more than
+ * the disclosure does.
+ */
+function includeErrorDetail(): boolean {
+  return process.env.WIG_SPA_DEBUG_ERRORS === 'true' || process.env.NODE_ENV === 'development';
 }
 
 /**
@@ -54,15 +75,30 @@ export async function withProxyAuth(
   request: Request,
   handler: (customer: ProxyCustomer) => Promise<Response>,
 ): Promise<Response> {
-  let customer: ProxyCustomer | null;
   try {
-    customer = authenticateProxy(request);
+    const customer = authenticateProxy(request);
+
+    if (!customer) return json({ signedIn: false });
+
+    return await handler(customer);
   } catch (error) {
-    if (error instanceof ProxyAuthError) return json({ error: 'invalid_signature' }, 401);
-    throw error;
+    if (error instanceof ProxyAuthError) {
+      return json({ error: 'invalid_signature' }, 401);
+    }
+
+    // Anything else is ours, not the caller's. Shopify renders a bare "error
+    // in the third-party application" page for an uncaught throw, which tells
+    // whoever is debugging nothing at all — so answer with JSON that names the
+    // problem, and log the full error for the terminal.
+    const detail = error instanceof Error ? error.message : String(error);
+    console.error('[app proxy] request failed:', error);
+
+    return json(
+      {
+        error: error instanceof ProxyConfigError ? 'app_misconfigured' : 'server_error',
+        ...(includeErrorDetail() ? { detail } : {}),
+      },
+      500,
+    );
   }
-
-  if (!customer) return json({ signedIn: false });
-
-  return handler(customer);
 }

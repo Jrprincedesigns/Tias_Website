@@ -240,3 +240,46 @@ test('whoami rejects a forged signature', { skip }, async () => {
   const response = await whoamiLoader({ request, params: {}, context: {} });
   assert.equal(response.status, 401);
 });
+
+test('a missing app secret answers with a named error, not an opaque 500', { skip }, async () => {
+  // Shopify renders "There was an error in the third-party application" for an
+  // uncaught throw, which tells a debugger nothing. This must name itself.
+  const saved = process.env.SHOPIFY_API_SECRET;
+  const savedDebug = process.env.WIG_SPA_DEBUG_ERRORS;
+  delete process.env.SHOPIFY_API_SECRET;
+  process.env.WIG_SPA_DEBUG_ERRORS = 'true';
+  try {
+    const request = new Request('https://app.example.com/whoami?shop=s&signature=whatever');
+    const response = await whoamiLoader({ request, params: {}, context: {} });
+    assert.equal(response.status, 500);
+
+    const body = await response.json();
+    assert.equal(body.error, 'app_misconfigured');
+    assert.match(body.detail, /SHOPIFY_API_SECRET/);
+  } finally {
+    if (saved) process.env.SHOPIFY_API_SECRET = saved;
+    if (savedDebug === undefined) delete process.env.WIG_SPA_DEBUG_ERRORS;
+    else process.env.WIG_SPA_DEBUG_ERRORS = savedDebug;
+  }
+});
+
+test('error detail is withheld unless debugging is switched on', { skip }, async () => {
+  const saved = process.env.SHOPIFY_API_SECRET;
+  const savedDebug = process.env.WIG_SPA_DEBUG_ERRORS;
+  const savedNodeEnv = process.env.NODE_ENV;
+  delete process.env.SHOPIFY_API_SECRET;
+  delete process.env.WIG_SPA_DEBUG_ERRORS;
+  process.env.NODE_ENV = 'production';
+  try {
+    const request = new Request('https://app.example.com/whoami?shop=s&signature=whatever');
+    const response = await whoamiLoader({ request, params: {}, context: {} });
+    const body = await response.json();
+    assert.equal(body.error, 'app_misconfigured');
+    assert.equal(body.detail, undefined, 'internals are not handed to storefront visitors');
+  } finally {
+    if (saved) process.env.SHOPIFY_API_SECRET = saved;
+    if (savedDebug !== undefined) process.env.WIG_SPA_DEBUG_ERRORS = savedDebug;
+    if (savedNodeEnv === undefined) delete process.env.NODE_ENV;
+    else process.env.NODE_ENV = savedNodeEnv;
+  }
+});
