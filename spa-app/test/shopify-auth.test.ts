@@ -5,18 +5,23 @@ import {
   verifyProxySignature,
   customerFromProxyRequest,
   verifyWebhookHmac,
-} from '../app/lib/shopify-auth.js';
+} from '../app/lib/shopify-auth.ts';
 
 const SECRET = 'shpss_test_secret';
 
 /** Build a correctly-signed proxy query the way Shopify does. */
-function signedQuery(params) {
+function signedQuery(params: Record<string, string | string[]>): URLSearchParams {
   const message = Object.keys(params)
     .sort()
-    .map((k) => `${k}=${Array.isArray(params[k]) ? params[k].join(',') : params[k]}`)
+    .map((k) => {
+      const value = params[k]!;
+      return `${k}=${Array.isArray(value) ? value.join(',') : value}`;
+    })
     .join('');
   const signature = crypto.createHmac('sha256', SECRET).update(message, 'utf8').digest('hex');
-  const search = new URLSearchParams(params);
+  const search = new URLSearchParams(
+    Object.entries(params).map(([k, v]) => [k, Array.isArray(v) ? v.join(',') : v] as [string, string]),
+  );
   search.set('signature', signature);
   return search;
 }
@@ -43,13 +48,27 @@ test('rejects a signature made with the wrong secret', () => {
 
 test('rejects a truncated signature without throwing', () => {
   const q = signedQuery({ shop: 'x' });
-  q.set('signature', q.get('signature').slice(0, 10));
+  q.set('signature', q.get('signature')!.slice(0, 10));
   assert.equal(verifyProxySignature(q, SECRET), false);
 });
 
-test('handles repeated parameters the way Shopify joins them', () => {
+test('handles a comma-joined multi-value parameter', () => {
   const q = signedQuery({ ids: ['1', '2', '3'], shop: 'x' });
   assert.equal(verifyProxySignature(q, SECRET), true);
+});
+
+test('canonicalises genuinely repeated keys, not just comma-joined ones', () => {
+  // ?ids=1&ids=2 — two separate entries under one key, which is what Shopify
+  // actually sends. The canonical message comma-joins them, and keys sort
+  // before they are concatenated: ids before shop.
+  const search = new URLSearchParams();
+  search.append('ids', '1');
+  search.append('ids', '2');
+  search.append('shop', 'theetcollection.myshopify.com');
+  const message = 'ids=1,2shop=theetcollection.myshopify.com';
+  search.set('signature', crypto.createHmac('sha256', SECRET).update(message, 'utf8').digest('hex'));
+
+  assert.equal(verifyProxySignature(search, SECRET), true);
 });
 
 test('returns the logged-in customer as a GID', () => {

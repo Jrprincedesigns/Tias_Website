@@ -18,22 +18,24 @@ import crypto from 'node:crypto';
  *                be read before any JSON parsing.
  */
 
+export interface ProxyCustomer {
+  /** Full GID, e.g. gid://shopify/Customer/7401 — the form the Admin API uses. */
+  shopifyCustomerId: string;
+}
+
 /** Constant-time compare that never throws on length mismatch. */
-function safeEqual(a, b) {
+function safeEqual(a: string, b: string): boolean {
   const bufA = Buffer.from(a, 'utf8');
   const bufB = Buffer.from(b, 'utf8');
   if (bufA.length !== bufB.length) return false;
   return crypto.timingSafeEqual(bufA, bufB);
 }
 
-/**
- * Verify an app-proxy request.
- *
- * @param {URLSearchParams|Record<string,string|string[]>} query
- * @param {string} secret  the app's client secret
- * @returns {boolean}
- */
-export function verifyProxySignature(query, secret) {
+/** Verify an app-proxy request. `secret` is the app's client secret. */
+export function verifyProxySignature(
+  query: URLSearchParams | Record<string, string>,
+  secret: string,
+): boolean {
   const params = query instanceof URLSearchParams ? query : new URLSearchParams(query);
 
   const signature = params.get('signature');
@@ -42,16 +44,17 @@ export function verifyProxySignature(query, secret) {
   // Shopify sorts the remaining parameters and joins them without separators.
   // Repeated keys are comma-joined, which is why we collect values per key
   // rather than using the first one.
-  const grouped = new Map();
+  const grouped = new Map<string, string[]>();
   for (const [key, value] of params.entries()) {
     if (key === 'signature') continue;
-    if (!grouped.has(key)) grouped.set(key, []);
-    grouped.get(key).push(value);
+    const existing = grouped.get(key);
+    if (existing) existing.push(value);
+    else grouped.set(key, [value]);
   }
 
   const message = [...grouped.keys()]
     .sort()
-    .map((key) => `${key}=${grouped.get(key).join(',')}`)
+    .map((key) => `${key}=${grouped.get(key)!.join(',')}`)
     .join('');
 
   const digest = crypto.createHmac('sha256', secret).update(message, 'utf8').digest('hex');
@@ -65,7 +68,7 @@ export function verifyProxySignature(query, secret) {
  * normal state, not an error. Throws only when the signature itself fails,
  * because that means someone is forging requests.
  */
-export function customerFromProxyRequest(url, secret) {
+export function customerFromProxyRequest(url: string, secret: string): ProxyCustomer | null {
   const { searchParams } = new URL(url);
 
   if (!verifyProxySignature(searchParams, secret)) {
@@ -82,7 +85,11 @@ export function customerFromProxyRequest(url, secret) {
  * Verify a webhook. `rawBody` must be the unparsed body — a re-serialised
  * object will not produce the same digest.
  */
-export function verifyWebhookHmac(rawBody, hmacHeader, secret) {
+export function verifyWebhookHmac(
+  rawBody: string,
+  hmacHeader: string | null | undefined,
+  secret: string,
+): boolean {
   if (!hmacHeader) return false;
   const digest = crypto.createHmac('sha256', secret).update(rawBody, 'utf8').digest('base64');
   return safeEqual(digest, hmacHeader);

@@ -42,11 +42,16 @@ Nothing here is store-specific, but four things must exist before it runs.
 ## Running the checks
 
 ```
-npm test
+npm test        # 48 unit tests
+npm run typecheck
 ```
 
 Covers app-proxy and webhook signature verification (including impersonation
-and forged-signature attempts) and the service status machine.
+and forged-signature attempts), the service status machine, and the membership
+allowance rules.
+
+Source is TypeScript run directly by Node's type stripping — no build step for
+tests. `tsc` runs in `--noEmit` mode purely as a checker.
 
 ## Two things that will bite
 

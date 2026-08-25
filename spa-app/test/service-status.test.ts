@@ -2,22 +2,25 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   SERVICE_STATUSES,
+  type ServiceStatus,
   canTransition,
   nextStatuses,
   assertTransition,
   consumesAllowanceOn,
   IN_STUDIO,
   TERMINAL,
-} from '../app/lib/service-status.js';
+} from '../app/lib/service-status.ts';
 
 test('the happy path walks end to end', () => {
-  const path = [
+  const path: ServiceStatus[] = [
     'requested', 'awaiting_shipment', 'in_transit_to_studio', 'received',
     'inspection', 'approved', 'in_service', 'quality_check', 'ready_to_ship',
     'return_shipment', 'delivered', 'completed',
   ];
   for (let i = 0; i < path.length - 1; i += 1) {
-    assert.ok(canTransition(path[i], path[i + 1]), `${path[i]} -> ${path[i + 1]} should be allowed`);
+    const from = path[i]!;
+    const to = path[i + 1]!;
+    assert.ok(canTransition(from, to), `${from} -> ${to} should be allowed`);
   }
 });
 
@@ -69,10 +72,10 @@ test('an unknown status is rejected', () => {
 });
 
 test('every status is reachable from requested', () => {
-  const seen = new Set(['requested']);
-  const queue = ['requested'];
+  const seen = new Set<ServiceStatus>(['requested']);
+  const queue: ServiceStatus[] = ['requested'];
   while (queue.length) {
-    for (const next of nextStatuses(queue.pop())) {
+    for (const next of nextStatuses(queue.pop()!)) {
       if (!seen.has(next)) { seen.add(next); queue.push(next); }
     }
   }
@@ -82,10 +85,10 @@ test('every status is reachable from requested', () => {
 
 test('every non-terminal status can still reach completed or cancelled', () => {
   const stuck = SERVICE_STATUSES.filter((start) => {
-    const seen = new Set([start]);
-    const queue = [start];
+    const seen = new Set<ServiceStatus>([start]);
+    const queue: ServiceStatus[] = [start];
     while (queue.length) {
-      for (const next of nextStatuses(queue.pop())) {
+      for (const next of nextStatuses(queue.pop()!)) {
         if (TERMINAL.has(next)) return false;
         if (!seen.has(next)) { seen.add(next); queue.push(next); }
       }
