@@ -2310,3 +2310,194 @@ body:has(.customer) {
   .tc-section .tc-probe-row__id { font-size: 20px; }
   .tc-section .tc-probe-row__name { font-size: 18px; }
 }
+
+/* ============================================================
+   WIG CLOSET
+   ============================================================ */
+.tc-section.tc-closet-wrap { padding: clamp(60px, 8vw, 110px) 0; }
+
+.tc-section .tc-closet-gate { max-width: 52ch; }
+.tc-section .tc-closet-gate__body {
+  margin: 18px 0 28px;
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--tc-mute);
+}
+
+.tc-section .tc-closet-heading {
+  font-family: var(--tc-serif);
+  font-size: clamp(22px, 2.4vw, 28px);
+  line-height: 1.1;
+  letter-spacing: -0.015em;
+  font-weight: 400;
+  margin: 44px 0 18px;
+}
+
+.tc-section .tc-closet-card {
+  background: var(--tc-paper);
+  border: 1px solid var(--tc-line);
+  border-radius: var(--tc-radius-lg);
+  padding: 26px 24px;
+}
+.tc-section .tc-closet-card + .tc-closet-card { margin-top: 14px; }
+.tc-section .tc-closet-card__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+.tc-section .tc-closet-card__title {
+  font-family: var(--tc-serif);
+  font-size: 21px;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+}
+.tc-section .tc-closet-card__label {
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--tc-mute);
+}
+.tc-section .tc-closet-card__meta {
+  font-size: 14px;
+  color: var(--tc-mute);
+  margin-top: 8px;
+}
+.tc-section .tc-closet-card__body {
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--tc-mute);
+  margin: 10px 0 18px;
+  max-width: 56ch;
+}
+
+.tc-section .tc-closet-membership { background: var(--tc-cream); border-color: var(--tc-lavender-soft); }
+.tc-section .tc-closet-membership__tier {
+  font-family: var(--tc-serif);
+  font-size: clamp(26px, 3vw, 34px);
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  margin: 10px 0 6px;
+}
+.tc-section .tc-closet-membership__count {
+  font-size: 15px;
+  color: var(--tc-lavender-deep);
+  font-weight: 500;
+}
+
+.tc-section .tc-closet-chip {
+  display: inline-block;
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  font-weight: 500;
+  color: var(--tc-lavender-deep);
+  background: var(--tc-lavender-mist);
+  border-radius: 999px;
+  padding: 5px 12px;
+  margin-top: 10px;
+}
+
+.tc-section .tc-closet-flag {
+  margin: 12px 0;
+  padding: 12px 16px;
+  border-radius: 10px;
+  background: #fff3d6;
+  color: #8a5a00;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.tc-section .tc-closet-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 14px;
+}
+.tc-section .tc-closet-grid .tc-closet-card + .tc-closet-card { margin-top: 0; }
+.tc-section .tc-closet-cta { margin-top: 24px; }
+
+/* Status ladder */
+.tc-section .tc-closet-timeline {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0;
+}
+.tc-section .tc-closet-step {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-right: 20px;
+  position: relative;
+}
+.tc-section .tc-closet-step__dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 1px solid var(--tc-line);
+  background: var(--tc-paper);
+  flex-shrink: 0;
+}
+.tc-section .tc-closet-step__label {
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  color: var(--tc-mute);
+  white-space: nowrap;
+}
+.tc-section .tc-closet-step--done .tc-closet-step__dot {
+  background: var(--tc-lavender-soft);
+  border-color: var(--tc-lavender-soft);
+}
+.tc-section .tc-closet-step--current .tc-closet-step__dot {
+  background: var(--tc-lavender-deep);
+  border-color: var(--tc-lavender-deep);
+  box-shadow: 0 0 0 4px var(--tc-lavender-mist);
+}
+.tc-section .tc-closet-step--current .tc-closet-step__label {
+  color: var(--tc-lavender-deep);
+  font-weight: 500;
+}
+
+/* Loading + failure */
+.tc-section .tc-closet-skeleton {
+  height: 96px;
+  border-radius: var(--tc-radius-lg);
+  background: linear-gradient(90deg, var(--tc-paper) 25%, var(--tc-cream) 50%, var(--tc-paper) 75%);
+  background-size: 200% 100%;
+  animation: tc-closet-shimmer 1.4s ease-in-out infinite;
+  margin-bottom: 14px;
+}
+.tc-section .tc-closet-skeleton--short { height: 60px; }
+@keyframes tc-closet-shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tc-section .tc-closet-skeleton { animation: none; }
+}
+
+.tc-section .tc-closet-notice {
+  border: 1px solid var(--tc-line);
+  border-radius: var(--tc-radius-lg);
+  padding: 26px 24px;
+  background: var(--tc-paper);
+}
+.tc-section .tc-closet-notice h2 {
+  font-family: var(--tc-serif);
+  font-size: 21px;
+  font-weight: 400;
+  margin: 0 0 10px;
+}
+.tc-section .tc-closet-notice p {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--tc-mute);
+  max-width: 60ch;
+}
+
+@media (max-width: 760px) {
+  .tc-section .tc-closet-card { padding: 22px 18px; }
+  .tc-section .tc-closet-grid { grid-template-columns: 1fr; }
+  .tc-section .tc-closet-step { padding-right: 14px; }
+}
