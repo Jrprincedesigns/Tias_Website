@@ -56,7 +56,11 @@
           }
         }
       },
-      "block_order": ["t1", "t2", "t3"]
+      "block_order": [
+        "t1",
+        "t2",
+        "t3"
+      ]
     },
     "process": {
       "type": "tc-process",
@@ -68,13 +72,54 @@
         "cta_link": "shopify://pages/wig-spa"
       },
       "blocks": {
-        "s1": { "type": "step", "settings": { "number": "01", "heading": "Join", "body": "Choose your membership. Your included services are available from day one of your membership year." } },
-        "s2": { "type": "step", "settings": { "number": "02", "heading": "Add your wigs", "body": "Register each unit — brand, length, texture, cap. Every service is recorded against the wig it was done to." } },
-        "s3": { "type": "step", "settings": { "number": "03", "heading": "Send it in", "body": "Tell us what it needs, send photos, and ship it to the studio. We confirm the moment it arrives." } },
-        "s4": { "type": "step", "settings": { "number": "04", "heading": "We inspect first", "body": "Nothing happens without your approval. If a unit needs work beyond what you asked for, we show you the price before we begin." } },
-        "s5": { "type": "step", "settings": { "number": "05", "heading": "Restored and returned", "body": "Serviced, quality-checked, and shipped home with tracking — and added to your unit's service history." } }
+        "s1": {
+          "type": "step",
+          "settings": {
+            "number": "01",
+            "heading": "Join",
+            "body": "Choose your membership. Your included services are available from day one of your membership year."
+          }
+        },
+        "s2": {
+          "type": "step",
+          "settings": {
+            "number": "02",
+            "heading": "Add your wigs",
+            "body": "Register each unit — brand, length, texture, cap. Every service is recorded against the wig it was done to."
+          }
+        },
+        "s3": {
+          "type": "step",
+          "settings": {
+            "number": "03",
+            "heading": "Send it in",
+            "body": "Tell us what it needs, send photos, and ship it to the studio. We confirm the moment it arrives."
+          }
+        },
+        "s4": {
+          "type": "step",
+          "settings": {
+            "number": "04",
+            "heading": "We inspect first",
+            "body": "Nothing happens without your approval. If a unit needs work beyond what you asked for, we show you the price before we begin."
+          }
+        },
+        "s5": {
+          "type": "step",
+          "settings": {
+            "number": "05",
+            "heading": "Restored and returned",
+            "body": "Serviced, quality-checked, and shipped home with tracking — and added to your unit's service history."
+          }
+        }
       },
-      "block_order": ["s1", "s2", "s3", "s4", "s5"]
+      "block_order": [
+        "s1",
+        "s2",
+        "s3",
+        "s4",
+        "s5"
+      ]
     },
     "pillars": {
       "type": "tc-pillars",
@@ -83,11 +128,36 @@
         "title": "<p>Care that <em>remembers</em>.</p>"
       },
       "blocks": {
-        "p1": { "type": "pillar", "settings": { "number": "01", "heading": "A record for every unit", "body": "What was done, when, and by whom. No more guessing how long ago a unit was last serviced." } },
-        "p2": { "type": "pillar", "settings": { "number": "02", "heading": "Nothing without approval", "body": "We document every unit on arrival and quote any additional work before we touch it." } },
-        "p3": { "type": "pillar", "settings": { "number": "03", "heading": "First in the queue", "body": "Member units are scheduled ahead of one-off bookings, especially in the busy weeks." } }
+        "p1": {
+          "type": "pillar",
+          "settings": {
+            "number": "01",
+            "heading": "A record for every unit",
+            "body": "<p>What was done, when, and by whom. No more guessing how long ago a unit was last serviced.</p>"
+          }
+        },
+        "p2": {
+          "type": "pillar",
+          "settings": {
+            "number": "02",
+            "heading": "Nothing without approval",
+            "body": "<p>We document every unit on arrival and quote any additional work before we touch it.</p>"
+          }
+        },
+        "p3": {
+          "type": "pillar",
+          "settings": {
+            "number": "03",
+            "heading": "First in the queue",
+            "body": "<p>Member units are scheduled ahead of one-off bookings, especially in the busy weeks.</p>"
+          }
+        }
       },
-      "block_order": ["p1", "p2", "p3"]
+      "block_order": [
+        "p1",
+        "p2",
+        "p3"
+      ]
     },
     "faq": {
       "type": "tc-faq",
@@ -97,14 +167,57 @@
         "intro": "The details worth knowing up front."
       },
       "blocks": {
-        "q1": { "type": "qa", "settings": { "question": "What if I don't send a wig every month?", "answer": "You aren't expected to. Membership includes a set number of services per membership year, not per month — use them whenever your units need them." } },
-        "q2": { "type": "qa", "settings": { "question": "Do unused services roll over?", "answer": "Rollover terms are being finalised and will be stated here before membership opens." } },
-        "q3": { "type": "qa", "settings": { "question": "Can I send in wigs that aren't from The T Collection?", "answer": "Yes. Outside units are welcome, though some services are priced differently because their construction and history are unknown to us." } },
-        "q4": { "type": "qa", "settings": { "question": "Who pays for shipping?", "answer": "Full mail-in shipping terms — including packaging, tracking, insurance and declared value — are set out in the Wig Spa service terms." } },
-        "q5": { "type": "qa", "settings": { "question": "What happens if my unit needs more work than I asked for?", "answer": "We stop and tell you. You'll see the recommendation and the price, and nothing proceeds until you approve it. You can always ask for the unit back instead." } },
-        "q6": { "type": "qa", "settings": { "question": "Can I cancel?", "answer": "Yes, from your account. Any minimum term will be stated clearly at checkout before you join." } }
+        "q1": {
+          "type": "qa",
+          "settings": {
+            "question": "What if I don't send a wig every month?",
+            "answer": "You aren't expected to. Membership includes a set number of services per membership year, not per month — use them whenever your units need them."
+          }
+        },
+        "q2": {
+          "type": "qa",
+          "settings": {
+            "question": "Do unused services roll over?",
+            "answer": "Rollover terms are being finalised and will be stated here before membership opens."
+          }
+        },
+        "q3": {
+          "type": "qa",
+          "settings": {
+            "question": "Can I send in wigs that aren't from The T Collection?",
+            "answer": "Yes. Outside units are welcome, though some services are priced differently because their construction and history are unknown to us."
+          }
+        },
+        "q4": {
+          "type": "qa",
+          "settings": {
+            "question": "Who pays for shipping?",
+            "answer": "Full mail-in shipping terms — including packaging, tracking, insurance and declared value — are set out in the Wig Spa service terms."
+          }
+        },
+        "q5": {
+          "type": "qa",
+          "settings": {
+            "question": "What happens if my unit needs more work than I asked for?",
+            "answer": "We stop and tell you. You'll see the recommendation and the price, and nothing proceeds until you approve it. You can always ask for the unit back instead."
+          }
+        },
+        "q6": {
+          "type": "qa",
+          "settings": {
+            "question": "Can I cancel?",
+            "answer": "Yes, from your account. Any minimum term will be stated clearly at checkout before you join."
+          }
+        }
       },
-      "block_order": ["q1", "q2", "q3", "q4", "q5", "q6"]
+      "block_order": [
+        "q1",
+        "q2",
+        "q3",
+        "q4",
+        "q5",
+        "q6"
+      ]
     },
     "cta": {
       "type": "tc-cta",
@@ -121,5 +234,12 @@
       }
     }
   },
-  "order": ["header", "tiers", "process", "pillars", "faq", "cta"]
+  "order": [
+    "header",
+    "tiers",
+    "process",
+    "pillars",
+    "faq",
+    "cta"
+  ]
 }

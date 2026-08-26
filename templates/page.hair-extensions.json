@@ -16,7 +16,7 @@
           "settings": {
             "number": "01",
             "heading": "Single-donor sourced",
-            "body": "Every bundle traces back to one donor. Cuticles aligned, never blended with synthetic or commodity hair."
+            "body": "<p>Every bundle traces back to one donor. Cuticles aligned, never blended with synthetic or commodity hair.</p>"
           }
         },
         "p2": {
@@ -24,7 +24,7 @@
           "settings": {
             "number": "02",
             "heading": "Hand-wefted in-studio",
-            "body": "No machine wefts. Each strand sewn by hand for a flatter base, lighter wear, and longer life."
+            "body": "<p>No machine wefts. Each strand sewn by hand for a flatter base, lighter wear, and longer life.</p>"
           }
         },
         "p3": {
@@ -32,7 +32,7 @@
           "settings": {
             "number": "03",
             "heading": "Shade-matched by eye",
-            "body": "Twenty-four custom-blended shades, color-matched in our studio. Take the quiz or send a photo \u2014 we'll never guess."
+            "body": "<p>Twenty-four custom-blended shades, color-matched in our studio. Take the quiz or send a photo — we'll never guess.</p>"
           }
         }
       },

@@ -389,6 +389,10 @@
   color: var(--tc-mute);
   margin: 0;
 }
+/* The body is a richtext field, so its value arrives wrapped in <p>. Strip the
+   browser's default margins but keep spacing between multiple paragraphs. */
+.tc-section .tc-pillar__p p { margin: 0 0 1em; }
+.tc-section .tc-pillar__p p:last-child { margin-bottom: 0; }
 @media (max-width: 760px) {
   .tc-section .tc-pillars { grid-template-columns: 1fr; }
   .tc-section .tc-pillar { border-right: 0; border-bottom: 1px solid var(--tc-line); }
