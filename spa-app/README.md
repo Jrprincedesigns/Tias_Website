@@ -35,9 +35,24 @@ Nothing here is store-specific, but four things must exist before it runs.
    `logged_in_customer_id`. Do not add a path suffix to the proxy URL —
    `shopify app dev` overwrites it with the bare tunnel host each run.
 
-3. **Create the Supabase project** and apply `supabase/migrations`. RLS is on
-   with no permissive policies — reads and writes go through the service role
-   from this app only, so a leaked anon key exposes nothing.
+3. **Create the Supabase project** and apply `supabase/migrations` in order. RLS
+   is on with no permissive policies — reads and writes go through the service
+   role from this app only, so a leaked anon key exposes nothing.
+
+   Apply them by pasting each file into the SQL editor, or with the CLI:
+
+   ```
+   brew install supabase/tap/supabase
+   supabase login
+   supabase link --project-ref <your-project-ref>
+   supabase db push
+   ```
+
+   `0002` creates the private `wig-photos` bucket. The Supabase CLI has no
+   bucket-create command, but buckets are just rows in `storage.buckets`, so it
+   lives in a migration and reproduces on a fresh project. The file is guarded
+   on the storage schema existing, so it is a no-op against a plain PostgreSQL
+   instance — which is what the integration tests run against.
 
 4. **Set the environment** (see `.env.example`).
 
