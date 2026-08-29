@@ -394,3 +394,159 @@ export async function listOpenWorkOrders(db: Queryable): Promise<ServiceRequestS
 export function balanceFromEntries(entries: readonly LedgerEntry[]): number {
   return balanceOf(entries);
 }
+
+export interface WorkOrderEvent {
+  id: string;
+  kind: string;
+  fromStatus: ServiceStatus | null;
+  toStatus: ServiceStatus | null;
+  actor: string;
+  note: string | null;
+  createdAt: Date;
+}
+
+export interface WorkOrder {
+  id: string;
+  status: ServiceStatus;
+  serviceType: string;
+  coveredByAllowance: boolean;
+  intake: Record<string, unknown>;
+  customerNotes: string | null;
+  staffNotes: string | null;
+  submittedAt: Date;
+  receivedAt: Date | null;
+  completedAt: Date | null;
+  wig: {
+    id: string;
+    nickname: string;
+    isTCollection: boolean;
+    brand: string | null;
+    lengthInches: number | null;
+    texture: string | null;
+    color: string | null;
+    laceType: string | null;
+    capSize: string | null;
+  };
+  member: {
+    id: string;
+    shopifyCustomerId: string;
+    email: string | null;
+    firstName: string | null;
+    lastName: string | null;
+  };
+  membership: {
+    id: string;
+    tier: string;
+    status: MembershipWindow['status'];
+    allowanceRemaining: number;
+  } | null;
+}
+
+/** One work order with everything the detail screen shows, in one query each. */
+export async function getWorkOrder(db: Queryable, id: string): Promise<WorkOrder | null> {
+  const { rows } = await db.query(
+    `select sr.id, sr.status, sr.service_type, sr.covered_by_allowance, sr.intake,
+            sr.customer_notes, sr.staff_notes, sr.submitted_at, sr.received_at, sr.completed_at,
+            w.id as wig_id, w.nickname, w.is_t_collection, w.brand, w.length_inches,
+            w.texture, w.color, w.lace_type, w.cap_size,
+            m.id as member_id, m.shopify_customer_id, m.email, m.first_name, m.last_name,
+            ms.id as membership_id, ms.tier, ms.status as membership_status
+       from service_requests sr
+       join wigs w    on w.id = sr.wig_id
+       join members m on m.id = sr.member_id
+       left join memberships ms on ms.id = sr.membership_id
+      where sr.id = $1`,
+    [id],
+  );
+  const row = rows[0];
+  if (!row) return null;
+
+  // Read the balance separately rather than joining the view — a member with no
+  // membership must still produce a work order, and an inner join would drop it.
+  const allowanceRemaining = row.membership_id
+    ? await getAllowanceBalance(db, row.membership_id)
+    : 0;
+
+  return {
+    id: row.id,
+    status: row.status,
+    serviceType: row.service_type,
+    coveredByAllowance: row.covered_by_allowance,
+    intake: row.intake ?? {},
+    customerNotes: row.customer_notes,
+    staffNotes: row.staff_notes,
+    submittedAt: new Date(row.submitted_at),
+    receivedAt: row.received_at ? new Date(row.received_at) : null,
+    completedAt: row.completed_at ? new Date(row.completed_at) : null,
+    wig: {
+      id: row.wig_id,
+      nickname: row.nickname,
+      isTCollection: row.is_t_collection,
+      brand: row.brand,
+      lengthInches: row.length_inches,
+      texture: row.texture,
+      color: row.color,
+      laceType: row.lace_type,
+      capSize: row.cap_size,
+    },
+    member: {
+      id: row.member_id,
+      shopifyCustomerId: row.shopify_customer_id,
+      email: row.email,
+      firstName: row.first_name,
+      lastName: row.last_name,
+    },
+    membership: row.membership_id
+      ? {
+          id: row.membership_id,
+          tier: row.tier,
+          status: row.membership_status,
+          allowanceRemaining,
+        }
+      : null,
+  };
+}
+
+/** The audit trail, newest first — who moved what, when. */
+export async function listEvents(db: Queryable, serviceRequestId: string): Promise<WorkOrderEvent[]> {
+  const { rows } = await db.query(
+    `select id, kind, from_status, to_status, actor, payload, created_at
+       from events
+      where service_request_id = $1
+      order by created_at desc`,
+    [serviceRequestId],
+  );
+  return rows.map((row) => ({
+    id: row.id,
+    kind: row.kind,
+    fromStatus: row.from_status,
+    toStatus: row.to_status,
+    actor: row.actor,
+    note: row.payload?.note ?? null,
+    createdAt: new Date(row.created_at),
+  }));
+}
+
+/**
+ * Staff notes are working notes, so they are edited in place rather than
+ * appended — but the edit itself is recorded, because "the notes said something
+ * different yesterday" is exactly the kind of thing a dispute turns on.
+ */
+export async function saveStaffNotes(
+  pool: Transactable,
+  input: { serviceRequestId: string; notes: string; actor: string },
+): Promise<void> {
+  await withTransaction(pool, async (tx) => {
+    const { rowCount } = await tx.query(
+      `update service_requests set staff_notes = $2 where id = $1`,
+      [input.serviceRequestId, input.notes],
+    );
+    if (rowCount === 0) throw new Error(`No service request ${input.serviceRequestId}`);
+
+    await tx.query(
+      `insert into events (service_request_id, kind, actor, payload)
+       values ($1, 'staff_notes_edited', $2, $3::jsonb)`,
+      [input.serviceRequestId, input.actor, JSON.stringify({ length: input.notes.length })],
+    );
+  });
+}

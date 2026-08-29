@@ -10,6 +10,9 @@ import {
   advanceStatus,
   getCloset,
   listOpenWorkOrders,
+  getWorkOrder,
+  listEvents,
+  saveStaffNotes,
 } from '../app/lib/db.ts';
 
 /**
@@ -216,4 +219,89 @@ test('membership reads back even when it is not active', { skip }, async () => {
   const membership = await getMembership(pool, member.id);
   assert.equal(membership?.status, 'past_due',
     'so the closet can say "past due" rather than "no membership"');
+});
+
+test('a work order reads back with its wig, member and membership', { skip }, async () => {
+  const { member, membershipId, wigId } = await seedMemberWithMembership({ granted: 3 });
+  const request = await createServiceRequest(pool, {
+    memberId: member.id, wigId, membershipId,
+    serviceType: 'rejuvenation', coveredByAllowance: true,
+    customerNotes: 'lace lifting at the temples',
+    intake: { desiredPart: 'middle', hasBeenColored: false },
+  });
+
+  const order = await getWorkOrder(pool, request.id);
+  assert.ok(order);
+  assert.equal(order.wig.nickname, 'Chocolate Body Wave');
+  assert.equal(order.wig.lengthInches, 26);
+  assert.equal(order.member.shopifyCustomerId, 'gid://shopify/Customer/7401');
+  assert.equal(order.membership?.tier, 'founding');
+  assert.equal(order.membership?.allowanceRemaining, 3);
+  assert.equal(order.customerNotes, 'lace lifting at the temples');
+  assert.deepEqual(order.intake, { desiredPart: 'middle', hasBeenColored: false });
+});
+
+test('a work order without a membership still reads back', { skip }, async () => {
+  // A non-member sending a wig in is a normal, paying customer. An inner join
+  // on memberships would make them vanish from the studio's queue entirely.
+  const member = await findOrCreateMember(pool, { shopifyCustomerId: 'gid://shopify/Customer/999' });
+  const wig = await pool.query(
+    `insert into wigs (member_id, nickname) values ($1, 'Walk-in unit') returning id`,
+    [member.id],
+  );
+  const request = await createServiceRequest(pool, {
+    memberId: member.id, wigId: wig.rows[0].id, membershipId: null,
+    serviceType: 'reconstruction', coveredByAllowance: false,
+  });
+
+  const order = await getWorkOrder(pool, request.id);
+  assert.ok(order);
+  assert.equal(order.membership, null);
+  assert.equal(order.coveredByAllowance, false);
+});
+
+test('an unknown work order is null, not an error', { skip }, async () => {
+  assert.equal(await getWorkOrder(pool, '00000000-0000-0000-0000-000000000000'), null);
+});
+
+test('the event trail records every move, newest first', { skip }, async () => {
+  const { member, membershipId, wigId } = await seedMemberWithMembership({ granted: 2 });
+  const request = await createServiceRequest(pool, {
+    memberId: member.id, wigId, membershipId, serviceType: 'rejuvenation', coveredByAllowance: true,
+  });
+  await advanceStatus(pool, { serviceRequestId: request.id, to: 'awaiting_shipment', actor: 'tia' });
+  await advanceStatus(pool, { serviceRequestId: request.id, to: 'in_transit_to_studio', actor: 'tia', note: 'UPS 1Z999' });
+
+  const events = await listEvents(pool, request.id);
+  assert.equal(events.length, 2);
+  assert.equal(events[0]?.toStatus, 'in_transit_to_studio', 'newest first');
+  assert.equal(events[0]?.note, 'UPS 1Z999');
+  assert.equal(events[1]?.toStatus, 'awaiting_shipment');
+  assert.equal(events[1]?.actor, 'tia');
+});
+
+test('editing staff notes is itself recorded', { skip }, async () => {
+  const { member, membershipId, wigId } = await seedMemberWithMembership({ granted: 1 });
+  const request = await createServiceRequest(pool, {
+    memberId: member.id, wigId, membershipId, serviceType: 'repair', coveredByAllowance: true,
+  });
+
+  await saveStaffNotes(pool, { serviceRequestId: request.id, notes: 'Knots need bleaching', actor: 'tia' });
+  const order = await getWorkOrder(pool, request.id);
+  assert.equal(order?.staffNotes, 'Knots need bleaching');
+
+  const events = await listEvents(pool, request.id);
+  assert.equal(events[0]?.kind, 'staff_notes_edited',
+    'an edit leaves a trace even though the notes themselves are overwritten');
+  assert.equal(events[0]?.actor, 'tia');
+});
+
+test('saving notes on a missing work order fails rather than silently doing nothing', { skip }, async () => {
+  await assert.rejects(
+    () => saveStaffNotes(pool, {
+      serviceRequestId: '00000000-0000-0000-0000-000000000000',
+      notes: 'x', actor: 'tia',
+    }),
+    /No service request/,
+  );
 });
