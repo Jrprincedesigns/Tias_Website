@@ -18,6 +18,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 
   return withProxyAuth(request, async (customer) =>
     json({
+      ok: true,
       signatureValid: true,
       signedIn: true,
       shopifyCustomerId: customer.shopifyCustomerId,

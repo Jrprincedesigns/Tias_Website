@@ -15,6 +15,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) =>
     const closet = await getCloset(pool, customer.shopifyCustomerId);
 
     return json({
+      ok: true,
       signedIn: true,
       membership: closet.membership
         ? {

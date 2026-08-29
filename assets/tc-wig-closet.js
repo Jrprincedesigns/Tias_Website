@@ -213,10 +213,15 @@
         try {
           data = JSON.parse(text);
         } catch (e) {
-          throw new Error('The studio sent back something we could not read.');
+          // Shopify's proxy replaces the body of any non-2xx response with its
+          // own HTML error page, so unreadable text means the app is down or
+          // unreachable rather than that it sent something strange.
+          throw new Error('We could not reach the studio. Please try again shortly.');
         }
-        if (!response.ok) {
-          throw new Error(data && data.error === 'app_misconfigured'
+        // The endpoint always answers 200 and puts the outcome in the body,
+        // precisely so this message survives the trip.
+        if (data.ok === false) {
+          throw new Error(data.error === 'app_misconfigured'
             ? 'The studio service is not configured correctly. We have been notified.'
             : 'The studio service is temporarily unavailable.');
         }

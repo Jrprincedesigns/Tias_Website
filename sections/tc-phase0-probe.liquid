@@ -126,7 +126,7 @@
             return;
           }
 
-          if (response.status === 401 || data.error === 'invalid_signature') {
+          if (data.ok === false && data.error === 'invalid_signature') {
             set('c', 'fail',
               'The signature did not verify. <code>SHOPIFY_API_SECRET</code> in the app’s environment ' +
               'does not match the app Shopify signed with.');
@@ -157,15 +157,18 @@
             set('d', 'fail', 'Not reachable — same cause as B.');
             return;
           }
-          if (response.status >= 500) {
-            set('d', 'fail',
-              'The app errored. Almost always <code>DATABASE_URL</code>: unset, or pointed at the direct ' +
-              'Postgres port instead of the Supabase pooler on 6543. This is configuration, not architecture.');
-            return;
-          }
           var data;
           try { data = JSON.parse(text); } catch (e) {
-            set('d', 'fail', 'The response was not JSON.');
+            set('d', 'fail',
+              'The response was not JSON — Shopify substitutes its own error page when the app ' +
+              'is unreachable, so this usually means the dev server is not running.');
+            return;
+          }
+          if (data.ok === false) {
+            set('d', 'fail',
+              'The app answered but could not serve the closet: <code>' + data.error + '</code>. ' +
+              'Almost always <code>DATABASE_URL</code> — unset, or pointed at the direct Postgres port ' +
+              'instead of the Supabase pooler on 6543. Configuration, not architecture.');
             return;
           }
           if (data.signedIn === false) {

@@ -3,13 +3,23 @@ import { customerFromProxyRequest, type ProxyCustomer } from './shopify-auth.ts'
 /**
  * Shared handling for app-proxy endpoints.
  *
- * Storefront requests arrive here already signed by Shopify. Three outcomes,
- * and they are deliberately different:
+ * Every response leaves here as HTTP 200, with the real outcome carried in the
+ * body. That is not laziness about status codes — Shopify's proxy discards the
+ * body of any non-2xx response and substitutes its own "There was an error in
+ * the third-party application" page. A 500 that carefully explains itself
+ * reaches the customer as a blank wall, and the storefront cannot tell a
+ * misconfigured server from a lost connection.
  *
- *   forged signature  → 401. Someone is fabricating requests.
- *   valid, logged out → 200 with signedIn:false. A normal anonymous visitor,
- *                       not an error; the page renders a sign-in prompt.
- *   valid, signed in  → the handler runs with a customer id Shopify vouched for.
+ * So the transport always succeeds and the payload tells the truth:
+ *
+ *   { ok: true,  ... }                     the handler's data
+ *   { ok: true,  signedIn: false }         a normal anonymous visitor
+ *   { ok: false, error: 'invalid_signature' }
+ *   { ok: false, error: 'app_misconfigured' | 'server_error', detail? }
+ *
+ * `httpStatus` rides along in error bodies so logs and tests can still see
+ * what the status would have been. It is deliberately not called `status` —
+ * that name already means a work order's status elsewhere in these payloads.
  */
 
 export class ProxyAuthError extends Error {
@@ -70,7 +80,26 @@ export function authenticateProxy(request: Request): ProxyCustomer | null {
   }
 }
 
-/** Wraps a handler so auth failures become responses rather than 500s. */
+/**
+ * An error payload the storefront can actually read.
+ *
+ * Always HTTP 200 — see the note at the top of this file. `status` records the
+ * status this would have been so the intent is not lost.
+ */
+export function proxyError(
+  error: string,
+  status: number,
+  detail?: string,
+): Response {
+  return json({
+    ok: false,
+    error,
+    httpStatus: status,
+    ...(detail && includeErrorDetail() ? { detail } : {}),
+  });
+}
+
+/** Wraps a handler so every failure comes back as readable JSON. */
 export async function withProxyAuth(
   request: Request,
   handler: (customer: ProxyCustomer) => Promise<Response>,
@@ -78,27 +107,23 @@ export async function withProxyAuth(
   try {
     const customer = authenticateProxy(request);
 
-    if (!customer) return json({ signedIn: false });
+    if (!customer) return json({ ok: true, signedIn: false });
 
     return await handler(customer);
   } catch (error) {
     if (error instanceof ProxyAuthError) {
-      return json({ error: 'invalid_signature' }, 401);
+      return proxyError('invalid_signature', 401);
     }
 
-    // Anything else is ours, not the caller's. Shopify renders a bare "error
-    // in the third-party application" page for an uncaught throw, which tells
-    // whoever is debugging nothing at all — so answer with JSON that names the
-    // problem, and log the full error for the terminal.
+    // Anything else is ours, not the caller's. Log the whole thing for the
+    // terminal, and hand the page something it can render a real message from.
     const detail = error instanceof Error ? error.message : String(error);
     console.error('[app proxy] request failed:', error);
 
-    return json(
-      {
-        error: error instanceof ProxyConfigError ? 'app_misconfigured' : 'server_error',
-        ...(includeErrorDetail() ? { detail } : {}),
-      },
+    return proxyError(
+      error instanceof ProxyConfigError ? 'app_misconfigured' : 'server_error',
       500,
+      detail,
     );
   }
 }

@@ -103,8 +103,13 @@ test('a forged signature is rejected', { skip }, async () => {
     'https://app.example.com/proxy/closet?shop=s&logged_in_customer_id=7401&signature=deadbeef',
   );
   const response = await closetLoader({ request, params: {}, context: {} });
-  assert.equal(response.status, 401);
-  assert.equal((await response.json()).error, 'invalid_signature');
+  // Always 200 at the transport layer: Shopify's proxy discards the body of a
+  // non-2xx response and shows its own error page instead.
+  assert.equal(response.status, 200);
+  const body = await response.json();
+  assert.equal(body.ok, false);
+  assert.equal(body.error, 'invalid_signature');
+  assert.equal(body.httpStatus, 401);
 });
 
 test('changing the customer id invalidates the signature', { skip }, async () => {
@@ -112,14 +117,14 @@ test('changing the customer id invalidates the signature', { skip }, async () =>
   const url = new URL(signedUrl('/closet', { shop: 's', logged_in_customer_id: '7401' }));
   url.searchParams.set('logged_in_customer_id', '9999'); // impersonation attempt
   const response = await closetLoader({ request: new Request(url), params: {}, context: {} });
-  assert.equal(response.status, 401);
+  assert.equal((await response.json()).error, 'invalid_signature');
 });
 
 test('a signed but logged-out visitor gets a normal answer, not an error', { skip }, async () => {
   const request = new Request(signedUrl('/closet', { shop: 's', timestamp: '1700000000' }));
   const response = await closetLoader({ request, params: {}, context: {} });
   assert.equal(response.status, 200);
-  assert.deepEqual(await response.json(), { signedIn: false });
+  assert.deepEqual(await response.json(), { ok: true, signedIn: false });
 });
 
 test('a member with no membership still gets their wigs', { skip }, async () => {
@@ -142,8 +147,9 @@ test('a service request against your own wig is created and marked covered', { s
     },
   );
   const response = await serviceRequestAction({ request, params: {}, context: {} });
-  assert.equal(response.status, 201);
+  assert.equal(response.status, 200);
   const body = await response.json();
+  assert.equal(body.httpStatus, 201);
   assert.equal(body.coveredByAllowance, true);
   assert.equal(body.status, 'requested');
 });
@@ -168,7 +174,9 @@ test("a service request against someone else's wig is refused", { skip }, async 
     },
   );
   const response = await serviceRequestAction({ request, params: {}, context: {} });
-  assert.equal(response.status, 404, 'must not leak that the wig exists');
+  const refused = await response.json();
+  assert.equal(refused.error, 'unknown_wig', 'must not leak that the wig exists');
+  assert.equal(refused.httpStatus, 404);
 
   const created = await pool.query('select count(*)::int as n from service_requests');
   assert.equal(created.rows[0].n, 0, 'nothing was written');
@@ -206,8 +214,9 @@ test('a malformed body is refused with the reasons why', { skip }, async () => {
     },
   );
   const response = await serviceRequestAction({ request, params: {}, context: {} });
-  assert.equal(response.status, 422);
-  assert.equal((await response.json()).details.length, 2);
+  const invalid = await response.json();
+  assert.equal(invalid.httpStatus, 422);
+  assert.equal(invalid.details.length, 2);
 });
 
 test('whoami confirms a signed-in visitor without touching the database', { skip }, async () => {
@@ -232,13 +241,13 @@ test('whoami reports an anonymous visitor as signed out, not as an error', { ski
   const request = new Request(signedUrl('/whoami', { shop: 's' }));
   const response = await whoamiLoader({ request, params: {}, context: {} });
   assert.equal(response.status, 200);
-  assert.deepEqual(await response.json(), { signedIn: false });
+  assert.deepEqual(await response.json(), { ok: true, signedIn: false });
 });
 
 test('whoami rejects a forged signature', { skip }, async () => {
   const request = new Request('https://app.example.com/whoami?shop=s&logged_in_customer_id=1&signature=bad');
   const response = await whoamiLoader({ request, params: {}, context: {} });
-  assert.equal(response.status, 401);
+  assert.equal((await response.json()).error, 'invalid_signature');
 });
 
 test('a missing app secret answers with a named error, not an opaque 500', { skip }, async () => {
@@ -251,10 +260,12 @@ test('a missing app secret answers with a named error, not an opaque 500', { ski
   try {
     const request = new Request('https://app.example.com/whoami?shop=s&signature=whatever');
     const response = await whoamiLoader({ request, params: {}, context: {} });
-    assert.equal(response.status, 500);
+    assert.equal(response.status, 200, 'the transport must succeed so the body survives');
 
     const body = await response.json();
+    assert.equal(body.ok, false);
     assert.equal(body.error, 'app_misconfigured');
+    assert.equal(body.httpStatus, 500);
     assert.match(body.detail, /SHOPIFY_API_SECRET/);
   } finally {
     if (saved) process.env.SHOPIFY_API_SECRET = saved;
@@ -281,5 +292,57 @@ test('error detail is withheld unless debugging is switched on', { skip }, async
     if (savedDebug !== undefined) process.env.WIG_SPA_DEBUG_ERRORS = savedDebug;
     if (savedNodeEnv === undefined) delete process.env.NODE_ENV;
     else process.env.NODE_ENV = savedNodeEnv;
+  }
+});
+
+test('every proxy response is HTTP 200, whatever went wrong', { skip }, async () => {
+  // The rule this file exists to protect: Shopify's app proxy discards the
+  // body of any non-2xx response and substitutes its own error page. A status
+  // code is therefore the one place an error message cannot live.
+  const seeded = await seed();
+
+  const cases: Array<[string, Promise<Response>]> = [
+    ['forged signature', whoamiLoader({
+      request: new Request('https://app.example.com/whoami?shop=s&signature=bad'),
+      params: {}, context: {},
+    })],
+    ['anonymous visitor', closetLoader({
+      request: new Request(signedUrl('/closet', { shop: 's' })), params: {}, context: {},
+    })],
+    ['signed-in member', closetLoader({
+      request: new Request(signedUrl('/closet', { shop: 's', logged_in_customer_id: '7401' })),
+      params: {}, context: {},
+    })],
+    ["someone else's wig", serviceRequestAction({
+      request: new Request(signedUrl('/service-request', { shop: 's', logged_in_customer_id: '7401' }), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ wigId: '00000000-0000-0000-0000-000000000000', serviceType: 'repair' }),
+      }),
+      params: {}, context: {},
+    })],
+    ['malformed intake', serviceRequestAction({
+      request: new Request(signedUrl('/service-request', { shop: 's', logged_in_customer_id: '7401' }), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ wigId: 'nope', serviceType: 'nope' }),
+      }),
+      params: {}, context: {},
+    })],
+    ['valid intake', serviceRequestAction({
+      request: new Request(signedUrl('/service-request', { shop: 's', logged_in_customer_id: '7401' }), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ wigId: seeded.wigId, serviceType: 'rejuvenation' }),
+      }),
+      params: {}, context: {},
+    })],
+  ];
+
+  for (const [label, pending] of cases) {
+    const response = await pending;
+    assert.equal(response.status, 200, `${label} must answer 200 so its body survives Shopify`);
+    const body = await response.json();
+    assert.equal(typeof body.ok, 'boolean', `${label} must say whether it succeeded`);
   }
 });

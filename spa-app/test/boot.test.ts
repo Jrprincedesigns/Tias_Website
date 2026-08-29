@@ -22,9 +22,12 @@ test('whoami answers without DATABASE_URL set', async () => {
     const request = new Request('https://app.example.com/whoami?shop=s&signature=bad');
     const response = await loader({ request, params: {}, context: {} } as never);
 
-    // A forged signature, so 401 — but crucially it is an answer, not a crash.
-    assert.equal(response.status, 401);
-    assert.equal((await response.json()).error, 'invalid_signature');
+    // A forged signature — but crucially it is an answer, not a crash. The
+    // transport is 200 so Shopify does not swallow the body.
+    assert.equal(response.status, 200);
+    const body = await response.json();
+    assert.equal(body.ok, false);
+    assert.equal(body.error, 'invalid_signature');
   } finally {
     if (savedDb !== undefined) process.env.DATABASE_URL = savedDb;
     if (savedSecret === undefined) delete process.env.SHOPIFY_API_SECRET;

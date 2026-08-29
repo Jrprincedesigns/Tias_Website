@@ -7,7 +7,7 @@ import {
   getMembership,
 } from '../lib/db.ts';
 import { decideCoverage } from '../lib/allowance.ts';
-import { json, withProxyAuth } from '../lib/proxy.ts';
+import { json, proxyError, withProxyAuth } from '../lib/proxy.ts';
 import { parseIntake } from '../lib/intake.ts';
 
 /**
@@ -19,17 +19,21 @@ import { parseIntake } from '../lib/intake.ts';
  */
 export const action = async ({ request }: ActionFunctionArgs) =>
   withProxyAuth(request, async (customer) => {
-    if (request.method !== 'POST') return json({ error: 'method_not_allowed' }, 405);
+    if (request.method !== 'POST') return proxyError('method_not_allowed', 405);
 
     let body: unknown;
     try {
       body = await request.json();
     } catch {
-      return json({ error: 'invalid_json' }, 400);
+      return proxyError('invalid_json', 400);
     }
 
     const parsed = parseIntake(body);
-    if (!parsed.ok) return json({ error: 'invalid_request', details: parsed.errors }, 422);
+    if (!parsed.ok) {
+      // Validation messages are the caller's own mistakes, so they travel in
+      // the body rather than behind the debug flag.
+      return json({ ok: false, error: 'invalid_request', httpStatus: 422, details: parsed.errors });
+    }
     const intake = parsed.value;
 
     const member = await findOrCreateMember(pool, { shopifyCustomerId: customer.shopifyCustomerId });
@@ -42,7 +46,7 @@ export const action = async ({ request }: ActionFunctionArgs) =>
     if (owned.rowCount === 0) {
       // Deliberately the same shape as "no such wig". Telling an attacker that
       // a wig exists but belongs to someone else is a free membership lookup.
-      return json({ error: 'unknown_wig' }, 404);
+      return proxyError('unknown_wig', 404);
     }
 
     const membership = await getMembership(pool, member.id);
@@ -70,13 +74,14 @@ export const action = async ({ request }: ActionFunctionArgs) =>
 
     return json(
       {
+        ok: true,
         id: created.id,
         status: created.status,
         coveredByAllowance: decision.covered,
         // Why it isn't covered, so the page can say something useful instead
         // of just showing a price.
         coverageReason: decision.covered ? null : decision.reason,
+        httpStatus: 201,
       },
-      201,
     );
   });
