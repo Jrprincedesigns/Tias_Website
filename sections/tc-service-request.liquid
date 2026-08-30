@@ -1,0 +1,208 @@
+{{ 'thetcollection.css' | asset_url | stylesheet_tag }}
+
+{%- comment -%}
+  Send a wig in.
+
+  The intake questions are blocks, not code — §5 lists nine of them and they
+  will change as the studio learns what it actually needs to ask. Tia adds,
+  rewords and removes them in the theme editor; the answers land in the work
+  order as-is.
+{%- endcomment -%}
+
+<section class="tc-section tc-request-wrap">
+  <div class="tc-container">
+
+    {%- if customer == blank -%}
+      <div class="tc-closet-gate tc-reveal">
+        <span class="tc-eyebrow">{{ section.settings.eyebrow }}</span>
+        <h1 class="tc-section-title">{{ section.settings.signed_out_title }}</h1>
+        <p class="tc-closet-gate__body">{{ section.settings.signed_out_body }}</p>
+        <a href="{{ routes.account_login_url }}" class="tc-btn tc-btn--dark">
+          Sign in <span class="tc-arrow">&rarr;</span>
+        </a>
+      </div>
+
+    {%- else -%}
+      <div class="tc-section-head tc-reveal">
+        <div>
+          <span class="tc-eyebrow">{{ section.settings.eyebrow }}</span>
+          <h1 class="tc-section-title">{{ section.settings.title }}</h1>
+        </div>
+        {%- if section.settings.intro != blank -%}
+          <div class="tc-section-head__right"><p>{{ section.settings.intro }}</p></div>
+        {%- endif -%}
+      </div>
+
+      <form
+        class="tc-request"
+        data-tc-request
+        data-proxy-base="{{ section.settings.proxy_base | default: '/apps/spa' }}"
+        data-max-photos="{{ section.settings.max_photos | default: 6 }}"
+        data-closet-url="{{ section.settings.closet_page | default: '' }}"
+      >
+        {%- comment -%} 1 — which unit {%- endcomment -%}
+        <fieldset class="tc-request__step">
+          <legend>1 &middot; Which unit?</legend>
+          <div data-request-wigs>
+            <p class="tc-request__hint">Loading your units&hellip;</p>
+          </div>
+        </fieldset>
+
+        {%- comment -%} 2 — what service {%- endcomment -%}
+        <fieldset class="tc-request__step">
+          <legend>2 &middot; What does it need?</legend>
+          <div class="tc-request__choices">
+            {%- for block in section.blocks -%}
+              {%- if block.type == 'service' -%}
+                <label class="tc-request__choice" {{ block.shopify_attributes }}>
+                  <input type="radio" name="serviceType" value="{{ block.settings.value }}" required>
+                  <span>
+                    <strong>{{ block.settings.label }}</strong>
+                    {%- if block.settings.description != blank -%}
+                      <em>{{ block.settings.description }}</em>
+                    {%- endif -%}
+                  </span>
+                </label>
+              {%- endif -%}
+            {%- endfor -%}
+          </div>
+          <p class="tc-request__coverage" data-request-coverage hidden></p>
+        </fieldset>
+
+        {%- comment -%} 3 — the studio's questions, editable in the theme editor {%- endcomment -%}
+        <fieldset class="tc-request__step">
+          <legend>3 &middot; Tell us about it</legend>
+          {%- for block in section.blocks -%}
+            {%- if block.type == 'question' -%}
+              <div class="tc-field" {{ block.shopify_attributes }}>
+                <label for="q-{{ block.id }}">{{ block.settings.question }}</label>
+                {%- if block.settings.choices != blank -%}
+                  <select id="q-{{ block.id }}" name="intake:{{ block.settings.question }}">
+                    <option value="">Choose one</option>
+                    {%- assign options = block.settings.choices | split: ',' -%}
+                    {%- for option in options -%}
+                      <option value="{{ option | strip | escape }}">{{ option | strip }}</option>
+                    {%- endfor -%}
+                  </select>
+                {%- else -%}
+                  <input
+                    type="text"
+                    id="q-{{ block.id }}"
+                    name="intake:{{ block.settings.question }}"
+                    placeholder="{{ block.settings.placeholder | escape }}"
+                  >
+                {%- endif -%}
+              </div>
+            {%- endif -%}
+          {%- endfor -%}
+
+          <div class="tc-field">
+            <label for="tc-request-notes">{{ section.settings.notes_label }}</label>
+            <textarea id="tc-request-notes" name="notes" rows="4"
+              placeholder="{{ section.settings.notes_placeholder | escape }}"></textarea>
+          </div>
+        </fieldset>
+
+        {%- comment -%} 4 — photographs {%- endcomment -%}
+        <fieldset class="tc-request__step">
+          <legend>4 &middot; Photos</legend>
+          <p class="tc-request__hint">{{ section.settings.photos_hint }}</p>
+          <input
+            type="file"
+            id="tc-request-photos"
+            accept="image/jpeg,image/png,image/webp,image/heic,image/heif"
+            multiple
+            data-request-file
+          >
+          <div class="tc-request__photos" data-request-photos></div>
+        </fieldset>
+
+        <div class="tc-request__submit">
+          <button type="submit" class="tc-btn tc-btn--dark" data-request-submit>
+            {{ section.settings.submit_label }} <span class="tc-arrow">&rarr;</span>
+          </button>
+          <p class="tc-request__status" data-request-status role="status" aria-live="polite"></p>
+        </div>
+      </form>
+    {%- endif -%}
+
+  </div>
+</section>
+
+{% render 'tc-reveal-script' %}
+<script src="{{ 'tc-service-request.js' | asset_url }}" defer></script>
+
+{% schema %}
+{
+  "name": "TC — Send a wig in",
+  "tag": "section",
+  "max_blocks": 20,
+  "settings": [
+    { "type": "text", "id": "eyebrow", "label": "Eyebrow", "default": "The Wig Spa" },
+    { "type": "richtext", "id": "title", "label": "Title", "default": "<p>Send us your <em>unit</em>.</p>" },
+    { "type": "textarea", "id": "intro", "label": "Intro", "default": "Tell us what it needs and send a few photos. We'll confirm the moment it arrives and never begin extra work without asking you first." },
+    { "type": "header", "content": "Connection" },
+    { "type": "text", "id": "proxy_base", "label": "App proxy base path", "default": "/apps/spa" },
+    { "type": "url", "id": "closet_page", "label": "Wig Closet page link" },
+    { "type": "header", "content": "Notes and photos" },
+    { "type": "text", "id": "notes_label", "label": "Notes label", "default": "Anything else we should know?" },
+    { "type": "text", "id": "notes_placeholder", "label": "Notes placeholder", "default": "The more detail, the better." },
+    { "type": "textarea", "id": "photos_hint", "label": "Photo guidance", "default": "Front, back, and a close-up of anything that worries you. Good light helps us quote accurately." },
+    { "type": "range", "id": "max_photos", "min": 1, "max": 12, "step": 1, "label": "Photos allowed", "default": 6 },
+    { "type": "text", "id": "submit_label", "label": "Submit button", "default": "Send it in" },
+    { "type": "header", "content": "Signed out" },
+    { "type": "text", "id": "signed_out_title", "label": "Title", "default": "Sign in to send a unit." },
+    { "type": "textarea", "id": "signed_out_body", "label": "Body", "default": "Your account keeps a record of every unit you send and everything we do to it." }
+  ],
+  "blocks": [
+    {
+      "type": "service",
+      "name": "Service option",
+      "settings": [
+        { "type": "text", "id": "label", "label": "Label", "default": "Rejuvenation" },
+        {
+          "type": "select",
+          "id": "value",
+          "label": "Service type",
+          "info": "Must match a type the studio system understands.",
+          "options": [
+            { "value": "rejuvenation", "label": "Rejuvenation" },
+            { "value": "repair", "label": "Repair" },
+            { "value": "reconstruction", "label": "Reconstruction" },
+            { "value": "styling", "label": "Styling" },
+            { "value": "color", "label": "Color" },
+            { "value": "other", "label": "Other" }
+          ],
+          "default": "rejuvenation"
+        },
+        { "type": "text", "id": "description", "label": "Short description" }
+      ]
+    },
+    {
+      "type": "question",
+      "name": "Intake question",
+      "settings": [
+        { "type": "text", "id": "question", "label": "Question", "default": "What's wrong with the unit?" },
+        { "type": "text", "id": "placeholder", "label": "Placeholder" },
+        { "type": "text", "id": "choices", "label": "Choices", "info": "Comma-separated. Leave empty for a free-text answer." }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "TC — Send a wig in",
+      "category": "TheTCollection",
+      "blocks": [
+        { "type": "service", "settings": { "label": "Rejuvenation", "value": "rejuvenation", "description": "Deep cleanse, condition, detangle and restyle." } },
+        { "type": "service", "settings": { "label": "Repair", "value": "repair", "description": "Lace work, elastic, small construction issues." } },
+        { "type": "service", "settings": { "label": "Reconstruction", "value": "reconstruction", "description": "Major cap rebuilding or structural work." } },
+        { "type": "question", "settings": { "question": "What's wrong with the unit?", "placeholder": "Shedding, tangling, lifting lace..." } },
+        { "type": "question", "settings": { "question": "Desired part", "choices": "Middle, Side, Free part, No preference" } },
+        { "type": "question", "settings": { "question": "Lace condition", "choices": "Good, Slightly torn, Badly torn, No lace" } },
+        { "type": "question", "settings": { "question": "Has it been coloured?", "choices": "No, Yes — by us, Yes — elsewhere, Not sure" } },
+        { "type": "question", "settings": { "question": "Has adhesive been used?", "choices": "No, Glue, Tape, Both" } }
+      ]
+    }
+  ]
+}
+{% endschema %}

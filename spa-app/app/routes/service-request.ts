@@ -5,6 +5,7 @@ import {
   findOrCreateMember,
   getAllowanceEntries,
   getMembership,
+  recordIntakePhotos,
 } from '../lib/db.ts';
 import { decideCoverage } from '../lib/allowance.ts';
 import { json, proxyError, withProxyAuth } from '../lib/proxy.ts';
@@ -62,6 +63,16 @@ export const action = async ({ request }: ActionFunctionArgs) =>
       serviceRequestId: '00000000-0000-0000-0000-000000000000',
     });
 
+    // Storage paths come from the browser. recordIntakePhotos verifies every
+    // one begins with this member's own prefix and refuses the whole batch if
+    // any does not, so a stranger's photograph cannot be attached by editing a
+    // string.
+    const photoPaths = Array.isArray((body as { photoPaths?: unknown }).photoPaths)
+      ? ((body as { photoPaths: unknown[] }).photoPaths.filter(
+          (p): p is string => typeof p === 'string',
+        ))
+      : [];
+
     const created = await createServiceRequest(pool, {
       memberId: member.id,
       wigId: intake.wigId,
@@ -72,10 +83,26 @@ export const action = async ({ request }: ActionFunctionArgs) =>
       customerNotes: intake.notes,
     });
 
+    let photosAttached = 0;
+    try {
+      photosAttached = await recordIntakePhotos(pool, {
+        memberId: member.id,
+        wigId: intake.wigId,
+        serviceRequestId: created.id,
+        storagePaths: photoPaths,
+      });
+    } catch (error) {
+      // The request itself is already saved and is the thing that matters — a
+      // wig on its way to the studio must not be lost because a photo path was
+      // wrong. Report it rather than failing the submission.
+      console.error('[service-request] photos rejected:', error);
+    }
+
     return json(
       {
         ok: true,
         id: created.id,
+        photosAttached,
         status: created.status,
         coveredByAllowance: decision.covered,
         // Why it isn't covered, so the page can say something useful instead

@@ -74,3 +74,90 @@ test('every advertised service type is accepted', () => {
     assert.equal(parseIntake({ wigId: WIG, serviceType }).ok, true, `${serviceType} should be valid`);
   }
 });
+
+/* --- registering a unit --------------------------------------------------- */
+
+import { parseWigRegistration, parseUploadRequest, MAX_UPLOAD_BYTES } from '../app/lib/intake.ts';
+
+test('a nickname alone is enough to register a unit', () => {
+  // Demanding texture, cap size and lace type up front is how a form gets
+  // abandoned. Everything but the name can be filled in later.
+  const result = parseWigRegistration({ nickname: 'Chocolate Body Wave' });
+  assert.equal(result.ok, true);
+  if (!result.ok) return;
+  assert.equal(result.value.nickname, 'Chocolate Body Wave');
+  assert.equal(result.value.isTCollection, false);
+  assert.equal(result.value.lengthInches, null);
+});
+
+test('a unit with no name is refused, in words a person would use', () => {
+  const result = parseWigRegistration({ texture: 'body wave' });
+  assert.equal(result.ok, false);
+  if (result.ok) return;
+  assert.match(result.errors[0] ?? '', /name/i);
+});
+
+test('blank and whitespace-only fields become null, not empty strings', () => {
+  const result = parseWigRegistration({ nickname: '  Unit A  ', brand: '   ', texture: '' });
+  assert.equal(result.ok, true);
+  if (!result.ok) return;
+  assert.equal(result.value.nickname, 'Unit A');
+  assert.equal(result.value.brand, null);
+  assert.equal(result.value.texture, null);
+});
+
+test('length is bounded the same way the database bounds it', () => {
+  // Mirrors wig_length_sane so a typo comes back as a sentence rather than a
+  // constraint violation.
+  assert.equal(parseWigRegistration({ nickname: 'x', lengthInches: 26 }).ok, true);
+  assert.equal(parseWigRegistration({ nickname: 'x', lengthInches: 0 }).ok, false);
+  assert.equal(parseWigRegistration({ nickname: 'x', lengthInches: 400 }).ok, false);
+  assert.equal(parseWigRegistration({ nickname: 'x', lengthInches: 26.5 }).ok, false);
+});
+
+test('an empty length is absent, not invalid', () => {
+  // An untouched number input submits '' — that must not read as an error.
+  const result = parseWigRegistration({ nickname: 'x', lengthInches: '' });
+  assert.equal(result.ok, true);
+  if (!result.ok) return;
+  assert.equal(result.value.lengthInches, null);
+});
+
+test('isTCollection accepts the string a form actually submits', () => {
+  assert.equal(parseWigRegistration({ nickname: 'x', isTCollection: 'true' }).ok, true);
+  const result = parseWigRegistration({ nickname: 'x', isTCollection: 'true' });
+  if (result.ok) assert.equal(result.value.isTCollection, true);
+});
+
+/* --- photo uploads -------------------------------------------------------- */
+
+test('every type the bucket accepts is accepted here too', () => {
+  for (const [type, ext] of Object.entries({
+    'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp',
+    'image/heic': 'heic', 'image/heif': 'heif',
+  })) {
+    const result = parseUploadRequest({ contentType: type, size: 1024 });
+    assert.equal(result.ok, true, `${type} should be allowed`);
+    if (result.ok) assert.equal(result.value.extension, ext);
+  }
+});
+
+test('HEIC is accepted, because iPhones shoot it by default', () => {
+  assert.equal(parseUploadRequest({ contentType: 'IMAGE/HEIC', size: 500 }).ok, true,
+    'and the content type may arrive in any case');
+});
+
+test('a PDF pretending to be a photo is refused', () => {
+  const result = parseUploadRequest({ contentType: 'application/pdf', size: 1024 });
+  assert.equal(result.ok, false);
+});
+
+test('an oversized photo is refused before it is uploaded, not after', () => {
+  assert.equal(parseUploadRequest({ contentType: 'image/jpeg', size: MAX_UPLOAD_BYTES + 1 }).ok, false);
+  assert.equal(parseUploadRequest({ contentType: 'image/jpeg', size: MAX_UPLOAD_BYTES }).ok, true);
+});
+
+test('a file with no readable size is refused', () => {
+  assert.equal(parseUploadRequest({ contentType: 'image/jpeg' }).ok, false);
+  assert.equal(parseUploadRequest({ contentType: 'image/jpeg', size: 0 }).ok, false);
+});

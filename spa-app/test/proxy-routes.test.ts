@@ -19,6 +19,7 @@ let pool: pg.Pool;
 let closetLoader: any;
 let serviceRequestAction: any;
 let whoamiLoader: any;
+let wigsAction: any;
 
 before(async () => {
   if (!CONNECTION) return;
@@ -26,6 +27,7 @@ before(async () => {
   ({ loader: closetLoader } = await import('../app/routes/closet.ts'));
   ({ action: serviceRequestAction } = await import('../app/routes/service-request.ts'));
   ({ loader: whoamiLoader } = await import('../app/routes/whoami.ts'));
+  ({ action: wigsAction } = await import('../app/routes/wigs.ts'));
 });
 
 after(async () => {
@@ -345,4 +347,98 @@ test('every proxy response is HTTP 200, whatever went wrong', { skip }, async ()
     const body = await response.json();
     assert.equal(typeof body.ok, 'boolean', `${label} must say whether it succeeded`);
   }
+});
+
+test('a member registers a unit through the proxy', { skip }, async () => {
+  const request = new Request(
+    signedUrl('/wigs', { shop: 's', logged_in_customer_id: '7401' }),
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nickname: 'Jet Black Straight', lengthInches: 24, texture: 'straight' }),
+    },
+  );
+  const response = await wigsAction({ request, params: {}, context: {} });
+  assert.equal(response.status, 200);
+
+  const body = await response.json();
+  assert.equal(body.ok, true);
+  assert.equal(body.wig.nickname, 'Jet Black Straight');
+  assert.equal(body.wig.lengthInches, 24);
+  assert.equal(body.httpStatus, 201);
+});
+
+test('registering a unit with no name explains itself', { skip }, async () => {
+  const request = new Request(
+    signedUrl('/wigs', { shop: 's', logged_in_customer_id: '7401' }),
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ texture: 'body wave' }),
+    },
+  );
+  const body = await (await wigsAction({ request, params: {}, context: {} })).json();
+  assert.equal(body.ok, false);
+  assert.equal(body.httpStatus, 422);
+  assert.match(body.details[0], /name/i);
+});
+
+test('an anonymous visitor cannot register a unit', { skip }, async () => {
+  const request = new Request(
+    signedUrl('/wigs', { shop: 's' }),
+    { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{"nickname":"x"}' },
+  );
+  const body = await (await wigsAction({ request, params: {}, context: {} })).json();
+  assert.equal(body.signedIn, false);
+
+  const { rows } = await pool.query(`select count(*)::int as n from wigs where nickname = 'x'`);
+  assert.equal(rows[0].n, 0, 'nothing was written');
+});
+
+test('a service request attaches only the photos that belong to the member', { skip }, async () => {
+  const seeded = await seed();
+  const memberRow = await pool.query(
+    `select id from members where shopify_customer_id = 'gid://shopify/Customer/7401'`,
+  );
+  const memberId = memberRow.rows[0].id;
+
+  const request = new Request(
+    signedUrl('/service-request', { shop: 's', logged_in_customer_id: '7401' }),
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        wigId: seeded.wigId,
+        serviceType: 'rejuvenation',
+        photoPaths: [`${memberId}/intake/one.jpg`, `${memberId}/intake/two.jpg`],
+      }),
+    },
+  );
+  const body = await (await serviceRequestAction({ request, params: {}, context: {} })).json();
+  assert.equal(body.ok, true);
+  assert.equal(body.photosAttached, 2);
+});
+
+test('a forged photo path loses the photos but never the wig', { skip }, async () => {
+  // A unit already on its way to the studio must not be lost because a path was
+  // wrong. The request saves; the photos do not.
+  const seeded = await seed();
+  const request = new Request(
+    signedUrl('/service-request', { shop: 's', logged_in_customer_id: '7401' }),
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        wigId: seeded.wigId,
+        serviceType: 'rejuvenation',
+        photoPaths: ['some-other-member/intake/theirs.jpg'],
+      }),
+    },
+  );
+  const body = await (await serviceRequestAction({ request, params: {}, context: {} })).json();
+  assert.equal(body.ok, true, 'the service request still exists');
+  assert.equal(body.photosAttached, 0, 'but the foreign photo was refused');
+
+  const { rows } = await pool.query(`select count(*)::int as n from photos`);
+  assert.equal(rows[0].n, 0);
 });

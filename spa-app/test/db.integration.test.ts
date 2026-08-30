@@ -13,6 +13,8 @@ import {
   getWorkOrder,
   listEvents,
   saveStaffNotes,
+  registerWig,
+  recordIntakePhotos,
 } from '../app/lib/db.ts';
 
 /**
@@ -304,4 +306,101 @@ test('saving notes on a missing work order fails rather than silently doing noth
     }),
     /No service request/,
   );
+});
+
+test('a member can register a unit with just a name', { skip }, async () => {
+  const member = await findOrCreateMember(pool, { shopifyCustomerId: 'gid://shopify/Customer/500' });
+  const wig = await registerWig(pool, {
+    memberId: member.id, nickname: 'Honey Blonde', isTCollection: false,
+  });
+  assert.equal(wig.nickname, 'Honey Blonde');
+  assert.equal(wig.lastServicedAt, null);
+
+  const wigs = await listWigs(pool, member.id);
+  assert.equal(wigs.length, 1, 'and it shows up in their closet immediately');
+});
+
+test('the database rejects an absurd length even if validation is bypassed', { skip }, async () => {
+  const member = await findOrCreateMember(pool, { shopifyCustomerId: 'gid://shopify/Customer/501' });
+  await assert.rejects(
+    () => registerWig(pool, {
+      memberId: member.id, nickname: 'Bad', isTCollection: false, lengthInches: 400,
+    }),
+    /wig_length_sane/,
+  );
+});
+
+test('intake photos attach to a work order', { skip }, async () => {
+  const { member, membershipId, wigId } = await seedMemberWithMembership({ granted: 1 });
+  const request = await createServiceRequest(pool, {
+    memberId: member.id, wigId, membershipId, serviceType: 'rejuvenation', coveredByAllowance: true,
+  });
+
+  const written = await recordIntakePhotos(pool, {
+    memberId: member.id, wigId, serviceRequestId: request.id,
+    storagePaths: [`${member.id}/intake/a.jpg`, `${member.id}/intake/b.jpg`],
+  });
+  assert.equal(written, 2);
+
+  const { rows } = await pool.query(
+    `select kind, uploaded_by, customer_visible from photos where service_request_id = $1`,
+    [request.id],
+  );
+  assert.equal(rows.length, 2);
+  assert.equal(rows[0].kind, 'intake');
+  assert.equal(rows[0].uploaded_by, 'customer');
+  assert.equal(rows[0].customer_visible, false, 'photos are private by default');
+});
+
+test("a member cannot attach another member's photo", { skip }, async () => {
+  // The storage path arrives from the browser. Without this check, editing one
+  // string would attach a stranger's photograph — taken inside their home — to
+  // your own work order.
+  const { member, membershipId, wigId } = await seedMemberWithMembership({ granted: 1 });
+  const request = await createServiceRequest(pool, {
+    memberId: member.id, wigId, membershipId, serviceType: 'rejuvenation', coveredByAllowance: true,
+  });
+
+  await assert.rejects(
+    () => recordIntakePhotos(pool, {
+      memberId: member.id, wigId, serviceRequestId: request.id,
+      storagePaths: [`${member.id}/intake/mine.jpg`, 'someone-else-id/intake/theirs.jpg'],
+    }),
+    /does not belong to this member/,
+  );
+
+  const { rows } = await pool.query(
+    `select count(*)::int as n from photos where service_request_id = $1`, [request.id],
+  );
+  assert.equal(rows[0].n, 0, 'and the legitimate one is not written either — all or nothing');
+});
+
+test('no photos is not an error', { skip }, async () => {
+  const { member, membershipId, wigId } = await seedMemberWithMembership({ granted: 1 });
+  const request = await createServiceRequest(pool, {
+    memberId: member.id, wigId, membershipId, serviceType: 'repair', coveredByAllowance: true,
+  });
+  assert.equal(
+    await recordIntakePhotos(pool, {
+      memberId: member.id, wigId, serviceRequestId: request.id, storagePaths: [],
+    }),
+    0,
+  );
+});
+
+test('the same photo path twice writes one row', { skip }, async () => {
+  // A retried submit must not duplicate the member's photographs.
+  const { member, membershipId, wigId } = await seedMemberWithMembership({ granted: 1 });
+  const request = await createServiceRequest(pool, {
+    memberId: member.id, wigId, membershipId, serviceType: 'repair', coveredByAllowance: true,
+  });
+  const path = [`${member.id}/intake/same.jpg`];
+
+  await recordIntakePhotos(pool, { memberId: member.id, wigId, serviceRequestId: request.id, storagePaths: path });
+  await recordIntakePhotos(pool, { memberId: member.id, wigId, serviceRequestId: request.id, storagePaths: path });
+
+  const { rows } = await pool.query(
+    `select count(*)::int as n from photos where service_request_id = $1`, [request.id],
+  );
+  assert.equal(rows[0].n, 1);
 });

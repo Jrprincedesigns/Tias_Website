@@ -550,3 +550,92 @@ export async function saveStaffNotes(
     );
   });
 }
+
+/**
+ * Register a unit against a member.
+ *
+ * A member sending in their first wig should not have to complete a separate
+ * registration flow first, so this is called inline from the service-request
+ * form. The nickname is what the member calls it — that is what appears in
+ * Tia's queue, so "Chocolate Body Wave" beats a serial number.
+ */
+export async function registerWig(
+  db: Queryable,
+  input: {
+    memberId: string;
+    nickname: string;
+    isTCollection: boolean;
+    brand?: string | null;
+    lengthInches?: number | null;
+    texture?: string | null;
+    color?: string | null;
+    laceType?: string | null;
+    capSize?: string | null;
+    notes?: string | null;
+  },
+): Promise<Wig> {
+  const { rows } = await db.query(
+    `insert into wigs
+       (member_id, nickname, is_t_collection, brand, length_inches, texture, color,
+        lace_type, cap_size, notes)
+     values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+     returning id, nickname, is_t_collection, brand, length_inches, texture, color, photo_path`,
+    [
+      input.memberId,
+      input.nickname,
+      input.isTCollection,
+      input.brand ?? null,
+      input.lengthInches ?? null,
+      input.texture ?? null,
+      input.color ?? null,
+      input.laceType ?? null,
+      input.capSize ?? null,
+      input.notes ?? null,
+    ],
+  );
+  const row = rows[0];
+  return {
+    id: row.id,
+    nickname: row.nickname,
+    isTCollection: row.is_t_collection,
+    brand: row.brand,
+    lengthInches: row.length_inches,
+    texture: row.texture,
+    color: row.color,
+    photoPath: row.photo_path,
+    lastServicedAt: null,
+  };
+}
+
+/**
+ * Attach uploaded photographs to a service request.
+ *
+ * Storage paths arrive from the browser, so every one is checked against the
+ * member's own prefix before it is written. Without that a member could attach
+ * another member's photograph to their own work order simply by editing a
+ * string — and these are pictures taken inside people's homes.
+ */
+export async function recordIntakePhotos(
+  db: Queryable,
+  input: {
+    memberId: string;
+    wigId: string;
+    serviceRequestId: string;
+    storagePaths: readonly string[];
+  },
+): Promise<number> {
+  const prefix = `${input.memberId}/`;
+  const foreign = input.storagePaths.filter((path) => !path.startsWith(prefix));
+  if (foreign.length > 0) {
+    throw new Error('Refusing to attach a photo that does not belong to this member');
+  }
+  if (input.storagePaths.length === 0) return 0;
+
+  const { rowCount } = await db.query(
+    `insert into photos (member_id, wig_id, service_request_id, kind, storage_path, uploaded_by)
+     select $1, $2, $3, 'intake', unnest($4::text[]), 'customer'
+     on conflict (storage_path) do nothing`,
+    [input.memberId, input.wigId, input.serviceRequestId, input.storagePaths],
+  );
+  return rowCount ?? 0;
+}
