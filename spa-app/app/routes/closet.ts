@@ -1,7 +1,7 @@
 import type { LoaderFunctionArgs } from 'react-router';
 import pool from '../db.server.ts';
 import { getCloset } from '../lib/db.ts';
-import { signPhotoUrls } from '../lib/photos.ts';
+import { createViewUrls } from '../lib/storage.ts';
 import { json, withProxyAuth } from '../lib/proxy.ts';
 
 /**
@@ -17,7 +17,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) =>
 
     // Unit cards lead with the wig's photograph, so the grid needs signed URLs
     // too — not just the detail panel. One batch call covers the whole closet.
-    const signed = await signPhotoUrls(
+    const signed = await createViewUrls(
       closet.wigs.map((wig) => wig.photoPath).filter((path): path is string => Boolean(path)),
     );
 

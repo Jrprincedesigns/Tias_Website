@@ -99,3 +99,142 @@ export function parseIntake(input: unknown): ParseResult {
     },
   };
 }
+
+/* ------------------------------------------------------------------------- */
+/* Registering a unit                                                        */
+/* ------------------------------------------------------------------------- */
+
+export interface WigRegistration {
+  nickname: string;
+  isTCollection: boolean;
+  brand: string | null;
+  lengthInches: number | null;
+  texture: string | null;
+  color: string | null;
+  laceType: string | null;
+  capSize: string | null;
+  notes: string | null;
+}
+
+export type WigParseResult =
+  | { ok: true; value: WigRegistration }
+  | { ok: false; errors: string[] };
+
+const MAX_NICKNAME = 80;
+const MAX_SHORT_FIELD = 120;
+
+/** Optional free text: absent, empty and whitespace all collapse to null. */
+function optionalText(
+  value: unknown,
+  field: string,
+  max: number,
+  errors: string[],
+): string | null {
+  if (value === undefined || value === null) return null;
+  if (typeof value !== 'string') {
+    errors.push(`${field} must be text`);
+    return null;
+  }
+  const trimmed = value.trim();
+  if (trimmed.length === 0) return null;
+  if (trimmed.length > max) {
+    errors.push(`${field} must be under ${max} characters`);
+    return null;
+  }
+  return trimmed;
+}
+
+export function parseWigRegistration(input: unknown): WigParseResult {
+  const errors: string[] = [];
+
+  if (typeof input !== 'object' || input === null || Array.isArray(input)) {
+    return { ok: false, errors: ['Body must be a JSON object'] };
+  }
+  const body = input as Record<string, unknown>;
+
+  // The nickname is the only thing genuinely required — it is what a member
+  // calls the unit and what Tia sees in her queue. Everything else can be
+  // filled in later, and demanding it up front is how a form gets abandoned.
+  const nickname = optionalText(body.nickname, 'nickname', MAX_NICKNAME, errors);
+  if (!nickname) errors.push('Give the unit a name so you can tell it apart');
+
+  let lengthInches: number | null = null;
+  if (body.lengthInches !== undefined && body.lengthInches !== null && body.lengthInches !== '') {
+    const parsed = Number(body.lengthInches);
+    if (!Number.isFinite(parsed) || !Number.isInteger(parsed)) {
+      errors.push('Length must be a whole number of inches');
+    } else if (parsed < 1 || parsed > 60) {
+      // Mirrors the wig_length_sane constraint, so an obvious typo is caught
+      // here with a readable sentence rather than as a constraint violation.
+      errors.push('Length must be between 1 and 60 inches');
+    } else {
+      lengthInches = parsed;
+    }
+  }
+
+  const value: WigRegistration = {
+    nickname: nickname ?? '',
+    isTCollection: body.isTCollection === true || body.isTCollection === 'true',
+    brand: optionalText(body.brand, 'brand', MAX_SHORT_FIELD, errors),
+    lengthInches,
+    texture: optionalText(body.texture, 'texture', MAX_SHORT_FIELD, errors),
+    color: optionalText(body.color, 'color', MAX_SHORT_FIELD, errors),
+    laceType: optionalText(body.laceType, 'lace type', MAX_SHORT_FIELD, errors),
+    capSize: optionalText(body.capSize, 'cap size', MAX_SHORT_FIELD, errors),
+    notes: optionalText(body.notes, 'notes', 2000, errors),
+  };
+
+  if (errors.length > 0) return { ok: false, errors };
+  return { ok: true, value };
+}
+
+/* ------------------------------------------------------------------------- */
+/* Photo uploads                                                             */
+/* ------------------------------------------------------------------------- */
+
+/** Extensions the storage bucket accepts, mapped from what a browser sends. */
+const IMAGE_EXTENSIONS: Record<string, string> = {
+  'image/jpeg': 'jpg',
+  'image/png': 'png',
+  'image/webp': 'webp',
+  'image/heic': 'heic',
+  'image/heif': 'heif',
+};
+
+export const MAX_UPLOAD_BYTES = 20 * 1024 * 1024;
+
+export type UploadRequestResult =
+  | { ok: true; value: { extension: string; contentType: string } }
+  | { ok: false; errors: string[] };
+
+/**
+ * Validates an upload request before a signed URL is minted.
+ *
+ * Checked here as well as in the bucket because a rejection at this point can
+ * explain itself; a rejection at the storage layer arrives as an opaque failure
+ * after the member has already waited for the file to transfer.
+ */
+export function parseUploadRequest(input: unknown): UploadRequestResult {
+  const errors: string[] = [];
+
+  if (typeof input !== 'object' || input === null || Array.isArray(input)) {
+    return { ok: false, errors: ['Body must be a JSON object'] };
+  }
+  const body = input as Record<string, unknown>;
+
+  const contentType = typeof body.contentType === 'string' ? body.contentType.toLowerCase() : '';
+  const extension = IMAGE_EXTENSIONS[contentType];
+  if (!extension) {
+    errors.push('Photos must be JPEG, PNG, WebP or HEIC');
+  }
+
+  const size = Number(body.size);
+  if (!Number.isFinite(size) || size <= 0) {
+    errors.push('Could not read the size of that file');
+  } else if (size > MAX_UPLOAD_BYTES) {
+    errors.push('Photos must be under 20MB');
+  }
+
+  if (errors.length > 0) return { ok: false, errors };
+  return { ok: true, value: { extension: extension!, contentType } };
+}

@@ -1,0 +1,33 @@
+{
+  "sections": {
+    "request": {
+      "type": "tc-service-request",
+      "settings": {
+        "eyebrow": "The Wig Spa",
+        "title": "<p>Send us your <em>unit</em>.</p>",
+        "intro": "Tell us what it needs and send a few photos. We'll confirm the moment it arrives, and we never begin extra work without asking you first.",
+        "proxy_base": "/apps/spa",
+        "notes_label": "Anything else we should know?",
+        "notes_placeholder": "The more detail, the better.",
+        "photos_hint": "Front, back, and a close-up of anything that worries you. Good light helps us quote accurately.",
+        "max_photos": 6,
+        "submit_label": "Send it in",
+        "signed_out_title": "Sign in to send a unit.",
+        "signed_out_body": "Your account keeps a record of every unit you send and everything we do to it."
+      },
+      "blocks": {
+        "s1": { "type": "service", "settings": { "label": "Rejuvenation", "value": "rejuvenation", "description": "Deep cleanse, condition, detangle and restyle." } },
+        "s2": { "type": "service", "settings": { "label": "Repair", "value": "repair", "description": "Lace work, elastic, small construction issues." } },
+        "s3": { "type": "service", "settings": { "label": "Reconstruction", "value": "reconstruction", "description": "Major cap rebuilding or structural work." } },
+        "s4": { "type": "service", "settings": { "label": "Color", "value": "color", "description": "Recolor, gloss, or full transformation." } },
+        "q1": { "type": "question", "settings": { "question": "What's wrong with the unit?", "placeholder": "Shedding, tangling, lifting lace..." } },
+        "q2": { "type": "question", "settings": { "question": "Desired part", "choices": "Middle, Side, Free part, No preference" } },
+        "q3": { "type": "question", "settings": { "question": "Lace condition", "choices": "Good, Slightly torn, Badly torn, No lace" } },
+        "q4": { "type": "question", "settings": { "question": "Has it been coloured?", "choices": "No, Yes — by us, Yes — elsewhere, Not sure" } },
+        "q5": { "type": "question", "settings": { "question": "Has adhesive been used?", "choices": "No, Glue, Tape, Both" } }
+      },
+      "block_order": ["s1", "s2", "s3", "s4", "q1", "q2", "q3", "q4", "q5"]
+    }
+  },
+  "order": ["request"]
+}

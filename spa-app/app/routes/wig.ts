@@ -1,7 +1,7 @@
 import type { LoaderFunctionArgs } from 'react-router';
 import pool from '../db.server.ts';
 import { findOrCreateMember, getWigDetail } from '../lib/db.ts';
-import { signPhotoUrls } from '../lib/photos.ts';
+import { createViewUrls } from '../lib/storage.ts';
 import { json, proxyError, withProxyAuth } from '../lib/proxy.ts';
 
 /**
@@ -33,7 +33,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) =>
     if (!detail) return json({ ok: true, signedIn: true, found: false });
 
     // One batch call for the profile shot and the gallery together.
-    const signed = await signPhotoUrls([
+    const signed = await createViewUrls([
       detail.wig.photoPath,
       ...detail.photos.map((photo) => photo.storagePath),
     ].filter((path): path is string => Boolean(path)));

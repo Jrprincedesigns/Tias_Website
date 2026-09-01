@@ -11,7 +11,7 @@ It serves three surfaces:
 | Surface | Who it's for |
 |---|---|
 | Embedded admin (Shopify sidebar) | Tia — the work queue, status, notes, photos, approvals |
-| App proxy endpoints (`/apps/spa/*`) | The storefront — Wig Closet and service requests |
+| App proxy endpoints (`/apps/spa/*`) | The storefront — Wig Closet, wig registration, photo uploads, service requests |
 | Webhook handlers | Shopify — subscription and order state |
 
 ## Why it can't be a theme
