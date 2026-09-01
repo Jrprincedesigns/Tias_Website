@@ -1,0 +1,122 @@
+{{ 'thetcollection.css' | asset_url | stylesheet_tag }}
+
+<section class="tc-section tc-tiers-wrap">
+  <div class="tc-container">
+    {%- if section.settings.eyebrow != blank or section.settings.title != blank or section.settings.intro != blank -%}
+      <div class="tc-section-head tc-reveal">
+        <div>
+          {%- if section.settings.eyebrow != blank -%}<span class="tc-eyebrow">{{ section.settings.eyebrow }}</span>{%- endif -%}
+          {%- if section.settings.title != blank -%}<h2 class="tc-section-title">{{ section.settings.title }}</h2>{%- endif -%}
+        </div>
+        {%- if section.settings.intro != blank -%}
+          <div class="tc-section-head__right"><p>{{ section.settings.intro }}</p></div>
+        {%- endif -%}
+      </div>
+    {%- endif -%}
+
+    <div class="tc-tiers tc-reveal">
+      {%- for block in section.blocks -%}
+        <article
+          class="tc-tier{% if block.settings.featured %} tc-tier--featured{% endif %}"
+          {{ block.shopify_attributes }}
+        >
+          {%- if block.settings.badge != blank -%}
+            <span class="tc-tier__badge">{{ block.settings.badge }}</span>
+          {%- endif -%}
+
+          <h3 class="tc-tier__name">{{ block.settings.name }}</h3>
+
+          {%- if block.settings.summary != blank -%}
+            <p class="tc-tier__summary">{{ block.settings.summary }}</p>
+          {%- endif -%}
+
+          <div class="tc-tier__pricing">
+            <span class="tc-tier__price">{{ block.settings.price }}</span>
+            {%- if block.settings.cadence != blank -%}
+              <span class="tc-tier__cadence">{{ block.settings.cadence }}</span>
+            {%- endif -%}
+          </div>
+
+          {%- if block.settings.inclusions != blank -%}
+            <div class="tc-tier__inclusions">{{ block.settings.inclusions }}</div>
+          {%- endif -%}
+
+          {%- if block.settings.cta_link != blank -%}
+            <a
+              href="{{ block.settings.cta_link }}"
+              class="tc-btn {% if block.settings.featured %}tc-btn--dark{% else %}tc-btn--outline{% endif %} tc-tier__cta"
+            >
+              {{ block.settings.cta_label | default: 'Join' }} <span class="tc-arrow">&rarr;</span>
+            </a>
+          {%- else -%}
+            <span class="tc-tier__soon">{{ block.settings.unavailable_label | default: 'Coming soon' }}</span>
+          {%- endif -%}
+
+          {%- if block.settings.fineprint != blank -%}
+            <p class="tc-tier__fineprint">{{ block.settings.fineprint }}</p>
+          {%- endif -%}
+        </article>
+      {%- endfor -%}
+    </div>
+
+    {%- if section.settings.footnote != blank -%}
+      <p class="tc-tiers__footnote tc-reveal">{{ section.settings.footnote }}</p>
+    {%- endif -%}
+  </div>
+</section>
+
+{% render 'tc-reveal-script' %}
+
+{% schema %}
+{
+  "name": "TC — Membership tiers",
+  "tag": "section",
+  "max_blocks": 4,
+  "settings": [
+    { "type": "text", "id": "eyebrow", "label": "Eyebrow", "default": "The Wig Spa Membership" },
+    { "type": "richtext", "id": "title", "label": "Title", "default": "<p>Your wig wardrobe,<br/>professionally <em>maintained</em>.</p>" },
+    { "type": "textarea", "id": "intro", "label": "Intro paragraph", "default": "Members send their units in for scheduled care, keep a record of every service, and pay member rates on everything else." },
+    { "type": "header", "content": "Pricing" },
+    {
+      "type": "paragraph",
+      "content": "Prices below are placeholders until the real numbers are set. Leave a tier's button link empty and it shows 'Coming soon' instead of sending anyone to checkout."
+    },
+    { "type": "text", "id": "footnote", "label": "Footnote under the tiers", "default": "Membership renews automatically. Cancel anytime from your account." }
+  ],
+  "blocks": [
+    {
+      "type": "tier",
+      "name": "Tier",
+      "settings": [
+        { "type": "text", "id": "name", "label": "Tier name", "default": "Essential Care" },
+        { "type": "text", "id": "badge", "label": "Badge", "info": "Optional. e.g. Most popular" },
+        { "type": "checkbox", "id": "featured", "label": "Highlight this tier", "default": false },
+        { "type": "textarea", "id": "summary", "label": "One-line summary", "default": "For one or two units that need routine upkeep." },
+        { "type": "text", "id": "price", "label": "Price", "default": "$—", "info": "Placeholder until pricing is confirmed." },
+        { "type": "text", "id": "cadence", "label": "Cadence", "default": "per month" },
+        {
+          "type": "richtext",
+          "id": "inclusions",
+          "label": "What's included",
+          "default": "<p>Spa services included each year<br/>Member pricing on additional services<br/>Priority booking<br/>Service history for every unit</p>"
+        },
+        { "type": "text", "id": "cta_label", "label": "Button label", "default": "Join" },
+        { "type": "url", "id": "cta_link", "label": "Button link", "info": "Link to the membership product. Leave empty while pricing is unconfirmed." },
+        { "type": "text", "id": "unavailable_label", "label": "Label when no link is set", "default": "Coming soon" },
+        { "type": "text", "id": "fineprint", "label": "Fine print" }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "TC — Membership tiers",
+      "category": "TheTCollection",
+      "blocks": [
+        { "type": "tier", "settings": { "name": "Essential Care", "summary": "For one or two units that need routine upkeep." } },
+        { "type": "tier", "settings": { "name": "Signature Care", "badge": "Most popular", "featured": true, "summary": "For a rotation of units worn through the year." } },
+        { "type": "tier", "settings": { "name": "Collection Care", "summary": "For a full wardrobe of high-value units." } }
+      ]
+    }
+  ]
+}
+{% endschema %}

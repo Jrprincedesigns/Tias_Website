@@ -1,0 +1,43 @@
+{
+  "include": [
+    "**/*.ts",
+    "**/*.tsx",
+    ".react-router/types/**/*",
+    "env.d.ts",
+    "test/**/*.ts"
+  ],
+  "compilerOptions": {
+    "allowImportingTsExtensions": true,
+    "allowJs": true,
+    "allowSyntheticDefaultImports": true,
+    "baseUrl": ".",
+    "forceConsistentCasingInFileNames": true,
+    "isolatedModules": true,
+    "jsx": "react-jsx",
+    "lib": [
+      "DOM",
+      "DOM.Iterable",
+      "ES2022"
+    ],
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "noEmit": true,
+    "noImplicitOverride": true,
+    "noUncheckedIndexedAccess": true,
+    "removeComments": false,
+    "resolveJsonModule": true,
+    "rootDirs": [
+      ".",
+      "./.react-router/types"
+    ],
+    "skipLibCheck": true,
+    "strict": true,
+    "target": "ES2022",
+    "types": [
+      "@react-router/node",
+      "@shopify/app-bridge-types",
+      "@shopify/polaris-types",
+      "vite/client"
+    ]
+  }
+}

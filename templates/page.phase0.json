@@ -1,0 +1,11 @@
+{
+  "sections": {
+    "probe": {
+      "type": "tc-phase0-probe",
+      "settings": {
+        "proxy_base": "/apps/spa"
+      }
+    }
+  },
+  "order": ["probe"]
+}

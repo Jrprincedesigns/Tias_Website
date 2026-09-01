@@ -1,0 +1,101 @@
+{{ 'thetcollection.css' | asset_url | stylesheet_tag }}
+
+{%- comment -%}
+  The Wig Closet — a member's units and their service history.
+
+  Gated on the customer object. The data itself comes from the app proxy,
+  which is the only party that can vouch for who is asking: Liquid tells us
+  someone is signed in, but the signed request is what proves it to the app.
+{%- endcomment -%}
+
+<section class="tc-section tc-closet-wrap">
+  <div class="tc-container">
+
+    {%- if customer == blank -%}
+      <div class="tc-closet-gate tc-reveal">
+        <span class="tc-eyebrow">{{ section.settings.eyebrow }}</span>
+        <h1 class="tc-section-title">{{ section.settings.signed_out_title }}</h1>
+        <p class="tc-closet-gate__body">{{ section.settings.signed_out_body }}</p>
+        <a href="{{ routes.account_login_url }}" class="tc-btn tc-btn--dark">
+          {{ section.settings.signed_out_cta | default: 'Sign in' }} <span class="tc-arrow">&rarr;</span>
+        </a>
+      </div>
+
+    {%- else -%}
+      <div class="tc-section-head tc-reveal">
+        <div>
+          <span class="tc-eyebrow">{{ section.settings.eyebrow }}</span>
+          <h1 class="tc-section-title">
+            {{ section.settings.greeting | default: 'Welcome back,' }}
+            <em>{{ customer.first_name | default: 'friend' }}</em>.
+          </h1>
+        </div>
+      </div>
+
+      {%- comment -%}
+        Everything below is replaced once the closet loads. The skeleton is
+        rendered server-side so the page reads as The T Collection immediately
+        rather than flashing empty and filling in.
+      {%- endcomment -%}
+      <div
+        class="tc-closet"
+        data-tc-closet
+        data-proxy-base="{{ section.settings.proxy_base | default: '/apps/spa' }}"
+        data-service-url="{{ section.settings.service_page | default: '' }}"
+        data-membership-url="{{ section.settings.membership_page | default: '' }}"
+      >
+        <div class="tc-closet__state" data-closet-state="loading">
+          <div class="tc-closet-skeleton"></div>
+          <div class="tc-closet-skeleton tc-closet-skeleton--short"></div>
+          <span class="visually-hidden">Loading your closet…</span>
+        </div>
+
+        <div class="tc-closet__state" data-closet-state="failed" hidden>
+          <div class="tc-closet-notice">
+            <h2>{{ section.settings.error_title | default: "We couldn't load your closet" }}</h2>
+            <p data-closet-error>{{ section.settings.error_body }}</p>
+          </div>
+        </div>
+
+        <div class="tc-closet__state" data-closet-state="ready" hidden>
+          <div data-closet-membership></div>
+          <div data-closet-active></div>
+          <div data-closet-wigs></div>
+        </div>
+      </div>
+    {%- endif -%}
+
+  </div>
+</section>
+
+{% render 'tc-reveal-script' %}
+<script src="{{ 'tc-wig-closet.js' | asset_url }}" defer></script>
+
+{% schema %}
+{
+  "name": "TC — Wig Closet",
+  "tag": "section",
+  "settings": [
+    { "type": "text", "id": "eyebrow", "label": "Eyebrow", "default": "Your Wig Closet" },
+    { "type": "text", "id": "greeting", "label": "Greeting", "default": "Welcome back," },
+    { "type": "header", "content": "Connection" },
+    {
+      "type": "text",
+      "id": "proxy_base",
+      "label": "App proxy base path",
+      "default": "/apps/spa",
+      "info": "Must match the prefix and subpath in the app's configuration."
+    },
+    { "type": "url", "id": "service_page", "label": "Send a wig in — page link" },
+    { "type": "url", "id": "membership_page", "label": "Membership page link" },
+    { "type": "header", "content": "Signed out" },
+    { "type": "text", "id": "signed_out_title", "label": "Title", "default": "Your closet is behind the door." },
+    { "type": "textarea", "id": "signed_out_body", "label": "Body", "default": "Sign in to see your units, their service history, and what your membership covers." },
+    { "type": "text", "id": "signed_out_cta", "label": "Button label", "default": "Sign in" },
+    { "type": "header", "content": "When something goes wrong" },
+    { "type": "text", "id": "error_title", "label": "Error title", "default": "We couldn't load your closet" },
+    { "type": "textarea", "id": "error_body", "label": "Error body", "default": "Your wigs are safe — this is a problem on our end. Try again in a moment, or contact the studio." }
+  ],
+  "presets": [{ "name": "TC — Wig Closet", "category": "TheTCollection" }]
+}
+{% endschema %}

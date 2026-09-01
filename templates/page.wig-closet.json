@@ -1,0 +1,18 @@
+{
+  "sections": {
+    "closet": {
+      "type": "tc-wig-closet",
+      "settings": {
+        "eyebrow": "Your Wig Closet",
+        "greeting": "Welcome back,",
+        "proxy_base": "/apps/spa",
+        "signed_out_title": "Your closet is behind the door.",
+        "signed_out_body": "Sign in to see your units, their service history, and what your membership covers.",
+        "signed_out_cta": "Sign in",
+        "error_title": "We couldn't load your closet",
+        "error_body": "Your wigs are safe — this is a problem on our end. Try again in a moment, or contact the studio."
+      }
+    }
+  },
+  "order": ["closet"]
+}
