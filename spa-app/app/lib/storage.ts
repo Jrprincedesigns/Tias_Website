@@ -101,10 +101,19 @@ export async function createViewUrls(paths: readonly string[]): Promise<Map<stri
       .storage.from(PHOTO_BUCKET)
       .createSignedUrls(unique, READ_URL_TTL_SECONDS);
 
-    if (error || !data) return signed;
+    // Logged rather than swallowed. A wrong key and an empty bucket both end
+    // up as "no photos" on the page, and without this line there is nothing to
+    // tell them apart — which is exactly the hour this cost once already.
+    if (error || !data) {
+      console.warn(`[storage] batch sign rejected: ${error?.message ?? 'no data returned'}`);
+      return signed;
+    }
 
     for (const row of data) {
-      if (row.error || !row.path || !row.signedUrl) continue;
+      if (row.error || !row.path || !row.signedUrl) {
+        console.warn(`[storage] could not sign ${row.path ?? '(unknown path)'}: ${row.error ?? 'no url returned'}`);
+        continue;
+      }
       signed.set(row.path, row.signedUrl);
     }
   } catch (cause) {
