@@ -1,57 +1,30 @@
-import type { LoaderFunctionArgs } from "react-router";
-import { redirect, Form, useLoaderData } from "react-router";
+import type { LoaderFunctionArgs } from 'react-router';
+import { redirect } from 'react-router';
 
-import { login } from "../../shopify.server";
-
-import styles from "./styles.module.css";
-
+/**
+ * The app root.
+ *
+ * Nothing about this app is meant to be browsed directly. Members reach it
+ * only through the storefront, where Shopify signs each request and forwards
+ * /apps/spa/<rest> here; Tia reaches it embedded in the Shopify admin. The
+ * scaffold shipped a marketing page here with placeholder copy and a shop-
+ * domain login form, which — once the app had a real hostname instead of a
+ * throwaway tunnel — published "[your app]" boilerplate and an OAuth entry
+ * point on a T Collection subdomain.
+ *
+ * So the root is a signpost, not a page.
+ */
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const url = new URL(request.url);
 
-  if (url.searchParams.get("shop")) {
+  // Shopify opens the embedded app by loading the root with ?shop=. This is
+  // the admin entry point and has to keep working — it is why this loader
+  // still exists rather than the route being deleted outright.
+  if (url.searchParams.get('shop')) {
     throw redirect(`/app?${url.searchParams.toString()}`);
   }
 
-  return { showForm: Boolean(login) };
+  // Anyone else is a person who typed the hostname. Send them to the shop.
+  // Installing on a store goes through /auth/login, which has its own form.
+  return redirect('https://thetcollection.shop');
 };
-
-export default function App() {
-  const { showForm } = useLoaderData<typeof loader>();
-
-  return (
-    <div className={styles.index}>
-      <div className={styles.content}>
-        <h1 className={styles.heading}>A short heading about [your app]</h1>
-        <p className={styles.text}>
-          A tagline about [your app] that describes your value proposition.
-        </p>
-        {showForm && (
-          <Form className={styles.form} method="post" action="/auth/login">
-            <label className={styles.label}>
-              <span>Shop domain</span>
-              <input className={styles.input} type="text" name="shop" />
-              <span>e.g: my-shop-domain.myshopify.com</span>
-            </label>
-            <button className={styles.button} type="submit">
-              Log in
-            </button>
-          </Form>
-        )}
-        <ul className={styles.list}>
-          <li>
-            <strong>Product feature</strong>. Some detail about your feature and
-            its benefit to your customer.
-          </li>
-          <li>
-            <strong>Product feature</strong>. Some detail about your feature and
-            its benefit to your customer.
-          </li>
-          <li>
-            <strong>Product feature</strong>. Some detail about your feature and
-            its benefit to your customer.
-          </li>
-        </ul>
-      </div>
-    </div>
-  );
-}

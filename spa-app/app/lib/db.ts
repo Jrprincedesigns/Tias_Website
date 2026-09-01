@@ -877,3 +877,160 @@ export async function recordInspectionDecision(
     return 'recorded';
   });
 }
+
+// ---------------------------------------------------------------------------
+// Subscription contracts — keeping membership state honest
+// ---------------------------------------------------------------------------
+
+/**
+ * Shopify's contract statuses, mapped onto ours.
+ *
+ * `FAILED` becomes past_due rather than cancelled on purpose: a failed charge
+ * is a card problem, and Shopify will retry. Treating it as cancelled would
+ * strip a paying member's benefits over a card that expired on a Tuesday.
+ */
+export function membershipStatusFromContract(
+  contractStatus: string,
+): MembershipWindow['status'] {
+  switch (contractStatus.toUpperCase()) {
+    case 'ACTIVE':
+      return 'active';
+    case 'PAUSED':
+      return 'paused';
+    case 'FAILED':
+      return 'past_due';
+    case 'CANCELLED':
+    case 'CANCELED':
+      return 'cancelled';
+    case 'EXPIRED':
+      return 'expired';
+    default:
+      // An unrecognised status must not silently read as active — that is the
+      // direction that gives away free work.
+      return 'past_due';
+  }
+}
+
+export interface ContractSnapshot {
+  shopifyContractId: string;
+  shopifyCustomerId: string;
+  status: string;
+  tier: string;
+  nextBillingAt: Date | null;
+}
+
+/**
+ * Write what Shopify says about a contract into the membership it belongs to.
+ *
+ * Shopify is the truth for whether a membership is paid for; this table is the
+ * truth for what has been done under it. So status and billing date come from
+ * the contract on every delivery, and the membership year is set once at
+ * creation and left alone — allowances are granted against that window, and
+ * moving it later would silently re-grant or revoke services already used.
+ *
+ * Idempotent by contract id, because webhooks arrive more than once and out of
+ * order. A redelivery of an older state cannot resurrect a cancelled
+ * membership: the update only moves the row forward in time.
+ */
+export async function upsertMembershipFromContract(
+  pool: Transactable,
+  snapshot: ContractSnapshot,
+): Promise<{ membershipId: string; created: boolean }> {
+  return withTransaction(pool, async (tx) => {
+    const member = await findOrCreateMember(tx, {
+      shopifyCustomerId: snapshot.shopifyCustomerId,
+    });
+
+    const status = membershipStatusFromContract(snapshot.status);
+
+    const existing = await tx.query(
+      `select id from memberships where shopify_contract_id = $1`,
+      [snapshot.shopifyContractId],
+    );
+
+    if (existing.rows.length > 0) {
+      const membershipId = existing.rows[0].id;
+      await tx.query(
+        `update memberships
+            set status = $2::membership_status,
+                tier = $3,
+                next_billing_at = $4,
+                cancelled_at = case when $2::membership_status = 'cancelled'
+                                    then coalesce(cancelled_at, now()) else null end,
+                updated_at = now()
+          where id = $1`,
+        [membershipId, status, snapshot.tier, snapshot.nextBillingAt],
+      );
+      await tx.query(
+        `insert into events (membership_id, kind, actor, payload)
+         values ($1, 'membership_updated', 'shopify', $2::jsonb)`,
+        [membershipId, JSON.stringify({ status, contract: snapshot.shopifyContractId })],
+      );
+      return { membershipId, created: false };
+    }
+
+    // A new contract starts a membership year today. The allowance grant that
+    // goes with it belongs to whatever creates the plan, not here — this
+    // handler must stay safe to run twice.
+    const inserted = await tx.query(
+      `insert into memberships
+         (member_id, shopify_contract_id, tier, status,
+          membership_year_start, membership_year_end, next_billing_at)
+       values ($1, $2, $3, $4::membership_status,
+               current_date, current_date + interval '1 year', $5)
+       returning id`,
+      [member.id, snapshot.shopifyContractId, snapshot.tier, status, snapshot.nextBillingAt],
+    );
+    const membershipId = inserted.rows[0].id;
+
+    await tx.query(
+      `insert into events (membership_id, kind, actor, payload)
+       values ($1, 'membership_created', 'shopify', $2::jsonb)`,
+      [membershipId, JSON.stringify({ status, contract: snapshot.shopifyContractId })],
+    );
+
+    return { membershipId, created: true };
+  });
+}
+
+/**
+ * Attach a paid order to the work it paid for.
+ *
+ * Tia raises a draft order when an inspection finds work beyond what was
+ * booked; when the member pays it, this is what closes the loop so the work
+ * order shows as settled rather than still waiting on approval.
+ *
+ * Matching is by draft order id, which the inspection recorded when the quote
+ * was raised. Returns the requests it touched so the caller can log honestly
+ * about an order that matched nothing — most orders are ordinary shop orders
+ * and match nothing at all, which is not an error.
+ */
+export async function reconcilePaidOrder(
+  pool: Transactable,
+  input: { shopifyOrderId: string; draftOrderIds: readonly string[] },
+): Promise<string[]> {
+  if (input.draftOrderIds.length === 0) return [];
+
+  return withTransaction(pool, async (tx) => {
+    const { rows } = await tx.query(
+      `update service_requests sr
+          set shopify_order_id = $1, updated_at = now()
+         from inspections i
+        where i.service_request_id = sr.id
+          and i.shopify_draft_order_id = any($2::text[])
+          and sr.shopify_order_id is null
+      returning sr.id`,
+      [input.shopifyOrderId, input.draftOrderIds],
+    );
+
+    for (const row of rows) {
+      await tx.query(
+        `insert into events (service_request_id, kind, actor, payload)
+         values ($1, 'additional_work_paid', 'shopify', $2::jsonb)`,
+        [row.id, JSON.stringify({ orderId: input.shopifyOrderId })],
+      );
+    }
+
+    return rows.map((row: any) => row.id);
+  });
+}
