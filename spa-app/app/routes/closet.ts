@@ -1,6 +1,7 @@
 import type { LoaderFunctionArgs } from 'react-router';
 import pool from '../db.server.ts';
 import { getCloset } from '../lib/db.ts';
+import { createViewUrls } from '../lib/storage.ts';
 import { json, withProxyAuth } from '../lib/proxy.ts';
 
 /**
@@ -14,6 +15,12 @@ export const loader = async ({ request }: LoaderFunctionArgs) =>
   withProxyAuth(request, async (customer) => {
     const closet = await getCloset(pool, customer.shopifyCustomerId);
 
+    // Unit cards lead with the wig's photograph, so the grid needs signed URLs
+    // too — not just the detail panel. One batch call covers the whole closet.
+    const signed = await createViewUrls(
+      closet.wigs.map((wig) => wig.photoPath).filter((path): path is string => Boolean(path)),
+    );
+
     return json({
       ok: true,
       signedIn: true,
@@ -26,7 +33,10 @@ export const loader = async ({ request }: LoaderFunctionArgs) =>
             servicesRemaining: closet.allowanceRemaining,
           }
         : null,
-      wigs: closet.wigs,
+      wigs: closet.wigs.map((wig) => ({
+        ...wig,
+        photoUrl: wig.photoPath ? signed.get(wig.photoPath) ?? null : null,
+      })),
       activeServices: closet.activeServices.map((service) => ({
         id: service.id,
         wigId: service.wigId,

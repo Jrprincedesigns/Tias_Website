@@ -493,6 +493,22 @@
   background: linear-gradient(135deg, transparent 50%, rgba(255,255,255,0.15) 100%);
 }
 
+/* Five-cell variant — same 3x2 grid, but the bottom-right row splits
+   into two equal cells instead of one wide one. Scoped to .tc-bento--5
+   so every existing four-block page keeps the wide cell 4 unchanged. */
+.tc-section .tc-bento--5 .tc-bento-cell--4 {
+  grid-row: 2;
+  grid-column: 2;
+}
+.tc-section .tc-bento-cell--5 {
+  grid-row: 2;
+  grid-column: 3;
+  background: var(--tc-cream-soft);
+}
+.tc-section .tc-bento-cell--5::before {
+  background: linear-gradient(135deg, transparent 50%, rgba(255,255,255,0.15) 100%);
+}
+
 /* Cell typography — text-shadow gives the white text an extra
    readability buffer on busy or light areas of the image */
 .tc-section .tc-bento-name {
@@ -580,6 +596,11 @@
   .tc-section .tc-bento-cell--2 { grid-row: 2; grid-column: 1; }
   .tc-section .tc-bento-cell--3 { grid-row: 2; grid-column: 2; }
   .tc-section .tc-bento-cell--4 { grid-row: 3; grid-column: 1 / 3; }
+
+  /* Five-cell variant on mobile: the bottom row splits, matching desktop. */
+  .tc-section .tc-bento--5 { grid-template-rows: 280px 200px 200px; }
+  .tc-section .tc-bento--5 .tc-bento-cell--4 { grid-row: 3; grid-column: 1; }
+  .tc-section .tc-bento-cell--5 { grid-row: 3; grid-column: 2; }
 }
 
 /* ============================================================
@@ -2507,6 +2528,341 @@ body:has(.customer) {
 }
 
 /* ============================================================
+   WIG CLOSET — UNIT CARD WITH PHOTO
+   Figma 9:2 / 8:16 / 8:28 are one card in three content states
+   (never serviced / serviced / outside unit). The Figma layout is
+   followed — photo above stacked title, spec, meta — while the type
+   and colour come from the theme rather than the mock's Inter/greys.
+   The card is a <button>: it opens the detail panel, so it has to be
+   reachable by keyboard and announce itself as pressable.
+   ============================================================ */
+.tc-section .tc-closet-wig {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  text-align: left;
+  width: 100%;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  border: 1px solid var(--tc-line);
+  background: var(--tc-paper);
+  transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.4s ease;
+}
+.tc-section .tc-closet-wig:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 24px rgba(14, 27, 77, 0.10);
+}
+.tc-section .tc-closet-wig:focus-visible {
+  outline: 2px solid var(--tc-lavender-deep);
+  outline-offset: 3px;
+}
+
+/* Fixed ratio so a grid of units stays aligned whether or not each
+   one has a photo yet — an unphotographed unit holds its place. */
+.tc-section .tc-closet-wig__photo {
+  position: relative;
+  aspect-ratio: 277 / 224;
+  border-radius: var(--tc-radius-lg);
+  overflow: hidden;
+  background: var(--tc-cream-soft);
+}
+.tc-section .tc-closet-wig__photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+/* Placeholder monogram — stands in until photo storage is wired. */
+.tc-section .tc-closet-wig__initial {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--tc-serif);
+  font-size: clamp(34px, 6vw, 48px);
+  color: var(--tc-lavender-soft);
+  user-select: none;
+}
+.tc-section .tc-closet-wig .tc-closet-card__title { font-size: 19px; }
+.tc-section .tc-closet-wig .tc-closet-card__meta { margin-top: 0; font-size: 13px; }
+.tc-section .tc-closet-wig .tc-closet-chip { margin-top: 0; align-self: flex-start; }
+
+/* ============================================================
+   WIG CLOSET — DETAIL PANEL (Figma 10:5)
+   The mock's information architecture is followed section for
+   section: header with pagination, a left column that runs
+   title → unit → reason → photos → timeline, a fixed right column
+   of details and notes, and a footer that carries the decision.
+   Presentation is the theme's: serif headings, lavender accents,
+   cream cards, no Inter and no borrowed greys.
+   ============================================================ */
+.tc-closet-panel {
+  position: fixed;
+  inset: 0;
+  z-index: 120;
+  display: flex;
+  justify-content: flex-end;
+}
+.tc-closet-panel[hidden] { display: none; }
+.tc-closet-panel__scrim {
+  position: absolute;
+  inset: 0;
+  background: rgba(10, 19, 47, 0.45);
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  animation: tc-panel-fade 0.25s ease;
+}
+.tc-closet-panel__dialog {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: min(1080px, 100%);
+  height: 100%;
+  background: var(--tc-bg);
+  box-shadow: -20px 0 60px rgba(10, 19, 47, 0.22);
+  animation: tc-panel-slide 0.32s cubic-bezier(0.2, 0.8, 0.2, 1);
+  overflow: hidden;
+}
+@keyframes tc-panel-fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes tc-panel-slide { from { transform: translateX(40px); opacity: 0; } to { transform: none; opacity: 1; } }
+@media (prefers-reduced-motion: reduce) {
+  .tc-closet-panel__scrim,
+  .tc-closet-panel__dialog { animation: none; }
+}
+
+.tc-closet-panel__header {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 16px 24px;
+  border-bottom: 1px solid var(--tc-line);
+  background: var(--tc-paper);
+  flex: none;
+}
+.tc-closet-panel__count {
+  font-size: 12px;
+  color: var(--tc-mute);
+  margin-right: auto;
+}
+.tc-closet-panel__nav { display: flex; }
+.tc-closet-panel__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 34px;
+  height: 34px;
+  padding: 0 10px;
+  background: var(--tc-paper);
+  border: 1px solid var(--tc-line);
+  color: var(--tc-navy);
+  font: inherit;
+  font-size: 15px;
+  line-height: 1;
+  cursor: pointer;
+}
+.tc-closet-panel__nav .tc-closet-panel__btn:first-child { border-radius: 8px 0 0 8px; }
+.tc-closet-panel__nav .tc-closet-panel__btn:last-child { border-radius: 0 8px 8px 0; margin-left: -1px; }
+.tc-closet-panel__btn--close { border-radius: 8px; margin-left: 6px; }
+.tc-closet-panel__btn:hover:not(:disabled) { background: var(--tc-cream); }
+.tc-closet-panel__btn:disabled { opacity: 0.4; cursor: default; }
+.tc-closet-panel__btn:focus-visible { outline: 2px solid var(--tc-lavender-deep); outline-offset: 2px; }
+
+.tc-closet-panel__body {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  align-items: start;
+}
+.tc-closet-panel__main { padding: 28px 26px; display: flex; flex-direction: column; gap: 26px; }
+.tc-closet-panel__side {
+  padding: 28px 26px;
+  display: flex;
+  flex-direction: column;
+  gap: 26px;
+  border-left: 1px solid var(--tc-line);
+  background: var(--tc-paper);
+  min-height: 100%;
+}
+
+.tc-closet-panel__title {
+  font-family: var(--tc-serif);
+  font-size: clamp(26px, 3vw, 32px);
+  font-weight: 400;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  margin: 0;
+}
+.tc-closet-panel__titlerow { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; }
+.tc-closet-panel__sub { font-size: 13px; color: var(--tc-mute); margin: 6px 0 0; }
+.tc-closet-panel__sub strong { color: var(--tc-navy); font-weight: 600; }
+
+.tc-closet-panel__section > h3 {
+  font-family: var(--tc-sans);
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--tc-mute);
+  font-weight: 600;
+  margin: 0 0 12px;
+}
+
+/* Unit summary — the mock's product row */
+.tc-closet-panel__unit { display: flex; gap: 16px; align-items: center; }
+.tc-closet-panel__thumb {
+  position: relative;
+  width: 72px;
+  height: 72px;
+  flex: none;
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--tc-cream-soft);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--tc-serif);
+  font-size: 26px;
+  color: var(--tc-lavender-soft);
+}
+.tc-closet-panel__thumb img { width: 100%; height: 100%; object-fit: cover; }
+.tc-closet-panel__unitname { font-family: var(--tc-serif); font-size: 19px; line-height: 1.2; }
+.tc-closet-panel__unitspec { font-size: 12px; color: var(--tc-mute); margin-top: 4px; }
+
+/* Reason card — the mock's left accent bar, in lavender */
+.tc-closet-panel__reason {
+  display: flex;
+  background: var(--tc-cream);
+  border: 1px solid var(--tc-line);
+  border-radius: 10px;
+  overflow: hidden;
+}
+.tc-closet-panel__reason::before {
+  content: '';
+  width: 4px;
+  flex: none;
+  background: var(--tc-lavender-deep);
+}
+.tc-closet-panel__reason > div { padding: 14px 16px; }
+.tc-closet-panel__reason p { margin: 6px 0 0; font-size: 14px; line-height: 1.55; }
+
+/* Photo gallery — mirrors the mock's proof grid */
+.tc-closet-panel__photos {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 12px;
+}
+.tc-closet-panel__photo {
+  position: relative;
+  aspect-ratio: 4 / 3;
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--tc-cream-soft);
+  border: 1px solid var(--tc-line);
+  display: flex;
+  align-items: flex-end;
+  padding: 10px;
+}
+.tc-closet-panel__photo img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.tc-closet-panel__photo span {
+  position: relative;
+  font-size: 11px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  background: rgba(10, 19, 47, 0.6);
+  color: #fff;
+}
+
+/* Detail rows — the mock's right-hand list */
+.tc-closet-panel__rows { display: flex; flex-direction: column; gap: 11px; }
+.tc-closet-panel__row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 14px;
+  font-size: 13px;
+}
+.tc-closet-panel__row dt { color: var(--tc-mute); margin: 0; }
+.tc-closet-panel__row dd { margin: 0; text-align: right; font-weight: 500; color: var(--tc-navy); }
+
+.tc-closet-panel__note {
+  background: var(--tc-cream);
+  border: 1px solid var(--tc-line);
+  border-radius: 10px;
+  padding: 14px 16px;
+  font-size: 14px;
+  line-height: 1.6;
+}
+.tc-closet-panel__note + .tc-closet-panel__note { margin-top: 10px; }
+.tc-closet-panel__note em {
+  display: block;
+  font-style: normal;
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--tc-mute);
+  margin-bottom: 6px;
+}
+.tc-closet-panel__empty { font-size: 14px; color: var(--tc-mute); margin: 0; }
+
+/* History entries */
+.tc-closet-panel__entry { border-top: 1px solid var(--tc-line); padding-top: 16px; margin-top: 16px; }
+.tc-closet-panel__entry:first-child { border-top: 0; padding-top: 0; margin-top: 0; }
+.tc-closet-panel__entryhead { display: flex; align-items: baseline; flex-wrap: wrap; gap: 10px; }
+.tc-closet-panel__entryname { font-family: var(--tc-serif); font-size: 17px; }
+.tc-closet-panel__events { list-style: none; margin: 12px 0 0; padding: 0; }
+.tc-closet-panel__events li {
+  position: relative;
+  padding-left: 18px;
+  font-size: 13px;
+  color: var(--tc-mute);
+  line-height: 1.5;
+}
+.tc-closet-panel__events li + li { margin-top: 8px; }
+.tc-closet-panel__events li::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 7px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--tc-lavender-soft);
+}
+
+.tc-closet-panel__footer {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 14px;
+  padding: 16px 24px;
+  border-top: 1px solid var(--tc-line);
+  background: var(--tc-paper);
+}
+.tc-closet-panel__footer p { margin: 0; font-size: 12px; color: var(--tc-mute); }
+.tc-closet-panel__actions { display: flex; align-items: center; gap: 12px; }
+.tc-closet-panel__link {
+  background: none;
+  border: 0;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--tc-navy);
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 10px 4px;
+}
+
+@media (max-width: 900px) {
+  .tc-closet-panel__body { grid-template-columns: 1fr; }
+  .tc-closet-panel__side { border-left: 0; border-top: 1px solid var(--tc-line); min-height: 0; }
+  .tc-closet-panel__dialog { width: 100%; }
    SEND A WIG IN
    ============================================================ */
 .tc-section.tc-request-wrap { padding: clamp(60px, 8vw, 110px) 0; }

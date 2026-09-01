@@ -639,3 +639,241 @@ export async function recordIntakePhotos(
   );
   return rowCount ?? 0;
 }
+// ---------------------------------------------------------------------------
+// Wig detail — everything behind one unit card in the closet
+// ---------------------------------------------------------------------------
+
+export interface WigDetailPhoto {
+  id: string;
+  kind: string;
+  storagePath: string;
+  caption: string | null;
+  createdAt: Date;
+}
+
+export interface WigDetailEvent {
+  kind: string;
+  fromStatus: ServiceStatus | null;
+  toStatus: ServiceStatus | null;
+  createdAt: Date;
+}
+
+export interface WigDetailInspection {
+  assessment: string | null;
+  recommendedWork: string | null;
+  additionalCostCents: number | null;
+  currency: string;
+  customerApproved: boolean | null;
+  customerRespondedAt: Date | null;
+}
+
+export interface WigDetailService {
+  id: string;
+  serviceType: string;
+  status: ServiceStatus;
+  coveredByAllowance: boolean;
+  customerNotes: string | null;
+  studioNotes: string | null;
+  submittedAt: Date;
+  receivedAt: Date | null;
+  completedAt: Date | null;
+  events: WigDetailEvent[];
+  inspection: WigDetailInspection | null;
+}
+
+export interface WigDetail {
+  wig: Wig & {
+    laceType: string | null;
+    capSize: string | null;
+    purchasedOn: string | null;
+    notes: string | null;
+  };
+  services: WigDetailService[];
+  photos: WigDetailPhoto[];
+}
+
+/**
+ * One unit and its whole history.
+ *
+ * `memberId` is not a filter of convenience — it is the ownership check. The
+ * wig id arrives from the browser, so a member editing it must get nothing
+ * back rather than someone else's unit. Returns null when the wig is not
+ * theirs, which the route reports the same way it reports "no such wig":
+ * telling the difference would confirm the id exists.
+ *
+ * Only `customer_visible` photos come back. Arrival documentation is written
+ * for the studio's protection first, and defaults to private.
+ */
+export async function getWigDetail(
+  db: Queryable,
+  memberId: string,
+  wigId: string,
+): Promise<WigDetail | null> {
+  const { rows: wigRows } = await db.query(
+    `select w.id, w.nickname, w.is_t_collection, w.brand, w.length_inches,
+            w.texture, w.color, w.lace_type, w.cap_size, w.purchased_on,
+            w.photo_path, w.notes,
+            (select max(sr.completed_at)
+               from service_requests sr
+              where sr.wig_id = w.id and sr.status = 'completed') as last_serviced_at
+       from wigs w
+      where w.id = $1 and w.member_id = $2 and w.retired_at is null`,
+    [wigId, memberId],
+  );
+  if (wigRows.length === 0) return null;
+  const w = wigRows[0];
+
+  const { rows: serviceRows } = await db.query(
+    `select sr.id, sr.service_type, sr.status, sr.covered_by_allowance,
+            sr.customer_notes, sr.studio_notes,
+            sr.submitted_at, sr.received_at, sr.completed_at
+       from service_requests sr
+      where sr.wig_id = $1 and sr.member_id = $2
+      order by sr.submitted_at desc`,
+    [wigId, memberId],
+  );
+
+  const serviceIds = serviceRows.map((r: any) => r.id);
+
+  // Two grouped reads rather than one per service — a unit with a long history
+  // would otherwise fan out into a query per row.
+  const eventsByService = new Map<string, WigDetailEvent[]>();
+  const inspectionByService = new Map<string, WigDetailInspection>();
+
+  if (serviceIds.length > 0) {
+    const { rows: eventRows } = await db.query(
+      `select service_request_id, kind, from_status, to_status, created_at
+         from events
+        where service_request_id = any($1::uuid[])
+        order by created_at asc`,
+      [serviceIds],
+    );
+    for (const row of eventRows) {
+      const list = eventsByService.get(row.service_request_id) ?? [];
+      list.push({
+        kind: row.kind,
+        fromStatus: row.from_status,
+        toStatus: row.to_status,
+        createdAt: new Date(row.created_at),
+      });
+      eventsByService.set(row.service_request_id, list);
+    }
+
+    // Latest inspection per request — a correction is a new row, not an edit.
+    const { rows: inspectionRows } = await db.query(
+      `select distinct on (service_request_id)
+              service_request_id, assessment, recommended_work,
+              additional_cost_cents, currency, customer_approved, customer_responded_at
+         from inspections
+        where service_request_id = any($1::uuid[])
+        order by service_request_id, created_at desc`,
+      [serviceIds],
+    );
+    for (const row of inspectionRows) {
+      inspectionByService.set(row.service_request_id, {
+        assessment: row.assessment,
+        recommendedWork: row.recommended_work,
+        additionalCostCents: row.additional_cost_cents,
+        currency: row.currency,
+        customerApproved: row.customer_approved,
+        customerRespondedAt: row.customer_responded_at ? new Date(row.customer_responded_at) : null,
+      });
+    }
+  }
+
+  const { rows: photoRows } = await db.query(
+    `select id, kind, storage_path, caption, created_at
+       from photos
+      where wig_id = $1 and member_id = $2 and customer_visible = true
+      order by created_at desc`,
+    [wigId, memberId],
+  );
+
+  return {
+    wig: {
+      id: w.id,
+      nickname: w.nickname,
+      isTCollection: w.is_t_collection,
+      brand: w.brand,
+      lengthInches: w.length_inches,
+      texture: w.texture,
+      color: w.color,
+      laceType: w.lace_type,
+      capSize: w.cap_size,
+      purchasedOn: w.purchased_on ? new Date(w.purchased_on).toISOString() : null,
+      photoPath: w.photo_path,
+      notes: w.notes,
+      lastServicedAt: w.last_serviced_at ? new Date(w.last_serviced_at).toISOString() : null,
+    },
+    services: serviceRows.map((row: any) => ({
+      id: row.id,
+      serviceType: row.service_type,
+      status: row.status,
+      coveredByAllowance: row.covered_by_allowance,
+      customerNotes: row.customer_notes,
+      studioNotes: row.studio_notes,
+      submittedAt: new Date(row.submitted_at),
+      receivedAt: row.received_at ? new Date(row.received_at) : null,
+      completedAt: row.completed_at ? new Date(row.completed_at) : null,
+      events: eventsByService.get(row.id) ?? [],
+      inspection: inspectionByService.get(row.id) ?? null,
+    })),
+    photos: photoRows.map((row: any) => ({
+      id: row.id,
+      kind: row.kind,
+      storagePath: row.storage_path,
+      caption: row.caption,
+      createdAt: new Date(row.created_at),
+    })),
+  };
+}
+
+/**
+ * The member's answer to "we found more work — shall we?".
+ *
+ * Records the decision against the inspection and moves the work order off
+ * `awaiting_customer_approval`. Money is deliberately not touched here: raising
+ * the draft order for the extra cost is a separate step that needs the Admin
+ * API, and a decision recorded twice must not bill twice.
+ *
+ * The ownership check is in the WHERE clause rather than a prior read, so a
+ * member cannot answer for someone else's inspection between the two.
+ */
+export async function recordInspectionDecision(
+  pool: Transactable,
+  input: { memberId: string; serviceRequestId: string; approved: boolean },
+): Promise<'recorded' | 'not_found' | 'already_answered'> {
+  return withTransaction(pool, async (tx) => {
+    const { rows } = await tx.query(
+      `select sr.id, sr.status, i.id as inspection_id, i.customer_approved
+         from service_requests sr
+         join inspections i on i.service_request_id = sr.id
+        where sr.id = $1 and sr.member_id = $2
+        order by i.created_at desc
+        limit 1`,
+      [input.serviceRequestId, input.memberId],
+    );
+    if (rows.length === 0) return 'not_found';
+    if (rows[0].customer_approved !== null) return 'already_answered';
+
+    await tx.query(
+      `update inspections
+          set customer_approved = $2, customer_responded_at = now()
+        where id = $1`,
+      [rows[0].inspection_id, input.approved],
+    );
+
+    const nextStatus = input.approved ? 'approved' : 'returned_unserviced';
+    await tx.query(
+      `update service_requests set status = $2::service_status, updated_at = now() where id = $1`,
+      [input.serviceRequestId, nextStatus],
+    );
+    await tx.query(
+      `insert into events (service_request_id, kind, from_status, to_status, actor, payload)
+       values ($1, 'customer_decision', $2::service_status, $3::service_status, 'customer', $4::jsonb)`,
+      [input.serviceRequestId, rows[0].status, nextStatus, JSON.stringify({ approved: input.approved })],
+    );
+
+    return 'recorded';
+  });
+}

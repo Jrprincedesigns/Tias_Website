@@ -77,3 +77,41 @@ export async function createViewUrl(path: string): Promise<string | null> {
   if (error || !data) return null;
   return data.signedUrl;
 }
+
+/**
+ * Temporary links for many photos at once.
+ *
+ * The closet grid and the detail panel both need every photo signed before
+ * they render, and calling createViewUrl per path would mean one round trip
+ * per unit. This is the same operation, batched.
+ *
+ * A path that cannot be signed is simply absent from the map rather than
+ * present with a broken value — callers render their placeholder instead. That
+ * includes the case where Supabase is not configured at all: a missing photo
+ * should leave a gap in a gallery, never take down the unit around it.
+ */
+export async function createViewUrls(paths: readonly string[]): Promise<Map<string, string>> {
+  const signed = new Map<string, string>();
+
+  const unique = Array.from(new Set(paths.filter((path) => Boolean(path))));
+  if (unique.length === 0) return signed;
+
+  try {
+    const { data, error } = await storage()
+      .storage.from(PHOTO_BUCKET)
+      .createSignedUrls(unique, READ_URL_TTL_SECONDS);
+
+    if (error || !data) return signed;
+
+    for (const row of data) {
+      if (row.error || !row.path || !row.signedUrl) continue;
+      signed.set(row.path, row.signedUrl);
+    }
+  } catch (cause) {
+    // storage() throws when the Supabase variables are unset. Photos are not
+    // worth failing a closet over, so this is logged and left empty.
+    console.warn('[storage] could not sign photo urls:', cause instanceof Error ? cause.message : cause);
+  }
+
+  return signed;
+}

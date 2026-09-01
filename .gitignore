@@ -4,9 +4,13 @@ node_modules/
 .env.*
 !.env.example
 
-# Supabase CLI scratch
-supabase/.temp/
-supabase/.branches/
+# Supabase CLI scratch. Patterns with a slash anchor to this file's directory,
+# so the bare form missed spa-app/supabase/.temp/ when the CLI was run there.
+**/supabase/.temp/
+**/supabase/.branches/
+
+# Vercel CLI / build-preset scratch
+**/.vercel/
 
 # OS noise
 .DS_Store
