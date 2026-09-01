@@ -22,10 +22,10 @@
       </div>
     {%- endif -%}
 
-    <div class="tc-bento tc-reveal">
+    <div class="tc-bento tc-bento--{{ section.blocks.size }} tc-reveal">
       {%- for block in section.blocks -%}
         {%- assign position = forloop.index -%}
-        {%- if position > 4 -%}{%- assign position = 4 -%}{%- endif -%}
+        {%- if position > 5 -%}{%- assign position = 5 -%}{%- endif -%}
 
         {%- assign cell_image = block.settings.image | default: block.settings.product.featured_image | default: block.settings.collection.image -%}
         {%- assign cell_name = block.settings.name | default: block.settings.product.title | default: block.settings.collection.title -%}
@@ -107,7 +107,7 @@
 {
   "name": "TC — Bento grid",
   "tag": "section",
-  "max_blocks": 4,
+  "max_blocks": 5,
   "settings": [
     {
       "type": "header",
@@ -135,7 +135,7 @@
     {
       "type": "header",
       "content": "Layout note",
-      "info": "The first block is the large feature cell. Add up to three more blocks for the right side."
+      "info": "The first block is the large feature cell. Add up to four more blocks for the right side — with four, the last one spans the bottom; with five, the bottom row splits in two."
     }
   ],
   "blocks": [
