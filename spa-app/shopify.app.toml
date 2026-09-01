@@ -2,7 +2,7 @@
 
 client_id = "b379f3423f17d23f5eb220cd611824d6"
 name = "tc-wig-spa"
-application_url = "https://example.com"
+application_url = "https://spa.thetcollection.shop"
 embedded = true
 
 [access_scopes]
@@ -25,7 +25,7 @@ scopes = "read_customers,write_customers,write_products,read_own_subscription_co
 # service-request.ts) to match what the CLI actually configures. Keeping a
 # /proxy suffix here would work until the next `app dev` silently removed it.
 [app_proxy]
-url = "https://example.com"
+url = "https://spa.thetcollection.shop"
 subpath = "spa"
 prefix = "apps"
 
@@ -55,8 +55,15 @@ api_version = "2026-10"
   topics = [ "orders/paid" ]
 
 [auth]
-redirect_urls = [ "https://example.com/api/auth" ]
+redirect_urls = [ "https://spa.thetcollection.shop/api/auth" ]
 
 [build]
-include_config_on_deploy = true
-automatically_update_urls_on_dev = true
+# Off deliberately. When true, every `shopify app dev` run rewrote
+# application_url, app_proxy.url and redirect_urls to its throwaway tunnel —
+# and the tunnel dies with the process. Forgetting to `npm run deploy`
+# afterwards left live members proxied at a dead host, with the closet showing
+# "we could not reach the studio" and nothing in the app to explain it.
+#
+# The cost is that dev URLs are now set by hand when they need to change. That
+# is a chore you notice, which is better than a silent production outage.
+automatically_update_urls_on_dev = false
