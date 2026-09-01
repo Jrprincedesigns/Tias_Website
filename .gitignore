@@ -9,5 +9,8 @@ node_modules/
 **/supabase/.temp/
 **/supabase/.branches/
 
+# Vercel CLI / build-preset scratch
+**/.vercel/
+
 # OS noise
 .DS_Store
