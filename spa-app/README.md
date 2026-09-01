@@ -127,6 +127,20 @@ unset `DATABASE_URL` is the first thing to check.
   removes `SellingPlanGroup` records belonging to an uninstalled subscriptions
   app. Live memberships depend on this app staying installed.
 
+  Two things guard this, and neither prevents it — they buy time and lower the
+  odds:
+
+  1. **The uninstall webhook raises an alert.** Set `ALERT_WEBHOOK_URL` to a
+     Slack/Discord incoming webhook or any endpoint that can reach a phone.
+     Without it the alert only reaches the logs, which is where this problem
+     went unnoticed by design. Reinstalling inside the 48-hour window costs
+     nothing; outside it, every member's billing has nothing left to bill
+     against.
+  2. **Restrict who can uninstall.** In Shopify admin, staff need the *Apps*
+     permission to remove an app. Limit it to the store owner: Settings →
+     Users and permissions → the staff member → uncheck *Manage and install
+     apps*. Nothing in this repo can enforce that.
+
 - **Webhook bodies must be verified against raw bytes.** Parsing the JSON and
   re-serialising it changes the bytes and the HMAC will not match. There is a
   test for exactly this.
