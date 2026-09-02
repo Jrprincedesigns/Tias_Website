@@ -41,6 +41,17 @@ export const MEMBER_DISCOUNT_METAFIELD = {
   key: 'member_discount_percent',
 } as const;
 
+/**
+ * The line of copy under a tier's name, on the variant so Tia can rewrite it
+ * without a deploy. Each tier says something different about who it is for and
+ * what it actually changes — three cards repeating one sentence with a
+ * different number in it reads like a price list rather than a choice.
+ */
+export const TIER_SUMMARY_METAFIELD = {
+  namespace: 'wig_spa',
+  key: 'tier_summary',
+} as const;
+
 export interface MembershipTier {
   /** Stable key. Never shown to a member; used to match a contract to a tier. */
   id: 'essential' | 'signature' | 'collection';
@@ -58,21 +69,21 @@ export const TIERS: readonly MembershipTier[] = [
     name: 'Essential Care',
     annualPrice: 48,
     discountPercent: 10,
-    summary: 'For one or two units that need routine upkeep.',
+    summary: 'For one or two units you wear regularly. Ten percent off every service in the spa.',
   },
   {
     id: 'signature',
     name: 'Signature Care',
     annualPrice: 80,
     discountPercent: 15,
-    summary: 'For a rotation of units worn throughout the year.',
+    summary: 'For a rotation you move between. Fifteen percent off, and your work is booked ahead of standard jobs.',
   },
   {
     id: 'collection',
     name: 'Collection Care',
     annualPrice: 144,
     discountPercent: 20,
-    summary: 'For a full wardrobe of high-value units.',
+    summary: 'For a wardrobe worth protecting. Twenty percent off, and your units go to the front of the queue.',
   },
 ];
 

@@ -63,9 +63,19 @@
 
             <h3 class="tc-tier__name">{{ variant.title }}</h3>
 
+            {%- comment -%}
+              Each tier's line is its own, written on the variant. Generating it
+              from the discount gave three cards the same sentence with a
+              different number in it, which reads as a price list rather than a
+              choice between three things. The fallback is only reached if a
+              summary has been cleared.
+            {%- endcomment -%}
+            {%- assign summary = variant.metafields.wig_spa.tier_summary -%}
             {%- assign discount = variant.metafields.wig_spa.member_discount_percent -%}
-            {%- if discount != blank -%}
-              <p class="tc-tier__summary">{{ discount }}% off every Wig Spa service, and a place in the queue.</p>
+            {%- if summary != blank -%}
+              <p class="tc-tier__summary">{{ summary }}</p>
+            {%- elsif discount != blank -%}
+              <p class="tc-tier__summary">{{ discount }}% off every Wig Spa service.</p>
             {%- endif -%}
 
             <form method="post" action="{{ routes.cart_add_url }}" class="tc-tier__form">

@@ -1,5 +1,6 @@
 import {
   MEMBER_DISCOUNT_METAFIELD,
+  TIER_SUMMARY_METAFIELD,
   TERMS,
   TIERS,
   priceAdjustmentPercent,
@@ -99,6 +100,12 @@ async function upsertProduct(admin: AdminClient): Promise<{
         key: MEMBER_DISCOUNT_METAFIELD.key,
         type: 'number_integer',
         value: String(tier.discountPercent),
+      },
+      {
+        namespace: TIER_SUMMARY_METAFIELD.namespace,
+        key: TIER_SUMMARY_METAFIELD.key,
+        type: 'single_line_text_field',
+        value: tier.summary,
       },
     ],
   }));
