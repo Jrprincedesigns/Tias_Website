@@ -2863,6 +2863,9 @@ body:has(.customer) {
   .tc-closet-panel__body { grid-template-columns: 1fr; }
   .tc-closet-panel__side { border-left: 0; border-top: 1px solid var(--tc-line); min-height: 0; }
   .tc-closet-panel__dialog { width: 100%; }
+}
+
+/* ============================================================
    SEND A WIG IN
    ============================================================ */
 .tc-section.tc-request-wrap { padding: clamp(60px, 8vw, 110px) 0; }
