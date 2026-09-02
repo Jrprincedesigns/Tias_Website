@@ -1,3 +1,12 @@
+/*
+ * ------------------------------------------------------------
+ * IMPORTANT: The contents of this file are auto-generated.
+ *
+ * This file may be updated by the Shopify admin theme editor
+ * or related systems. Please exercise caution as any changes
+ * made to this file may be overwritten.
+ * ------------------------------------------------------------
+ */
 {
   "sections": {
     "header": {
@@ -11,24 +20,19 @@
     "tiers": {
       "type": "tc-membership-join",
       "settings": {
+        "product": "wig-spa-membership",
         "eyebrow": "Choose your care",
         "title": "<p>Three ways to<br/>be <em>looked after</em>.</p>",
         "intro": "Every membership includes a set number of Wig Spa services each year, member pricing beyond that, and priority in the studio queue.",
-        "footnote": "Pricing is being finalised. Membership will renew automatically and can be cancelled from your account.",
         "featured_tier": "Signature",
         "badge": "Most popular",
-        "cta_label": "Join"
+        "cta_label": "Join",
+        "unavailable_label": "Coming soon",
+        "footnote": "Pricing is being finalised. Membership will renew automatically and can be cancelled from your account."
       }
     },
     "process": {
       "type": "tc-process",
-      "settings": {
-        "eyebrow": "How membership works",
-        "title": "<p>Wear it. Send it.<br/><em>Restored</em>.</p>",
-        "intro": "The same studio process you already know — just scheduled, tracked, and covered by your membership.",
-        "cta_label": "See what we do in the Spa",
-        "cta_link": "shopify://pages/wig-spa"
-      },
       "blocks": {
         "s1": {
           "type": "step",
@@ -77,14 +81,17 @@
         "s3",
         "s4",
         "s5"
-      ]
+      ],
+      "settings": {
+        "eyebrow": "How membership works",
+        "title": "<p>Wear it. Send it.<br/><em>Restored</em>.</p>",
+        "intro": "The same studio process you already know — just scheduled, tracked, and covered by your membership.",
+        "cta_label": "See what we do in the Spa",
+        "cta_link": "shopify://pages/wig-spa"
+      }
     },
     "pillars": {
       "type": "tc-pillars",
-      "settings": {
-        "eyebrow": "Why members stay",
-        "title": "<p>Care that <em>remembers</em>.</p>"
-      },
       "blocks": {
         "p1": {
           "type": "pillar",
@@ -115,15 +122,15 @@
         "p1",
         "p2",
         "p3"
-      ]
+      ],
+      "settings": {
+        "eyebrow": "Why members stay",
+        "title": "<p>Care that <em>remembers</em>.</p>",
+        "intro": ""
+      }
     },
     "faq": {
       "type": "tc-faq",
-      "settings": {
-        "eyebrow": "Membership questions",
-        "title": "<p>Before you <em>join</em>.</p>",
-        "intro": "The details worth knowing up front."
-      },
       "blocks": {
         "q1": {
           "type": "qa",
@@ -175,20 +182,28 @@
         "q4",
         "q5",
         "q6"
-      ]
+      ],
+      "settings": {
+        "eyebrow": "Membership questions",
+        "title": "<p>Before you <em>join</em>.</p>",
+        "intro": "The details worth knowing up front."
+      }
     },
     "cta": {
       "type": "tc-cta",
       "settings": {
+        "color_scheme": "ink",
         "eyebrow": "Not ready to join?",
         "title": "<p>Book a single <em>visit</em>.</p>",
         "sub": "Membership isn't the only way in. Send us a unit for a one-off service and see how we work first.",
         "show_newsletter": false,
+        "input_placeholder": "your@email.com",
+        "submit_label": "Subscribe",
+        "fineprint": "Most services turn around in 5-7 business days.",
         "cta1_label": "See Spa services",
         "cta1_link": "shopify://pages/wig-spa",
         "cta2_label": "Ask a question",
-        "cta2_link": "shopify://pages/contact",
-        "fineprint": "Most services turn around in 5-7 business days."
+        "cta2_link": "shopify://pages/contact"
       }
     }
   },
