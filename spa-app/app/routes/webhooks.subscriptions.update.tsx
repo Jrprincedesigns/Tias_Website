@@ -92,6 +92,9 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     shopifyCustomerId: contract.customer.id,
     status: contract.status,
     tier,
+    // From the tier they bought, and stored on the membership: a member keeps
+    // the discount they signed up for even if the tier's rate changes later.
+    discountPercent: matched?.discountPercent ?? null,
     nextBillingAt: contract.nextBillingDate ? new Date(contract.nextBillingDate) : null,
   });
 

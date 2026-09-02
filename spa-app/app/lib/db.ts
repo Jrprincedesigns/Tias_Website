@@ -50,6 +50,9 @@ export interface Membership extends MembershipWindow {
   id: string;
   tier: string;
   nextBillingAt: Date | null;
+  /** What this member gets off every service. Null for memberships that
+   *  predate the discount model and were never backfilled. */
+  discountPercent: number | null;
 }
 
 export interface ServiceRequestSummary {
@@ -148,7 +151,8 @@ export async function listWigs(db: Queryable, memberId: string): Promise<Wig[]> 
  */
 export async function getMembership(db: Queryable, memberId: string): Promise<Membership | null> {
   const { rows } = await db.query(
-    `select id, tier, status, membership_year_start, membership_year_end, next_billing_at
+    `select id, tier, status, membership_year_start, membership_year_end, next_billing_at,
+            discount_percent
        from memberships
       where member_id = $1
       order by (status = 'active') desc, membership_year_end desc
@@ -164,6 +168,7 @@ export async function getMembership(db: Queryable, memberId: string): Promise<Me
     membershipYearStart: new Date(row.membership_year_start),
     membershipYearEnd: new Date(row.membership_year_end),
     nextBillingAt: row.next_billing_at ? new Date(row.next_billing_at) : null,
+    discountPercent: row.discount_percent,
   };
 }
 
@@ -304,7 +309,8 @@ export async function advanceStatus(
 
 async function getMembershipById(db: Queryable, membershipId: string): Promise<Membership | null> {
   const { rows } = await db.query(
-    `select id, tier, status, membership_year_start, membership_year_end, next_billing_at
+    `select id, tier, status, membership_year_start, membership_year_end, next_billing_at,
+            discount_percent
        from memberships where id = $1`,
     [membershipId],
   );
@@ -317,6 +323,7 @@ async function getMembershipById(db: Queryable, membershipId: string): Promise<M
     membershipYearStart: new Date(row.membership_year_start),
     membershipYearEnd: new Date(row.membership_year_end),
     nextBillingAt: row.next_billing_at ? new Date(row.next_billing_at) : null,
+    discountPercent: row.discount_percent,
   };
 }
 
@@ -916,6 +923,8 @@ export interface ContractSnapshot {
   shopifyCustomerId: string;
   status: string;
   tier: string;
+  /** From the tier the member bought. Stored, not derived — see the migration. */
+  discountPercent: number | null;
   nextBillingAt: Date | null;
 }
 
@@ -955,11 +964,12 @@ export async function upsertMembershipFromContract(
             set status = $2::membership_status,
                 tier = $3,
                 next_billing_at = $4,
+                discount_percent = coalesce($6, discount_percent),
                 cancelled_at = case when $2::membership_status = 'cancelled'
                                     then coalesce(cancelled_at, now()) else null end,
                 updated_at = now()
           where id = $1`,
-        [membershipId, status, snapshot.tier, snapshot.nextBillingAt],
+        [membershipId, status, snapshot.tier, snapshot.nextBillingAt, null, snapshot.discountPercent],
       );
       await tx.query(
         `insert into events (membership_id, kind, actor, payload)
@@ -975,11 +985,11 @@ export async function upsertMembershipFromContract(
     const inserted = await tx.query(
       `insert into memberships
          (member_id, shopify_contract_id, tier, status,
-          membership_year_start, membership_year_end, next_billing_at)
+          membership_year_start, membership_year_end, next_billing_at, discount_percent)
        values ($1, $2, $3, $4::membership_status,
-               current_date, current_date + interval '1 year', $5)
+               current_date, current_date + interval '1 year', $5, $6)
        returning id`,
-      [member.id, snapshot.shopifyContractId, snapshot.tier, status, snapshot.nextBillingAt],
+      [member.id, snapshot.shopifyContractId, snapshot.tier, status, snapshot.nextBillingAt, snapshot.discountPercent],
     );
     const membershipId = inserted.rows[0].id;
 

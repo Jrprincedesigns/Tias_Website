@@ -106,7 +106,7 @@
     if (!data.membership) {
       card.appendChild(el('div', 'tc-closet-card__label', 'Membership'));
       card.appendChild(el('p', 'tc-closet-card__body',
-        'You are not a member yet. Members get included spa services, member rates, and priority in the studio.'));
+        'You are not a member yet. Members pay less on every service in the spa and move ahead in the studio queue.'));
       if (membershipUrl) {
         var join = el('a', 'tc-btn tc-btn--outline', 'See membership');
         join.href = membershipUrl;
@@ -127,9 +127,21 @@
       card.appendChild(warn);
     }
 
+    // What the membership is worth, rather than a countdown. Membership stopped
+    // including services, so "3 services remaining" was quietly counting down an
+    // allowance that nothing grants any more — it read as a benefit expiring.
+    if (typeof m.discountPercent === 'number' && m.discountPercent > 0) {
+      card.appendChild(el('div', 'tc-closet-membership__count',
+        m.discountPercent + '% off every service in the spa'));
+    }
+
+    // Only for members carrying an allowance from the old model. A zero here is
+    // the ordinary case now and says nothing worth reading.
     var remaining = typeof m.servicesRemaining === 'number' ? m.servicesRemaining : 0;
-    card.appendChild(el('div', 'tc-closet-membership__count',
-      remaining + (remaining === 1 ? ' service remaining' : ' services remaining')));
+    if (remaining > 0) {
+      card.appendChild(el('div', 'tc-closet-card__meta',
+        remaining + (remaining === 1 ? ' included service left' : ' included services left')));
+    }
 
     var renews = formatDate(m.renewsOn);
     if (renews) card.appendChild(el('div', 'tc-closet-card__meta', 'Renews ' + renews));
@@ -572,8 +584,11 @@
       var memberSection = section('Your membership');
       var mrows = el('dl', 'tc-closet-panel__rows');
       mrows.appendChild(detailRow('Tier', m.tier));
+      if (typeof m.discountPercent === 'number' && m.discountPercent > 0) {
+        mrows.appendChild(detailRow('Member pricing', m.discountPercent + '% off'));
+      }
       var remaining = typeof m.servicesRemaining === 'number' ? m.servicesRemaining : 0;
-      mrows.appendChild(detailRow('Services left', String(remaining)));
+      if (remaining > 0) mrows.appendChild(detailRow('Included services left', String(remaining)));
       var renews = formatDate(m.renewsOn);
       if (renews) mrows.appendChild(detailRow('Renews', renews));
       memberSection.appendChild(mrows);
