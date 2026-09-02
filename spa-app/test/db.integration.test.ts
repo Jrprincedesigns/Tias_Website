@@ -1,5 +1,8 @@
 import test, { before, after, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
+
+/** Members are scoped to a store, so every fixture needs one. */
+const SHOP = 'test-shop.myshopify.com';
 import pg from 'pg';
 import {
   findOrCreateMember,
@@ -43,6 +46,7 @@ beforeEach(async () => {
 
 async function seedMemberWithMembership(opts: { granted: number; status?: string }) {
   const member = await findOrCreateMember(pool, {
+    shop: SHOP,
     shopifyCustomerId: 'gid://shopify/Customer/7401',
     email: 'member@example.com',
   });
@@ -67,8 +71,9 @@ async function seedMemberWithMembership(opts: { granted: number; status?: string
 }
 
 test('creating a member twice returns the same row', { skip }, async () => {
-  const first = await findOrCreateMember(pool, { shopifyCustomerId: 'gid://shopify/Customer/1' });
+  const first = await findOrCreateMember(pool, { shop: SHOP, shopifyCustomerId: 'gid://shopify/Customer/1' });
   const second = await findOrCreateMember(pool, {
+    shop: SHOP,
     shopifyCustomerId: 'gid://shopify/Customer/1',
     email: 'later@example.com',
   });
@@ -77,14 +82,14 @@ test('creating a member twice returns the same row', { skip }, async () => {
 });
 
 test('an upsert never blanks details it was not given', { skip }, async () => {
-  await findOrCreateMember(pool, { shopifyCustomerId: 'gid://shopify/Customer/2', email: 'keep@example.com' });
-  const again = await findOrCreateMember(pool, { shopifyCustomerId: 'gid://shopify/Customer/2' });
+  await findOrCreateMember(pool, { shop: SHOP, shopifyCustomerId: 'gid://shopify/Customer/2', email: 'keep@example.com' });
+  const again = await findOrCreateMember(pool, { shop: SHOP, shopifyCustomerId: 'gid://shopify/Customer/2' });
   assert.equal(again.email, 'keep@example.com');
 });
 
 test('the closet reads back what was seeded', { skip }, async () => {
   await seedMemberWithMembership({ granted: 2 });
-  const closet = await getCloset(pool, 'gid://shopify/Customer/7401');
+  const closet = await getCloset(pool, SHOP, 'gid://shopify/Customer/7401');
 
   assert.equal(closet.membership?.tier, 'founding');
   assert.equal(closet.allowanceRemaining, 2);
@@ -196,7 +201,7 @@ test('the work queue sorts by how long something has been sitting', { skip }, as
   // Move the newer one so its clock resets; the older one has sat untouched.
   await advanceStatus(pool, { serviceRequestId: newer.id, to: 'awaiting_shipment', actor: 'tia' });
 
-  const queue = await listOpenWorkOrders(pool);
+  const queue = await listOpenWorkOrders(pool, SHOP);
   assert.equal(queue.length, 2);
   assert.equal(queue[0]?.id, older.id, 'the one waiting longest comes first');
 });
@@ -211,7 +216,7 @@ test('completed work leaves the queue and dates the wig', { skip }, async () => 
                     'return_shipment', 'delivered', 'completed']) {
     await advanceStatus(pool, { serviceRequestId: request.id, to, actor: 'tia' });
   }
-  assert.deepEqual(await listOpenWorkOrders(pool), []);
+  assert.deepEqual(await listOpenWorkOrders(pool, SHOP), []);
   const wigs = await listWigs(pool, member.id);
   assert.notEqual(wigs[0]?.lastServicedAt, null, 'the wig now has a service date');
 });
@@ -246,7 +251,7 @@ test('a work order reads back with its wig, member and membership', { skip }, as
 test('a work order without a membership still reads back', { skip }, async () => {
   // A non-member sending a wig in is a normal, paying customer. An inner join
   // on memberships would make them vanish from the studio's queue entirely.
-  const member = await findOrCreateMember(pool, { shopifyCustomerId: 'gid://shopify/Customer/999' });
+  const member = await findOrCreateMember(pool, { shop: SHOP, shopifyCustomerId: 'gid://shopify/Customer/999' });
   const wig = await pool.query(
     `insert into wigs (member_id, nickname) values ($1, 'Walk-in unit') returning id`,
     [member.id],
@@ -309,7 +314,7 @@ test('saving notes on a missing work order fails rather than silently doing noth
 });
 
 test('a member can register a unit with just a name', { skip }, async () => {
-  const member = await findOrCreateMember(pool, { shopifyCustomerId: 'gid://shopify/Customer/500' });
+  const member = await findOrCreateMember(pool, { shop: SHOP, shopifyCustomerId: 'gid://shopify/Customer/500' });
   const wig = await registerWig(pool, {
     memberId: member.id, nickname: 'Honey Blonde', isTCollection: false,
   });
@@ -321,7 +326,7 @@ test('a member can register a unit with just a name', { skip }, async () => {
 });
 
 test('the database rejects an absurd length even if validation is bypassed', { skip }, async () => {
-  const member = await findOrCreateMember(pool, { shopifyCustomerId: 'gid://shopify/Customer/501' });
+  const member = await findOrCreateMember(pool, { shop: SHOP, shopifyCustomerId: 'gid://shopify/Customer/501' });
   await assert.rejects(
     () => registerWig(pool, {
       memberId: member.id, nickname: 'Bad', isTCollection: false, lengthInches: 400,

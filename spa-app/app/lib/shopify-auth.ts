@@ -21,6 +21,14 @@ import crypto from 'node:crypto';
 export interface ProxyCustomer {
   /** Full GID, e.g. gid://shopify/Customer/7401 — the form the Admin API uses. */
   shopifyCustomerId: string;
+  /**
+   * Which store the request came from, e.g. shop.myshopify.com.
+   *
+   * Part of the signed query, so it is as trustworthy as the customer id
+   * beside it. A customer id only identifies a person *within* a store, so
+   * every read and write is scoped by the pair rather than the id alone.
+   */
+  shop: string;
 }
 
 /** Constant-time compare that never throws on length mismatch. */
@@ -78,7 +86,13 @@ export function customerFromProxyRequest(url: string, secret: string): ProxyCust
   const id = searchParams.get('logged_in_customer_id');
   if (!id) return null;
 
-  return { shopifyCustomerId: `gid://shopify/Customer/${id}` };
+  // Shopify always sends `shop` on a proxy request and it is inside the
+  // signature, so an absent one means something is wrong with the request
+  // rather than with the visitor.
+  const shop = searchParams.get('shop');
+  if (!shop) throw new Error('Proxy request carried no shop');
+
+  return { shopifyCustomerId: `gid://shopify/Customer/${id}`, shop };
 }
 
 /**

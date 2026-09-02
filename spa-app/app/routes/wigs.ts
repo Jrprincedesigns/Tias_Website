@@ -27,7 +27,10 @@ export const action = async ({ request }: ActionFunctionArgs) =>
       return json({ ok: false, error: 'invalid_request', httpStatus: 422, details: parsed.errors });
     }
 
-    const member = await findOrCreateMember(pool, { shopifyCustomerId: customer.shopifyCustomerId });
+    const member = await findOrCreateMember(pool, {
+      shop: customer.shop,
+      shopifyCustomerId: customer.shopifyCustomerId,
+    });
     const wig = await registerWig(pool, { memberId: member.id, ...parsed.value });
 
     return json({ ok: true, wig, httpStatus: 201 });

@@ -14,7 +14,10 @@ import { buildQueue, staleAfterDays, waitingFor } from '../lib/work-queue.ts';
  * one.
  */
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-  await authenticate.admin(request);
+  // The queue is scoped to the store Tia is signed into. Without this it
+  // lists every open work order in the database, which on a second install
+  // means another store's units appear in hers.
+  const { session } = await authenticate.admin(request);
 
   const threshold = staleAfterDays();
   const now = new Date();
@@ -23,7 +26,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   // empty studio. "No work orders" and "cannot reach the database" look
   // identical otherwise, and one of them is a lie.
   try {
-    const open = await listOpenWorkOrders(pool);
+    const open = await listOpenWorkOrders(pool, session.shop);
     const queue = buildQueue(open, now, threshold);
 
     return {

@@ -71,10 +71,26 @@ test('canonicalises genuinely repeated keys, not just comma-joined ones', () => 
   assert.equal(verifyProxySignature(search, SECRET), true);
 });
 
-test('returns the logged-in customer as a GID', () => {
-  const q = signedQuery({ shop: 'x', logged_in_customer_id: '7401' });
+test('returns the logged-in customer as a GID, with the store they came from', () => {
+  // A customer id identifies a person within a store, not across Shopify, so
+  // the pair is what a member is looked up by. The shop is inside the
+  // signature, which is what makes it safe to scope reads and writes on.
+  const q = signedQuery({ shop: 'tia.myshopify.com', logged_in_customer_id: '7401' });
   const customer = customerFromProxyRequest(`https://app.example.com/proxy/closet?${q}`, SECRET);
-  assert.deepEqual(customer, { shopifyCustomerId: 'gid://shopify/Customer/7401' });
+  assert.deepEqual(customer, {
+    shopifyCustomerId: 'gid://shopify/Customer/7401',
+    shop: 'tia.myshopify.com',
+  });
+});
+
+test('refuses a signed request that names no shop', () => {
+  // Shopify always sends one. Its absence means something is wrong with the
+  // request, and proceeding would write a member scoped to nothing.
+  const q = signedQuery({ logged_in_customer_id: '7401' });
+  assert.throws(
+    () => customerFromProxyRequest(`https://app.example.com/proxy/closet?${q}`, SECRET),
+    /carried no shop/,
+  );
 });
 
 test('returns null for a logged-out visitor rather than throwing', () => {

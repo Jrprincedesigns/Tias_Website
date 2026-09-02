@@ -37,7 +37,10 @@ export const action = async ({ request }: ActionFunctionArgs) =>
     }
     const intake = parsed.value;
 
-    const member = await findOrCreateMember(pool, { shopifyCustomerId: customer.shopifyCustomerId });
+    const member = await findOrCreateMember(pool, {
+      shop: customer.shop,
+      shopifyCustomerId: customer.shopifyCustomerId,
+    });
 
     // Ownership check. The wig must be this member's, and not retired.
     const owned = await pool.query(

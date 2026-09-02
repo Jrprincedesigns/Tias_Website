@@ -39,7 +39,10 @@ export const action = async ({ request }: ActionFunctionArgs) =>
       });
     }
 
-    const member = await findOrCreateMember(pool, { shopifyCustomerId: customer.shopifyCustomerId });
+    const member = await findOrCreateMember(pool, {
+      shop: customer.shop,
+      shopifyCustomerId: customer.shopifyCustomerId,
+    });
     const outcome = await recordInspectionDecision(pool, {
       memberId: member.id,
       serviceRequestId,

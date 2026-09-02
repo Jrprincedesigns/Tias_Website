@@ -94,17 +94,29 @@ export async function withTransaction<T>(
  */
 export async function findOrCreateMember(
   db: Queryable,
-  input: { shopifyCustomerId: string; email?: string | null; firstName?: string | null; lastName?: string | null },
+  input: {
+    shop: string;
+    shopifyCustomerId: string;
+    email?: string | null;
+    firstName?: string | null;
+    lastName?: string | null;
+  },
 ): Promise<Member> {
   const { rows } = await db.query(
-    `insert into members (shopify_customer_id, email, first_name, last_name)
-     values ($1, $2, $3, $4)
-     on conflict (shopify_customer_id) do update
+    `insert into members (shop, shopify_customer_id, email, first_name, last_name)
+     values ($1, $2, $3, $4, $5)
+     on conflict (shop, shopify_customer_id) do update
        set email      = coalesce(excluded.email, members.email),
            first_name = coalesce(excluded.first_name, members.first_name),
            last_name  = coalesce(excluded.last_name, members.last_name)
      returning id, shopify_customer_id, email, first_name, last_name`,
-    [input.shopifyCustomerId, input.email ?? null, input.firstName ?? null, input.lastName ?? null],
+    [
+      input.shop,
+      input.shopifyCustomerId,
+      input.email ?? null,
+      input.firstName ?? null,
+      input.lastName ?? null,
+    ],
   );
   const row = rows[0];
   return {
@@ -330,6 +342,7 @@ async function getMembershipById(db: Queryable, membershipId: string): Promise<M
 /** Everything the Wig Closet renders, in one round trip's worth of queries. */
 export async function getCloset(
   db: Queryable,
+  shop: string,
   shopifyCustomerId: string,
 ): Promise<{
   member: Member;
@@ -338,7 +351,7 @@ export async function getCloset(
   wigs: Wig[];
   activeServices: ServiceRequestSummary[];
 }> {
-  const member = await findOrCreateMember(db, { shopifyCustomerId });
+  const member = await findOrCreateMember(db, { shop, shopifyCustomerId });
   const membership = await getMembership(db, member.id);
   const [wigs, activeServices, allowanceRemaining] = await Promise.all([
     listWigs(db, member.id),
@@ -384,7 +397,10 @@ function toSummary(row: any): ServiceRequestSummary {
  * that is what "sitting too long" actually means. A wig submitted in January
  * that moved yesterday is fine; one that moved three weeks ago is not.
  */
-export async function listOpenWorkOrders(db: Queryable): Promise<ServiceRequestSummary[]> {
+export async function listOpenWorkOrders(
+  db: Queryable,
+  shop: string,
+): Promise<ServiceRequestSummary[]> {
   const { rows } = await db.query(
     `select sr.id, sr.wig_id, w.nickname as wig_nickname, sr.service_type, sr.status,
             sr.covered_by_allowance, sr.submitted_at,
@@ -392,8 +408,11 @@ export async function listOpenWorkOrders(db: Queryable): Promise<ServiceRequestS
                      sr.submitted_at) as status_since
        from service_requests sr
        join wigs w on w.id = sr.wig_id
+       join members m on m.id = sr.member_id
       where sr.status not in ('completed', 'cancelled')
+        and m.shop = $1
       order by status_since asc`,
+    [shop],
   );
   return rows.map(toSummary);
 }
@@ -919,6 +938,7 @@ export function membershipStatusFromContract(
 }
 
 export interface ContractSnapshot {
+  shop: string;
   shopifyContractId: string;
   shopifyCustomerId: string;
   status: string;
@@ -947,6 +967,7 @@ export async function upsertMembershipFromContract(
 ): Promise<{ membershipId: string; created: boolean }> {
   return withTransaction(pool, async (tx) => {
     const member = await findOrCreateMember(tx, {
+      shop: snapshot.shop,
       shopifyCustomerId: snapshot.shopifyCustomerId,
     });
 

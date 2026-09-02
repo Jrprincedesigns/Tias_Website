@@ -28,7 +28,10 @@ export const loader = async ({ request }: LoaderFunctionArgs) =>
       return proxyError('invalid_wig_id', 400);
     }
 
-    const member = await findOrCreateMember(pool, { shopifyCustomerId: customer.shopifyCustomerId });
+    const member = await findOrCreateMember(pool, {
+      shop: customer.shop,
+      shopifyCustomerId: customer.shopifyCustomerId,
+    });
     const detail = await getWigDetail(pool, member.id, wigId);
     if (!detail) return json({ ok: true, signedIn: true, found: false });
 

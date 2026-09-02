@@ -88,6 +88,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   }
 
   const { membershipId, created } = await upsertMembershipFromContract(pool, {
+    shop,
     shopifyContractId: contract.id,
     shopifyCustomerId: contract.customer.id,
     status: contract.status,

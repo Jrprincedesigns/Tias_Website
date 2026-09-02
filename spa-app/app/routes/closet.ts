@@ -13,7 +13,7 @@ import { json, withProxyAuth } from '../lib/proxy.ts';
  */
 export const loader = async ({ request }: LoaderFunctionArgs) =>
   withProxyAuth(request, async (customer) => {
-    const closet = await getCloset(pool, customer.shopifyCustomerId);
+    const closet = await getCloset(pool, customer.shop, customer.shopifyCustomerId);
 
     // Unit cards lead with the wig's photograph, so the grid needs signed URLs
     // too — not just the detail panel. One batch call covers the whole closet.
