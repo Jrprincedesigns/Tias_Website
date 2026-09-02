@@ -9,58 +9,16 @@
       }
     },
     "tiers": {
-      "type": "tc-membership-tiers",
+      "type": "tc-membership-join",
       "settings": {
         "eyebrow": "Choose your care",
         "title": "<p>Three ways to<br/>be <em>looked after</em>.</p>",
         "intro": "Every membership includes a set number of Wig Spa services each year, member pricing beyond that, and priority in the studio queue.",
-        "footnote": "Pricing is being finalised. Membership will renew automatically and can be cancelled from your account."
-      },
-      "blocks": {
-        "t1": {
-          "type": "tier",
-          "settings": {
-            "name": "Essential Care",
-            "summary": "For one or two units that need routine upkeep.",
-            "price": "$—",
-            "cadence": "per month",
-            "inclusions": "<p>Wig Spa services included each year<br/>Wash, deep condition and detangle<br/>Standard styling<br/>Wig health assessment<br/>Member pricing on additional services<br/>Priority booking over non-members</p>",
-            "cta_label": "Join",
-            "unavailable_label": "Coming soon"
-          }
-        },
-        "t2": {
-          "type": "tier",
-          "settings": {
-            "name": "Signature Care",
-            "badge": "Most popular",
-            "featured": true,
-            "summary": "For a rotation of units worn throughout the year.",
-            "price": "$—",
-            "cadence": "per month",
-            "inclusions": "<p>Everything in Essential Care<br/>More included services each year<br/>Minor maintenance and repairs<br/>Priority turnaround<br/>Discounted reconstruction<br/>Service history for every unit</p>",
-            "cta_label": "Join",
-            "unavailable_label": "Coming soon"
-          }
-        },
-        "t3": {
-          "type": "tier",
-          "settings": {
-            "name": "Collection Care",
-            "summary": "For a full wardrobe of high-value units.",
-            "price": "$—",
-            "cadence": "per month",
-            "inclusions": "<p>Everything in Signature Care<br/>Reconstruction credit each year<br/>Priority service queue<br/>Advanced styling<br/>Prepaid return shipping<br/>Early access to new releases</p>",
-            "cta_label": "Join",
-            "unavailable_label": "Coming soon"
-          }
-        }
-      },
-      "block_order": [
-        "t1",
-        "t2",
-        "t3"
-      ]
+        "footnote": "Pricing is being finalised. Membership will renew automatically and can be cancelled from your account.",
+        "featured_tier": "Signature",
+        "badge": "Most popular",
+        "cta_label": "Join"
+      }
     },
     "process": {
       "type": "tc-process",

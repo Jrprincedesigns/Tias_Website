@@ -3025,3 +3025,91 @@ body:has(.customer) {
   .tc-section .tc-request__row { grid-template-columns: 1fr; }
   .tc-section .tc-request__choice { padding: 14px 15px; }
 }
+
+/* ============================================================
+   MEMBERSHIP — CHOOSING A TERM
+   The tier cards reuse .tc-tier; this is only the radio group
+   inside them. Styled as pressable rows rather than bare radios
+   because the term is the second half of a buying decision, not
+   a form field someone fills in.
+   ============================================================ */
+.tc-section .tc-tier__form {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  margin-top: auto;
+}
+
+.tc-section .tc-terms {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.tc-section .tc-terms__legend {
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--tc-mute);
+  padding: 0;
+  margin-bottom: 4px;
+}
+
+.tc-section .tc-term {
+  display: block;
+  cursor: pointer;
+  border: 1px solid var(--tc-line);
+  border-radius: 10px;
+  background: var(--tc-paper);
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+.tc-section .tc-term:hover { border-color: var(--tc-lavender-soft); }
+
+/* The input stays in the accessibility tree and keyboard order —
+   it is only visually replaced by the row around it. */
+.tc-section .tc-term input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+.tc-section .tc-term__body {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+}
+.tc-section .tc-term__name {
+  font-size: 14px;
+  color: var(--tc-navy);
+}
+.tc-section .tc-term__price {
+  font-family: var(--tc-serif);
+  font-size: 18px;
+  letter-spacing: -0.01em;
+}
+
+.tc-section .tc-term:has(input:checked) {
+  border-color: var(--tc-lavender-deep);
+  background: var(--tc-cream);
+}
+.tc-section .tc-term:has(input:focus-visible) {
+  outline: 2px solid var(--tc-lavender-deep);
+  outline-offset: 2px;
+}
+
+/* Fallback for browsers without :has() — the checked term keeps a
+   visible marker rather than becoming indistinguishable. */
+@supports not selector(:has(*)) {
+  .tc-section .tc-term input { position: static; opacity: 1; width: auto; height: auto; margin: 0 8px 0 14px; }
+  .tc-section .tc-term__body { padding-left: 4px; }
+}
+
+.tc-section .tc-tier__cta[disabled] {
+  opacity: 0.5;
+  cursor: default;
+  pointer-events: none;
+}

@@ -1,0 +1,155 @@
+{{ 'thetcollection.css' | asset_url | stylesheet_tag }}
+
+{%- comment -%}
+  The Wig Spa Membership — the page you actually join on.
+
+  Every price here comes from Shopify rather than from a theme setting. A
+  variant's selling_plan_allocations already hold what each term costs for each
+  tier, so the nine numbers on this page are the nine numbers a member will be
+  charged. Typing them into section settings would let them drift the first time
+  Tia edits a price, and the page would go on confidently quoting the old one.
+
+  The membership product requires a selling plan, so a tier cannot be bought
+  without a term. That is why each card is its own form: the radio group names
+  the plan, and there is no path through this page that submits without one.
+{%- endcomment -%}
+
+{%- assign product = section.settings.product -%}
+
+<section class="tc-section tc-tiers-wrap">
+  <div class="tc-container">
+
+    {%- if section.settings.eyebrow != blank or section.settings.title != blank or section.settings.intro != blank -%}
+      <div class="tc-section-head tc-reveal">
+        <div>
+          {%- if section.settings.eyebrow != blank -%}<span class="tc-eyebrow">{{ section.settings.eyebrow }}</span>{%- endif -%}
+          {%- if section.settings.title != blank -%}<h2 class="tc-section-title">{{ section.settings.title }}</h2>{%- endif -%}
+        </div>
+        {%- if section.settings.intro != blank -%}
+          <div class="tc-section-head__right"><p>{{ section.settings.intro }}</p></div>
+        {%- endif -%}
+      </div>
+    {%- endif -%}
+
+    {%- if product == blank -%}
+      {%- comment -%} Only an editor sees this; a visitor gets nothing. {%- endcomment -%}
+      {%- if request.design_mode -%}
+        <div class="tc-closet-notice">
+          <h2>Pick the membership product</h2>
+          <p>This section reads its tiers, terms and prices from the product itself. Choose it in the section settings.</p>
+        </div>
+      {%- endif -%}
+
+    {%- elsif product.selling_plan_groups.size == 0 -%}
+      {%- if request.design_mode -%}
+        <div class="tc-closet-notice">
+          <h2>That product has no terms</h2>
+          <p>The membership needs its selling plans before anyone can join. Set them up in the app, under Membership.</p>
+        </div>
+      {%- endif -%}
+
+    {%- else -%}
+      <div class="tc-tiers tc-reveal">
+        {%- for variant in product.variants -%}
+          {%- assign featured = false -%}
+          {%- if section.settings.featured_tier != blank and variant.title contains section.settings.featured_tier -%}
+            {%- assign featured = true -%}
+          {%- endif -%}
+
+          <article class="tc-tier{% if featured %} tc-tier--featured{% endif %}">
+            {%- if featured and section.settings.badge != blank -%}
+              <span class="tc-tier__badge">{{ section.settings.badge }}</span>
+            {%- endif -%}
+
+            <h3 class="tc-tier__name">{{ variant.title }}</h3>
+
+            {%- assign discount = variant.metafields.wig_spa.member_discount_percent -%}
+            {%- if discount != blank -%}
+              <p class="tc-tier__summary">{{ discount }}% off every Wig Spa service, and a place in the queue.</p>
+            {%- endif -%}
+
+            <form method="post" action="{{ routes.cart_add_url }}" class="tc-tier__form">
+              <input type="hidden" name="form_type" value="product">
+              <input type="hidden" name="utf8" value="✓">
+              <input type="hidden" name="id" value="{{ variant.id }}">
+
+              <fieldset class="tc-terms">
+                <legend class="tc-terms__legend">Choose your term</legend>
+
+                {%- for allocation in variant.selling_plan_allocations -%}
+                  {%- assign plan = allocation.selling_plan -%}
+                  {%- comment -%}
+                    The longest term is the best value, so it is the one already
+                    chosen. A member who reads no further still gets the cheapest
+                    monthly rate rather than the dearest.
+                  {%- endcomment -%}
+                  {%- assign is_last = false -%}
+                  {%- if forloop.last -%}{%- assign is_last = true -%}{%- endif -%}
+
+                  <label class="tc-term">
+                    <input
+                      type="radio"
+                      name="selling_plan"
+                      value="{{ plan.id }}"
+                      {% if is_last %}checked{% endif %}
+                      required
+                    >
+                    <span class="tc-term__body">
+                      <span class="tc-term__name">{{ plan.name }}</span>
+                      <span class="tc-term__price">{{ allocation.price | money }}</span>
+                    </span>
+                  </label>
+                {%- endfor -%}
+              </fieldset>
+
+              <button
+                type="submit"
+                class="tc-btn {% if featured %}tc-btn--dark{% else %}tc-btn--outline{% endif %} tc-tier__cta"
+                {% unless variant.available %}disabled{% endunless %}
+              >
+                {%- if variant.available -%}
+                  {{ section.settings.cta_label | default: 'Join' }} <span class="tc-arrow">&rarr;</span>
+                {%- else -%}
+                  {{ section.settings.unavailable_label | default: 'Coming soon' }}
+                {%- endif -%}
+              </button>
+            </form>
+          </article>
+        {%- endfor -%}
+      </div>
+    {%- endif -%}
+
+    {%- if section.settings.footnote != blank -%}
+      <p class="tc-tiers__footnote tc-reveal">{{ section.settings.footnote }}</p>
+    {%- endif -%}
+
+  </div>
+</section>
+
+{% render 'tc-reveal-script' %}
+
+{% schema %}
+{
+  "name": "TC — Membership join",
+  "tag": "section",
+  "settings": [
+    {
+      "type": "product",
+      "id": "product",
+      "label": "Membership product",
+      "info": "Tiers, terms and prices are all read from this product. Nothing here is typed by hand."
+    },
+    { "type": "text", "id": "eyebrow", "label": "Eyebrow", "default": "The Wig Spa Membership" },
+    { "type": "richtext", "id": "title", "label": "Title", "default": "<p>Three ways to<br/>be <em>looked after</em>.</p>" },
+    { "type": "textarea", "id": "intro", "label": "Intro paragraph", "default": "Member pricing on every Wig Spa service and a place at the front of the studio queue. Longer commitments cost less per month." },
+    { "type": "header", "content": "Emphasis" },
+    { "type": "text", "id": "featured_tier", "label": "Tier to highlight", "default": "Signature", "info": "Matched against the variant name." },
+    { "type": "text", "id": "badge", "label": "Badge on the highlighted tier", "default": "Most popular" },
+    { "type": "header", "content": "Buttons" },
+    { "type": "text", "id": "cta_label", "label": "Button label", "default": "Join" },
+    { "type": "text", "id": "unavailable_label", "label": "When a tier is unavailable", "default": "Coming soon" },
+    { "type": "textarea", "id": "footnote", "label": "Footnote", "default": "Membership renews automatically at the end of each term and can be cancelled from your account." }
+  ],
+  "presets": [{ "name": "TC — Membership join", "category": "TheTCollection" }]
+}
+{% endschema %}
