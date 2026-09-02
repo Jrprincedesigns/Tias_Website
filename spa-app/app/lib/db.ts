@@ -1034,3 +1034,83 @@ export async function reconcilePaidOrder(
     return rows.map((row: any) => row.id);
   });
 }
+
+// ---------------------------------------------------------------------------
+// Service pricing — the inputs behind every price
+// ---------------------------------------------------------------------------
+
+import type { PricingSettings, ServiceInput } from './service-pricing.ts';
+
+export async function getPricingSettings(db: Queryable): Promise<PricingSettings> {
+  const { rows } = await db.query(
+    `select owner_draw_percent, target_hourly_cents, processing_percent,
+            processing_fixed_cents, shipping_cents
+       from pricing_settings where id = true`,
+  );
+  const row = rows[0];
+  if (!row) throw new Error('pricing_settings has no row — migration 0004 may not have run');
+
+  return {
+    ownerDrawPercent: Number(row.owner_draw_percent),
+    targetHourlyCents: row.target_hourly_cents,
+    processingPercent: Number(row.processing_percent),
+    processingFixedCents: row.processing_fixed_cents,
+    shippingCents: row.shipping_cents,
+  };
+}
+
+export async function listServiceInputs(db: Queryable): Promise<ServiceInput[]> {
+  const { rows } = await db.query(
+    `select id, name, hours, materials_cents, includes_shipping, notes
+       from service_pricing order by position, name`,
+  );
+  return rows.map((row: any) => ({
+    id: row.id,
+    name: row.name,
+    hours: Number(row.hours),
+    materialsCents: row.materials_cents,
+    includesShipping: row.includes_shipping,
+    notes: row.notes,
+  }));
+}
+
+/**
+ * Save the pricing inputs.
+ *
+ * One transaction for the shared settings and every service, because a
+ * half-applied save leaves prices that match neither the old inputs nor the
+ * new ones — and nothing on the screen would say so.
+ */
+export async function savePricing(
+  pool: Transactable,
+  input: {
+    settings: PricingSettings;
+    services: Array<{ id: string; hours: number; materialsCents: number; includesShipping: boolean }>;
+  },
+): Promise<void> {
+  await withTransaction(pool, async (tx) => {
+    await tx.query(
+      `update pricing_settings
+          set owner_draw_percent = $1, target_hourly_cents = $2,
+              processing_percent = $3, processing_fixed_cents = $4,
+              shipping_cents = $5, updated_at = now()
+        where id = true`,
+      [
+        input.settings.ownerDrawPercent,
+        input.settings.targetHourlyCents,
+        input.settings.processingPercent,
+        input.settings.processingFixedCents,
+        input.settings.shippingCents,
+      ],
+    );
+
+    for (const service of input.services) {
+      await tx.query(
+        `update service_pricing
+            set hours = $2, materials_cents = $3, includes_shipping = $4, updated_at = now()
+          where id = $1`,
+        [service.id, service.hours, service.materialsCents, service.includesShipping],
+      );
+    }
+  });
+}
