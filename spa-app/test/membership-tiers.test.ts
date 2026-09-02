@@ -77,3 +77,17 @@ test('discounts rise with the tier', () => {
   assert.deepEqual(percents, [...percents].sort((a, b) => a - b));
   assert.deepEqual(percents, [10, 15, 20]);
 });
+
+test('the tier is found on the variant title, not the plan or product name', () => {
+  // The first real membership was filed as "Every 12 months" because only the
+  // product title and the plan name were searched. A subscription line names
+  // the product, the variant and the term separately, and only the variant
+  // carries the tier.
+  assert.equal(tierFromNames('The Wig Spa Membership'), undefined, 'product title alone says nothing');
+  assert.equal(tierFromNames('Every 12 months'), undefined, 'a billing interval is not a tier');
+  assert.equal(
+    tierFromNames('Signature Care', 'Every 12 months', 'The Wig Spa Membership')?.id,
+    'signature',
+    'the variant title decides it',
+  );
+});

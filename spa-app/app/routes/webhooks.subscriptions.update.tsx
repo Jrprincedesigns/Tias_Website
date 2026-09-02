@@ -49,6 +49,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
           lines(first: 1) {
             nodes {
               title
+              variantTitle
               sellingPlanName
             }
           }
@@ -70,13 +71,19 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   // is what decides the discount they get. An unrecognised plan is recorded
   // under its own name rather than guessed at — a membership filed against the
   // wrong tier would hand out the wrong discount for as long as it lives.
-  const matched = tierFromNames(line?.sellingPlanName, line?.title);
-  const tier = matched?.name ?? line?.sellingPlanName ?? line?.title ?? 'Membership';
+  // The tier is the VARIANT title — "Signature Care". A line's `title` is the
+  // product, "The Wig Spa Membership", and `sellingPlanName` is the term,
+  // "Every 12 months". Matching on those two alone found nothing and filed the
+  // first real membership under its billing interval, with no member tag at
+  // all, because an unmatched tier means no tag can be chosen.
+  const matched = tierFromNames(line?.variantTitle, line?.sellingPlanName, line?.title);
+  const tier = matched?.name ?? line?.variantTitle ?? line?.sellingPlanName ?? 'Membership';
 
   if (!matched) {
     console.warn(
       `[${topic}] ${shop}: contract ${contract.id} does not match a known tier ` +
-        `(plan "${line?.sellingPlanName ?? '?'}") — recorded, but no member tag applied`,
+        `(variant "${line?.variantTitle ?? '?'}", plan "${line?.sellingPlanName ?? '?'}") ` +
+        `— recorded, but no member tag applied`,
     );
   }
 
