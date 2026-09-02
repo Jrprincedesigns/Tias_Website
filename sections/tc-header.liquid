@@ -61,6 +61,18 @@
       <div class="tc-nav__utility tc-nav__utility--right">
         {%- if show_account and shop.customer_accounts_enabled -%}
           {%- if customer -%}
+            {%- comment -%}
+              The closet only exists for someone signed in — anyone else lands
+              on a gate asking them to log in, which is a dead end for the
+              majority of visitors. So it appears when it works and is absent
+              when it would not, rather than sitting in the main nav for
+              everyone to bounce off.
+            {%- endcomment -%}
+            {%- if section.settings.closet_page != blank -%}
+              <a href="{{ section.settings.closet_page }}" class="tc-label-sm tc-nav__closet">
+                {{ section.settings.closet_label | default: 'Wig Closet' }}
+              </a>
+            {%- endif -%}
             <a href="{{ routes.account_url }}" class="tc-label-sm">{{ 'customer.account_fallback' | t }}</a>
           {%- else -%}
             <a href="{{ routes.account_login_url }}" class="tc-label-sm">{{ 'customer.log_in' | t }}</a>
@@ -123,6 +135,11 @@
         {%- if show_account and shop.customer_accounts_enabled -%}
           <span class="tc-nav-drawer__divider" aria-hidden="true"></span>
           {%- if customer -%}
+            {%- if section.settings.closet_page != blank -%}
+              <a href="{{ section.settings.closet_page }}" class="tc-nav-drawer__util">
+                {{ section.settings.closet_label | default: 'Wig Closet' }}
+              </a>
+            {%- endif -%}
             <a href="{{ routes.account_url }}" class="tc-nav-drawer__util">{{ 'customer.account_fallback' | t }}</a>
           {%- else -%}
             <a href="{{ routes.account_login_url }}" class="tc-nav-drawer__util">{{ 'customer.log_in' | t }}</a>
@@ -179,6 +196,22 @@
       "label": "Show account link",
       "default": true,
       "info": "Hidden automatically if customer accounts are disabled."
+    },
+    {
+      "type": "header",
+      "content": "Members only"
+    },
+    {
+      "type": "url",
+      "id": "closet_page",
+      "label": "Wig Closet page",
+      "info": "Shown in the header only to signed-in customers. Leave empty to hide it."
+    },
+    {
+      "type": "text",
+      "id": "closet_label",
+      "label": "Wig Closet label",
+      "default": "Wig Closet"
     }
   ],
   "presets": [
