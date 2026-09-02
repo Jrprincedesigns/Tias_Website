@@ -88,9 +88,11 @@ async function upsertProduct(admin: AdminClient): Promise<{
     // The variant carries the ANNUAL price; shorter terms discount from it.
     price: tier.annualPrice.toFixed(2),
     inventoryPolicy: 'CONTINUE',
-    // A membership is not a parcel. Left shippable, Shopify would ask a member
-    // for a delivery address and quote them postage on a discount card.
-    requiresComponents: false,
+    // A membership is not a parcel. Left shippable, checkout asks a member for
+    // a delivery address and quotes them postage on a discount card — which is
+    // exactly what it did the first time this ran, because the flag lives on
+    // the inventory item and not on the variant.
+    inventoryItem: { requiresShipping: false, tracked: false },
     metafields: [
       {
         namespace: MEMBER_DISCOUNT_METAFIELD.namespace,
@@ -125,6 +127,12 @@ async function upsertProduct(admin: AdminClient): Promise<{
         productType: 'Membership',
         vendor: 'The T Collection',
         status: 'DRAFT',
+        // Without this a membership can be bought outright, off a selling
+        // plan — which is what happened the first time it was tested. The
+        // order goes through at the variant's annual price, no subscription
+        // contract is created, so no webhook fires, no membership is recorded
+        // and no member tag is applied. The customer pays and gets nothing.
+        requiresSellingPlan: true,
         productOptions: [
           { name: 'Tier', values: TIERS.map((tier) => ({ name: tier.name })) },
         ],
