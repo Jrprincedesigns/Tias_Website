@@ -1,7 +1,9 @@
 import type { ActionFunctionArgs } from 'react-router';
 import { authenticate } from '../shopify.server';
 import pool from '../db.server';
-import { upsertMembershipFromContract } from '../lib/db';
+import { membershipStatusFromContract, upsertMembershipFromContract } from '../lib/db';
+import { syncMemberTags } from '../lib/membership-provisioning';
+import { tierFromNames } from '../lib/membership-tiers';
 
 /**
  * subscription_contracts/create and /update.
@@ -64,10 +66,19 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   }
 
   const line = contract.lines?.nodes?.[0];
-  // The selling plan name is the tier as the member bought it. Falling back to
-  // the line title keeps a membership attached to something readable rather
-  // than an empty string if the plan is ever renamed away.
-  const tier = line?.sellingPlanName ?? line?.title ?? 'Membership';
+  // Which tier they bought has to be read back off the contract, because that
+  // is what decides the discount they get. An unrecognised plan is recorded
+  // under its own name rather than guessed at — a membership filed against the
+  // wrong tier would hand out the wrong discount for as long as it lives.
+  const matched = tierFromNames(line?.sellingPlanName, line?.title);
+  const tier = matched?.name ?? line?.sellingPlanName ?? line?.title ?? 'Membership';
+
+  if (!matched) {
+    console.warn(
+      `[${topic}] ${shop}: contract ${contract.id} does not match a known tier ` +
+        `(plan "${line?.sellingPlanName ?? '?'}") — recorded, but no member tag applied`,
+    );
+  }
 
   const { membershipId, created } = await upsertMembershipFromContract(pool, {
     shopifyContractId: contract.id,
@@ -77,9 +88,19 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     nextBillingAt: contract.nextBillingDate ? new Date(contract.nextBillingDate) : null,
   });
 
+  // Tags are what actually apply member pricing, so they follow the contract's
+  // status rather than its existence: a paused or cancelled membership loses
+  // the discount at the same moment it stops being paid for.
+  const status = membershipStatusFromContract(contract.status);
+  await syncMemberTags(admin, {
+    customerId: contract.customer.id,
+    tierId: matched?.id ?? null,
+    active: status === 'active',
+  });
+
   console.log(
     `[${topic}] ${shop}: ${created ? 'created' : 'updated'} membership ${membershipId} ` +
-      `(${contract.status}) from ${contract.id}`,
+      `(${status}) from ${contract.id}${matched ? ` as ${matched.name}` : ''}`,
   );
 
   return new Response();
