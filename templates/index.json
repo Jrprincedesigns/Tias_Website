@@ -198,7 +198,6 @@
     },
     "tc_membership_cta": {
       "type": "tc-cta",
-      "disabled": true,
       "settings": {
         "color_scheme": "ink",
         "eyebrow": "The Wig Spa Membership",
