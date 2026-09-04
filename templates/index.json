@@ -196,6 +196,24 @@
         "cta_link": ""
       }
     },
+    "tc_membership_cta": {
+      "type": "tc-cta",
+      "disabled": true,
+      "settings": {
+        "color_scheme": "ink",
+        "eyebrow": "The Wig Spa Membership",
+        "title": "<p>Care that keeps pace with <em>how often</em> you wear them.</p>",
+        "sub": "Members pay less on every service and on every new unit, and their work moves ahead in the studio queue. Three tiers, three terms — the longer the commitment, the less it costs per month.",
+        "show_newsletter": false,
+        "input_placeholder": "your@email.com",
+        "submit_label": "Subscribe",
+        "fineprint": "Cancel from your account at the end of any term.",
+        "cta1_label": "See membership",
+        "cta1_link": "shopify://pages/membership",
+        "cta2_label": "How the Spa works",
+        "cta2_link": "shopify://pages/wig-spa"
+      }
+    },
     "blocks_RJzgxN": {
       "type": "_blocks",
       "blocks": {
@@ -266,21 +284,6 @@
       "settings": {
         "eyebrow": "Loved by many.",
         "title": "<p>Reviewed five stars,<br/><em>worn</em> for years.</p>"
-      }
-    },
-    "tc_membership_cta": {
-      "type": "tc-cta",
-      "settings": {
-        "color_scheme": "ink",
-        "eyebrow": "The Wig Spa Membership",
-        "title": "<p>Care that keeps pace with <em>how often</em> you wear them.</p>",
-        "sub": "Members pay less on every service and on every new unit, and their work moves ahead in the studio queue. Three tiers, three terms — the longer the commitment, the less it costs per month.",
-        "show_newsletter": false,
-        "cta1_label": "See membership",
-        "cta1_link": "shopify://pages/membership",
-        "cta2_label": "How the Spa works",
-        "cta2_link": "shopify://pages/wig-spa",
-        "fineprint": "Cancel from your account at the end of any term."
       }
     }
   },
