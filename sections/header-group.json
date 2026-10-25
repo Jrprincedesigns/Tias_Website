@@ -87,7 +87,9 @@
         "menu": "main-menu",
         "tagline": "Premium Custom Hair",
         "show_search": true,
-        "show_account": true
+        "show_account": true,
+        "closet_page": "shopify://pages/wig-closet",
+        "closet_label": "Wig Closet"
       }
     }
   },
