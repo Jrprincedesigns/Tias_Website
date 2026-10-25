@@ -1,5 +1,5 @@
-import crypto from 'node:crypto';
 import type { LoaderFunctionArgs } from 'react-router';
+import { cronAuthorised } from '../cron-auth.server.ts';
 import pool from '../db.server.ts';
 import { endLapsedMemberships } from '../lib/membership-cancellation.ts';
 import { shopAdmin } from '../shop-admin.server.ts';
@@ -11,19 +11,10 @@ import { shopAdmin } from '../shop-admin.server.ts';
  * paid through has passed: the member tags come off, and the membership stops
  * counting as active. Until this runs they keep what they paid for.
  *
- * Vercel sends `Authorization: Bearer $CRON_SECRET`. Without the secret set,
- * the endpoint refuses everything rather than running for anyone who asks.
+ * Vercel sends `Authorization: Bearer $CRON_SECRET` (cron-auth.server.ts).
  */
-function authorised(request: Request): boolean {
-  const secret = process.env.CRON_SECRET;
-  if (!secret) return false;
-  const given = Buffer.from(request.headers.get('authorization') ?? '');
-  const expected = Buffer.from(`Bearer ${secret}`);
-  return given.length === expected.length && crypto.timingSafeEqual(given, expected);
-}
-
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-  if (!authorised(request)) return new Response('Unauthorized', { status: 401 });
+  if (!cronAuthorised(request)) return new Response('Unauthorized', { status: 401 });
 
   const result = await endLapsedMemberships(pool, shopAdmin.forShop);
   for (const failure of result.failed) {
