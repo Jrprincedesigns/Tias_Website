@@ -7,32 +7,27 @@
  * hourly rate into a function of how heavily members use it. Selling the
  * discount instead means the fee is margin and the labour is always paid for.
  *
- * Shape in Shopify: one product, three variants (the tiers), one selling plan
- * group with three plans (the terms). A tier's variant price is its TWELVE
- * MONTH price; the shorter terms reach their own price by discounting that per
- * cycle. That is what keeps a single selling plan group correct for all three
- * tiers — the ratios are identical, so one set of adjustments fits every row.
+ * Shape in Shopify: one product, three variants (the tiers), and one selling
+ * plan group PER TIER, attached to that tier's variant. Each plan charges a
+ * fixed price. Tiers used to share one group whose plans discounted from the
+ * variant price, which only worked while every tier priced its terms in the
+ * same ratio — Essential's monthly and annual prices do not fit that ratio, and
+ * nothing says the other tiers' will either.
  *
- *   Essential   $48/yr    $27/6mo   $15/3mo
- *   Signature   $80/yr    $45/6mo   $25/3mo
- *   Collection  $144/yr   $81/6mo   $45/3mo
+ *   Essential   $18/mo (3-month minimum)   $195/yr
+ *   Signature   $25/3mo   $45/6mo   $80/yr
+ *   Collection  $45/3mo   $81/6mo   $144/yr
  *
- * Longer commitments cost less per month, which is the point: 3 months is the
- * full rate, 6 months saves ten percent, 12 months saves twenty.
+ * Longer commitments cost less per month, which is the point.
  *
  * ─── What Tia can change without a developer ───────────────────────────────
  *
- * Prices live on the Shopify variants. She edits them in admin like any other
- * product and all three terms move with them, because the shorter terms are
- * expressed as a share of the annual price rather than as their own numbers.
+ * The member discount lives in a metafield on each variant, editable in admin.
  *
- * The member discount lives in a metafield on each variant, so it sits beside
- * the price in the same screen.
- *
- * What she cannot change here is the set of tiers or the term lengths — those
- * are the selling plans themselves, and Shopify fixes a contract's terms at
- * the moment it is created. Changing them means new plans for new members
- * while existing members keep what they bought.
+ * Prices and terms are the selling plans themselves, and Shopify fixes a
+ * contract's terms at the moment it is created. Changing them means new plans
+ * for new members while existing members keep what they bought — so they live
+ * here, not on the variant.
  */
 
 /** Metafield holding the member discount, so it is editable beside the price. */
@@ -52,82 +47,82 @@ export const TIER_SUMMARY_METAFIELD = {
   key: 'tier_summary',
 } as const;
 
+export interface MembershipTerm {
+  id: 'monthly' | 'quarterly' | 'biannual' | 'annual';
+  /** The plan name a member sees at checkout and on their cart line. */
+  name: string;
+  /** Billing interval, in months. */
+  months: number;
+  /** What one billing cycle costs. */
+  price: number;
+  /**
+   * Cycles a member must pay before they can cancel. A prepaid term needs
+   * only one — the whole term is charged up front — but a monthly plan would
+   * let a member take the discount for a month and leave, so it carries a
+   * minimum commitment instead.
+   */
+  minCycles: number;
+}
+
 export interface MembershipTier {
   /** Stable key. Never shown to a member; used to match a contract to a tier. */
   id: 'essential' | 'signature' | 'collection';
   name: string;
-  /** The twelve-month price. Shorter terms are derived from it. */
-  annualPrice: number;
   /** Percent off other services. The whole value of the membership. */
   discountPercent: number;
   summary: string;
+  /** Shortest first. The storefront preselects the last, the best value. */
+  terms: readonly MembershipTerm[];
 }
 
 export const TIERS: readonly MembershipTier[] = [
   {
     id: 'essential',
     name: 'Essential Care',
-    annualPrice: 48,
     discountPercent: 10,
     summary: 'For one or two units you wear regularly. Ten percent off every service in the spa.',
+    terms: [
+      { id: 'monthly', name: 'Monthly (3-month minimum)', months: 1, price: 18, minCycles: 3 },
+      { id: 'annual', name: 'Annual', months: 12, price: 195, minCycles: 1 },
+    ],
   },
   {
     id: 'signature',
     name: 'Signature Care',
-    annualPrice: 80,
     discountPercent: 15,
     summary: 'For a rotation you move between. Fifteen percent off, and your work is booked ahead of standard jobs.',
+    terms: [
+      { id: 'quarterly', name: 'Every 3 months', months: 3, price: 25, minCycles: 1 },
+      { id: 'biannual', name: 'Every 6 months', months: 6, price: 45, minCycles: 1 },
+      { id: 'annual', name: 'Every 12 months', months: 12, price: 80, minCycles: 1 },
+    ],
   },
   {
     id: 'collection',
     name: 'Collection Care',
-    annualPrice: 144,
     discountPercent: 20,
     summary: 'For a wardrobe worth protecting. Twenty percent off, and your units go to the front of the queue.',
+    terms: [
+      { id: 'quarterly', name: 'Every 3 months', months: 3, price: 45, minCycles: 1 },
+      { id: 'biannual', name: 'Every 6 months', months: 6, price: 81, minCycles: 1 },
+      { id: 'annual', name: 'Every 12 months', months: 12, price: 144, minCycles: 1 },
+    ],
   },
 ];
 
-export interface MembershipTerm {
-  id: 'quarterly' | 'biannual' | 'annual';
-  name: string;
-  /** Billing interval, in months. Also the prepaid window. */
-  months: number;
-  /**
-   * What one cycle costs as a share of the annual price. Shopify expresses a
-   * selling plan's price as an adjustment to the variant price, and it can
-   * only adjust downward — which is why the variant holds the annual price
-   * and every shorter term is a reduction from it rather than an increase.
-   */
-  shareOfAnnual: number;
-}
-
-export const TERMS: readonly MembershipTerm[] = [
-  { id: 'quarterly', name: 'Every 3 months', months: 3, shareOfAnnual: 0.3125 },
-  { id: 'biannual', name: 'Every 6 months', months: 6, shareOfAnnual: 0.5625 },
-  { id: 'annual', name: 'Every 12 months', months: 12, shareOfAnnual: 1 },
-];
-
-/** What one cycle of this term costs for this tier. */
-export function priceForTerm(tier: MembershipTier, term: MembershipTerm): number {
-  return Math.round(tier.annualPrice * term.shareOfAnnual * 100) / 100;
-}
-
 /**
- * The percentage Shopify needs to reach that price from the variant price.
- *
- * Worth knowing before it surprises someone: the three-month plan is stored as
- * a ~69% discount, because it charges a quarter-year's share of an annual
- * price. It is not a 69% saving and should never be displayed as one — a theme
- * that renders "Save 69%" on a selling plan is reading this number out of
- * context.
+ * The price on the variant itself. Every plan sets its own price, so this is
+ * never what a member pays — but it is what a product listing shows before a
+ * term is chosen, so it is the full annual price rather than a low monthly
+ * figure that reads as the cost of membership.
  */
-export function priceAdjustmentPercent(term: MembershipTerm): number {
-  return Math.round((1 - term.shareOfAnnual) * 10000) / 100;
+export function variantPrice(tier: MembershipTier): number {
+  return Math.max(...tier.terms.map((term) => term.price));
 }
 
 /** Monthly equivalent, for showing that a longer commitment costs less. */
-export function monthlyEquivalent(tier: MembershipTier, term: MembershipTerm): number {
-  return Math.round((priceForTerm(tier, term) / term.months) * 100) / 100;
+export function monthlyEquivalent(term: MembershipTerm): number {
+  return Math.round((term.price / term.months) * 100) / 100;
 }
 
 export function tierById(id: string): MembershipTier | undefined {

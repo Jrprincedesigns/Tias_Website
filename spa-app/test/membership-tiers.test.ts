@@ -2,11 +2,10 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   TIERS,
-  TERMS,
-  priceForTerm,
-  priceAdjustmentPercent,
+  variantPrice,
   monthlyEquivalent,
   tierFromNames,
+  tierById,
 } from '../app/lib/membership-tiers.ts';
 
 /**
@@ -16,46 +15,51 @@ import {
  */
 
 test('the published prices come out of the model', () => {
-  const expected: Record<string, [number, number, number]> = {
-    // 3 months, 6 months, 12 months
-    essential: [15, 27, 48],
-    signature: [25, 45, 80],
-    collection: [45, 81, 144],
+  const expected: Record<string, Array<[number, number]>> = {
+    // [months per cycle, price per cycle]
+    essential: [[1, 18], [12, 195]],
+    signature: [[3, 25], [6, 45], [12, 80]],
+    collection: [[3, 45], [6, 81], [12, 144]],
   };
   for (const tier of TIERS) {
-    const actual = TERMS.map((term) => priceForTerm(tier, term));
+    const actual = tier.terms.map((term) => [term.months, term.price]);
     assert.deepEqual(actual, expected[tier.id], `${tier.name} prices`);
   }
 });
 
+test('Essential Care is monthly with a three-month minimum, or annual', () => {
+  const essential = tierById('essential')!;
+  const monthly = essential.terms.find((t) => t.id === 'monthly')!;
+  const annual = essential.terms.find((t) => t.id === 'annual')!;
+  assert.equal(essential.terms.length, 2);
+  assert.equal(monthly.minCycles * monthly.months, 3, 'monthly commits to three months');
+  assert.equal(annual.minCycles, 1, 'annual is prepaid, so needs no further minimum');
+});
+
 test('a longer commitment always costs less per month', () => {
   for (const tier of TIERS) {
-    const monthly = TERMS.map((term) => monthlyEquivalent(tier, term));
+    const monthly = tier.terms.map(monthlyEquivalent);
     for (let i = 1; i < monthly.length; i++) {
       assert.ok(
         monthly[i]! < monthly[i - 1]!,
-        `${tier.name}: ${TERMS[i]!.name} must beat ${TERMS[i - 1]!.name} per month`,
+        `${tier.name}: ${tier.terms[i]!.name} must beat ${tier.terms[i - 1]!.name} per month`,
       );
     }
   }
 });
 
-test('one set of plan adjustments fits every tier', () => {
-  // This is what lets a single selling plan group serve all three tiers. If a
-  // tier ever prices out of ratio, the group silently charges it wrongly.
-  for (const term of TERMS) {
-    const percents = TIERS.map(
-      (tier) => Math.round((priceForTerm(tier, term) / tier.annualPrice) * 10000) / 100,
-    );
-    assert.equal(new Set(percents).size, 1, `${term.name} must be one ratio across tiers`);
+test('the variant price is the annual price, and no plan charges more', () => {
+  // A listing shows the variant price before a term is chosen; showing the
+  // monthly figure there would read as the whole cost of membership.
+  for (const tier of TIERS) {
+    const annual = tier.terms.find((t) => t.id === 'annual')!;
+    assert.equal(variantPrice(tier), annual.price, tier.name);
   }
 });
 
-test('the annual plan is charged at the variant price', () => {
-  const annual = TERMS.find((t) => t.id === 'annual')!;
-  assert.equal(priceAdjustmentPercent(annual), 0);
+test('every tier ends on its annual term, so the storefront preselects it', () => {
   for (const tier of TIERS) {
-    assert.equal(priceForTerm(tier, annual), tier.annualPrice);
+    assert.equal(tier.terms.at(-1)!.id, 'annual', tier.name);
   }
 });
 
