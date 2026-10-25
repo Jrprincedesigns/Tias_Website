@@ -106,7 +106,7 @@
     if (!data.membership) {
       card.appendChild(el('div', 'tc-closet-card__label', 'Membership'));
       card.appendChild(el('p', 'tc-closet-card__body',
-        'You are not a member yet. Members pay less on every service in the spa and move ahead in the studio queue.'));
+        'You are not a member yet. Members get Rejuvenations included every 3 months, 10% off additional services, and on Signature and Collection, priority in the studio queue.'));
       if (membershipUrl) {
         var join = el('a', 'tc-btn tc-btn--outline', 'See membership');
         join.href = membershipUrl;
@@ -132,7 +132,7 @@
     // allowance that nothing grants any more — it read as a benefit expiring.
     if (typeof m.discountPercent === 'number' && m.discountPercent > 0) {
       card.appendChild(el('div', 'tc-closet-membership__count',
-        m.discountPercent + '% off every service in the spa'));
+        m.discountPercent + '% off additional services'));
     }
 
     // Only for members carrying an allowance from the old model. A zero here is
@@ -140,7 +140,7 @@
     var remaining = typeof m.servicesRemaining === 'number' ? m.servicesRemaining : 0;
     if (remaining > 0) {
       card.appendChild(el('div', 'tc-closet-card__meta',
-        remaining + (remaining === 1 ? ' included service left' : ' included services left')));
+        remaining + (remaining === 1 ? ' included Rejuvenation left' : ' included Rejuvenations left')));
     }
 
     var renews = formatDate(m.renewsOn);
@@ -588,7 +588,7 @@
         mrows.appendChild(detailRow('Member pricing', m.discountPercent + '% off'));
       }
       var remaining = typeof m.servicesRemaining === 'number' ? m.servicesRemaining : 0;
-      if (remaining > 0) mrows.appendChild(detailRow('Included services left', String(remaining)));
+      if (remaining > 0) mrows.appendChild(detailRow('Included Rejuvenations left', String(remaining)));
       var renews = formatDate(m.renewsOn);
       if (renews) mrows.appendChild(detailRow('Renews', renews));
       memberSection.appendChild(mrows);

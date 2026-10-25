@@ -75,7 +75,7 @@
             {%- if summary != blank -%}
               <p class="tc-tier__summary">{{ summary }}</p>
             {%- elsif discount != blank -%}
-              <p class="tc-tier__summary">{{ discount }}% off every Wig Spa service.</p>
+              <p class="tc-tier__summary">{{ discount }}% off additional Wig Spa services. Extra Rejuvenations are full price.</p>
             {%- endif -%}
 
             <form method="post" action="{{ routes.cart_add_url }}" class="tc-tier__form">

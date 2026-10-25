@@ -73,9 +73,9 @@
     if (membership) {
       coverageEl.hidden = false;
       coverageEl.textContent = membership.servicesRemaining > 0
-        ? membership.servicesRemaining + ' included service' +
-          (membership.servicesRemaining === 1 ? '' : 's') + ' remaining on your membership.'
-        : 'You have used your included services for this membership year — member rates still apply.';
+        ? membership.servicesRemaining + ' included Rejuvenation' +
+          (membership.servicesRemaining === 1 ? '' : 's') + ' available on your membership.'
+        : 'You have no included Rejuvenations available right now. More are added every 3 months.';
     }
 
     (closet.wigs || []).forEach(function (wig, index) {
