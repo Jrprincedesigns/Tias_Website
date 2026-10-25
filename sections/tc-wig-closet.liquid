@@ -45,9 +45,12 @@
         data-membership-url="{{ section.settings.membership_page | default: '' }}"
       >
         <div class="tc-closet__state" data-closet-state="loading">
+          <p class="tc-closet-loading" role="status">
+            <span class="tc-closet-spinner" aria-hidden="true"></span>
+            <span data-closet-loading-text>Loading your closet…</span>
+          </p>
           <div class="tc-closet-skeleton"></div>
           <div class="tc-closet-skeleton tc-closet-skeleton--short"></div>
-          <span class="visually-hidden">Loading your closet…</span>
         </div>
 
         <div class="tc-closet__state" data-closet-state="failed" hidden>

@@ -699,6 +699,16 @@
     closePanel();
   });
 
+  // The closet can take a few seconds when the app has been idle. Say so,
+  // rather than leaving a member wondering whether anything is happening.
+  setTimeout(function () {
+    var loading = root.querySelector('[data-closet-state="loading"]');
+    var text = root.querySelector('[data-closet-loading-text]');
+    if (loading && !loading.hidden && text) {
+      text.textContent = 'Still loading — this can take a few seconds.';
+    }
+  }, 4000);
+
   fetch(base + '/closet', {
     headers: { Accept: 'application/json' },
     credentials: 'same-origin'
