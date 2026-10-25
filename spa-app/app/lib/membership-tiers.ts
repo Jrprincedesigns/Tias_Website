@@ -85,7 +85,7 @@ export const TIERS: readonly MembershipTier[] = [
     name: 'Essential Care',
     discountPercent: 10,
     summary:
-      'For one or two units you wear regularly. Includes 1 wig rejuvenation every 3 months, plus 10% off additional spa services.',
+      'For one or two units you wear regularly. Includes 1 wig rejuvenation every 3 months, plus 10% off all additional Wig Spa services.',
     terms: [
       {
         id: 'monthly', name: 'Monthly (3-month minimum)', months: 1, price: 18, minCycles: 3,
