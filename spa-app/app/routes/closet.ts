@@ -30,6 +30,11 @@ export const loader = async ({ request }: LoaderFunctionArgs) =>
             status: closet.membership.status,
             renewsOn: closet.membership.membershipYearEnd.toISOString(),
             nextBillingAt: closet.membership.nextBillingAt?.toISOString() ?? null,
+            // Set once a member has cancelled from the closet: the membership
+            // stays active until this date, and then does not renew.
+            endsOn: closet.membership.cancelledAt
+              ? (closet.membership.accessUntil ?? closet.membership.cancelledAt).toISOString()
+              : null,
             // What the membership is worth to them: the discount on additional
             // services, and the Rejuvenations they can still book — granted
             // every three months, less any already held by a booking. The page

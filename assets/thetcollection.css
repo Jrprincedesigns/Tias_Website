@@ -2411,6 +2411,44 @@ body:has(.customer) {
   font-weight: 500;
 }
 
+/* Manage membership — collapsed under the membership card until asked for */
+.tc-section .tc-closet-manage {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid var(--tc-lavender-soft);
+}
+.tc-section .tc-closet-manage__toggle {
+  background: none;
+  border: 0;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--tc-navy);
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 6px 0;
+}
+.tc-section .tc-closet-manage__body { margin-top: 12px; max-width: 56ch; }
+.tc-section .tc-closet-manage__rows {
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+  margin: 0 0 18px;
+}
+.tc-section .tc-closet-manage__text {
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--tc-mute);
+  margin: 0 0 14px;
+}
+.tc-section .tc-closet-manage__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px;
+}
+.tc-section .tc-closet-manage button:disabled { opacity: 0.55; cursor: progress; }
+
 .tc-section .tc-closet-chip {
   display: inline-block;
   font-size: 10px;

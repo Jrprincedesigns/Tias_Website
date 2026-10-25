@@ -10,6 +10,7 @@ import {
   type LedgerEntry,
   type MembershipWindow,
 } from './allowance.ts';
+import { membershipStatus } from './membership-cancellation.ts';
 
 /**
  * Data access for the Wig Spa.
@@ -65,6 +66,10 @@ export interface Membership extends MembershipWindow {
   discountPercent: number | null;
   /** Rejuvenations granted each three-month period. Null for none. */
   rejuvenationsPerPeriod: number | null;
+  /** When the member cancelled, if they have. */
+  cancelledAt: Date | null;
+  /** After cancelling: the date the membership stays active until. */
+  accessUntil: Date | null;
 }
 
 export interface ServiceRequestSummary {
@@ -178,7 +183,7 @@ export async function listWigs(db: Queryable, memberId: string): Promise<Wig[]> 
 export async function getMembership(db: Queryable, memberId: string): Promise<Membership | null> {
   const { rows } = await db.query(
     `select id, tier, status, membership_year_start, membership_year_end, next_billing_at,
-            discount_percent, rejuvenations_per_period
+            discount_percent, rejuvenations_per_period, cancelled_at, access_until
        from memberships
       where member_id = $1
       order by (status = 'active') desc, membership_year_end desc
@@ -196,6 +201,8 @@ export async function getMembership(db: Queryable, memberId: string): Promise<Me
     nextBillingAt: row.next_billing_at ? new Date(row.next_billing_at) : null,
     discountPercent: row.discount_percent,
     rejuvenationsPerPeriod: row.rejuvenations_per_period,
+    cancelledAt: row.cancelled_at ? new Date(row.cancelled_at) : null,
+    accessUntil: row.access_until ? new Date(row.access_until) : null,
   };
 }
 
@@ -445,7 +452,7 @@ async function spendHeldAllowance(
 async function getMembershipById(db: Queryable, membershipId: string): Promise<Membership | null> {
   const { rows } = await db.query(
     `select id, tier, status, membership_year_start, membership_year_end, next_billing_at,
-            discount_percent, rejuvenations_per_period
+            discount_percent, rejuvenations_per_period, cancelled_at, access_until
        from memberships where id = $1`,
     [membershipId],
   );
@@ -460,6 +467,8 @@ async function getMembershipById(db: Queryable, membershipId: string): Promise<M
     nextBillingAt: row.next_billing_at ? new Date(row.next_billing_at) : null,
     discountPercent: row.discount_percent,
     rejuvenationsPerPeriod: row.rejuvenations_per_period,
+    cancelledAt: row.cancelled_at ? new Date(row.cancelled_at) : null,
+    accessUntil: row.access_until ? new Date(row.access_until) : null,
   };
 }
 
@@ -1098,19 +1107,24 @@ export interface ContractSnapshot {
 export async function upsertMembershipFromContract(
   pool: Transactable,
   snapshot: ContractSnapshot,
-): Promise<{ membershipId: string; created: boolean }> {
+): Promise<{ membershipId: string; created: boolean; status: MembershipWindow['status'] }> {
   return withTransaction(pool, async (tx) => {
     const member = await findOrCreateMember(tx, {
       shop: snapshot.shop,
       shopifyCustomerId: snapshot.shopifyCustomerId,
     });
 
-    const status = membershipStatusFromContract(snapshot.status);
-
     const existing = await tx.query(
-      `select id from memberships where shopify_contract_id = $1`,
+      `select id, access_until from memberships where shopify_contract_id = $1 for update`,
       [snapshot.shopifyContractId],
     );
+
+    // A member who cancelled from the closet keeps what they paid for: the
+    // contract reads CANCELLED, but the membership stays active until
+    // access_until (membership-cancellation.ts).
+    const accessUntil = existing.rows[0]?.access_until ? new Date(existing.rows[0].access_until) : null;
+    const status = membershipStatus(snapshot.status, accessUntil);
+    const contractCancelled = membershipStatusFromContract(snapshot.status) === 'cancelled';
 
     if (existing.rows.length > 0) {
       const membershipId = existing.rows[0].id;
@@ -1121,8 +1135,7 @@ export async function upsertMembershipFromContract(
                 next_billing_at = $4,
                 discount_percent = coalesce($5, discount_percent),
                 rejuvenations_per_period = coalesce($6, rejuvenations_per_period),
-                cancelled_at = case when $2::membership_status = 'cancelled'
-                                    then coalesce(cancelled_at, now()) else null end,
+                cancelled_at = case when $7 then coalesce(cancelled_at, now()) else null end,
                 updated_at = now()
           where id = $1`,
         [
@@ -1132,6 +1145,7 @@ export async function upsertMembershipFromContract(
           snapshot.nextBillingAt,
           snapshot.discountPercent,
           snapshot.rejuvenationsPerPeriod,
+          contractCancelled,
         ],
       );
       await tx.query(
@@ -1139,7 +1153,7 @@ export async function upsertMembershipFromContract(
          values ($1, 'membership_updated', 'shopify', $2::jsonb)`,
         [membershipId, JSON.stringify({ status, contract: snapshot.shopifyContractId })],
       );
-      return { membershipId, created: false };
+      return { membershipId, created: false, status };
     }
 
     // A new contract starts a membership year today. Rejuvenations are granted
@@ -1171,8 +1185,138 @@ export async function upsertMembershipFromContract(
       [membershipId, JSON.stringify({ status, contract: snapshot.shopifyContractId })],
     );
 
-    return { membershipId, created: true };
+    return { membershipId, created: true, status };
   });
+}
+
+/** The membership a member could cancel: their contract, and whether it is already ending. */
+export interface CancellableMembership {
+  id: string;
+  shopifyContractId: string;
+  status: MembershipWindow['status'];
+  cancelledAt: Date | null;
+  accessUntil: Date | null;
+}
+
+/**
+ * The member's own contract-backed membership, found from the signed proxy
+ * identity. The contract id never comes from the browser, so a member can only
+ * ever reach their own.
+ */
+export async function getCancellableMembership(
+  db: Queryable,
+  shop: string,
+  shopifyCustomerId: string,
+): Promise<CancellableMembership | null> {
+  const { rows } = await db.query(
+    `select ms.id, ms.shopify_contract_id, ms.status, ms.cancelled_at, ms.access_until
+       from memberships ms
+       join members m on m.id = ms.member_id
+      where m.shop = $1 and m.shopify_customer_id = $2 and ms.shopify_contract_id is not null
+      order by (ms.status = 'active') desc, ms.membership_year_end desc
+      limit 1`,
+    [shop, shopifyCustomerId],
+  );
+  const row = rows[0];
+  if (!row) return null;
+  return {
+    id: row.id,
+    shopifyContractId: row.shopify_contract_id,
+    status: row.status,
+    cancelledAt: row.cancelled_at ? new Date(row.cancelled_at) : null,
+    accessUntil: row.access_until ? new Date(row.access_until) : null,
+  };
+}
+
+/**
+ * Record a member's cancellation before the contract is cancelled in Shopify.
+ *
+ * It has to come first: the contract webhook can arrive before the cancel
+ * call returns, and it decides from access_until whether the member keeps
+ * their perks. Written afterwards, a fast webhook would end the membership on
+ * the spot. If the Shopify call then fails, `undoCancellationRequest` puts it
+ * back.
+ */
+export async function recordCancellationRequest(
+  db: Queryable,
+  membershipId: string,
+  accessUntil: Date | null,
+): Promise<void> {
+  await db.query(
+    `update memberships
+        set access_until = $2, cancelled_at = now(), updated_at = now()
+      where id = $1`,
+    [membershipId, accessUntil],
+  );
+  await db.query(
+    `insert into events (membership_id, kind, actor, payload)
+     values ($1, 'membership_cancel_requested', 'member', $2::jsonb)`,
+    [membershipId, JSON.stringify({ accessUntil: accessUntil?.toISOString() ?? null })],
+  );
+}
+
+export async function undoCancellationRequest(db: Queryable, membershipId: string): Promise<void> {
+  await db.query(
+    `update memberships
+        set access_until = null, cancelled_at = null, updated_at = now()
+      where id = $1 and status = 'active'`,
+    [membershipId],
+  );
+}
+
+/** A held-open membership whose paid-through date has passed. */
+export interface LapsedCancellation {
+  membershipId: string;
+  shop: string;
+  shopifyCustomerId: string;
+  shopifyContractId: string | null;
+}
+
+/**
+ * Held-open memberships whose paid-through date has passed.
+ *
+ * Read first and closed one at a time, after their member tags come off in
+ * Shopify: a membership closed with its tags still on would keep member
+ * pricing indefinitely, while one left open is simply retried tomorrow.
+ */
+export async function listLapsedCancellations(
+  db: Queryable,
+  now: Date = new Date(),
+): Promise<LapsedCancellation[]> {
+  const { rows } = await db.query(
+    `select ms.id, m.shop, m.shopify_customer_id, ms.shopify_contract_id
+       from memberships ms
+       join members m on m.id = ms.member_id
+      where ms.status = 'active'
+        and ms.cancelled_at is not null
+        and ms.access_until is not null
+        and ms.access_until <= $1
+      order by ms.access_until`,
+    [now],
+  );
+  return rows.map((row) => ({
+    membershipId: row.id,
+    shop: row.shop,
+    shopifyCustomerId: row.shopify_customer_id,
+    shopifyContractId: row.shopify_contract_id,
+  }));
+}
+
+/** End a held-open membership. Returns false if something else already moved it. */
+export async function closeLapsedCancellation(db: Queryable, membershipId: string): Promise<boolean> {
+  const { rowCount } = await db.query(
+    `update memberships
+        set status = 'cancelled', updated_at = now()
+      where id = $1 and status = 'active' and cancelled_at is not null`,
+    [membershipId],
+  );
+  if (!rowCount) return false;
+  await db.query(
+    `insert into events (membership_id, kind, actor, payload)
+     values ($1, 'membership_updated', 'system', $2::jsonb)`,
+    [membershipId, JSON.stringify({ status: 'cancelled', reason: 'paid_through_date_passed' })],
+  );
+  return true;
 }
 
 /**

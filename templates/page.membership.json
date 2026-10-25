@@ -28,7 +28,7 @@
         "badge": "Most popular",
         "cta_label": "Join",
         "unavailable_label": "Coming soon",
-        "footnote": "Pay monthly with a 3-month minimum, or for the year up front. Membership renews automatically and can be cancelled from your account."
+        "footnote": "Pay monthly with a 3-month minimum, or for the year up front. Membership renews automatically. Cancel from your Wig Closet once your minimum is met, and your benefits continue until the end of the time you have paid for."
       }
     },
     "process": {
@@ -171,7 +171,7 @@
           "type": "qa",
           "settings": {
             "question": "Can I cancel?",
-            "answer": "Yes, from your account. Monthly memberships have a 3-month minimum; annual memberships are paid for the year up front."
+            "answer": "Yes, from Manage membership in your Wig Closet. Monthly memberships have a 3-month minimum, so you can cancel once your third monthly payment has gone through. Annual memberships are paid for the year up front and can be cancelled at any time. Either way, your membership stops renewing and you keep your benefits until the end of the time you have paid for."
           }
         }
       },

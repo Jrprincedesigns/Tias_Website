@@ -143,10 +143,181 @@
         remaining + (remaining === 1 ? ' included Rejuvenation left' : ' included Rejuvenations left')));
     }
 
-    var renews = formatDate(m.renewsOn);
-    if (renews) card.appendChild(el('div', 'tc-closet-card__meta', 'Renews ' + renews));
+    // A member who has cancelled keeps their benefits to the date they paid
+    // through, and the card says so rather than promising a renewal.
+    var ends = formatDay(m.endsOn);
+    if (ends) {
+      card.appendChild(el('div', 'tc-closet-flag',
+        'Your membership is cancelled and will not renew. Your benefits continue until ' + ends + '.'));
+    } else {
+      var renews = formatDate(m.renewsOn);
+      if (renews) card.appendChild(el('div', 'tc-closet-card__meta', 'Renews ' + renews));
+      if (m.status === 'active') card.appendChild(buildManage());
+    }
 
     host.appendChild(card);
+  }
+
+  // -------------------------------------------------------------------------
+  // Manage membership
+  //
+  // Collapsed until asked for: the plan details come from Shopify by way of
+  // the app, so they are fetched only when a member opens this, and the closet
+  // itself never waits on them. Whether a member may cancel is decided by the
+  // app — the page only says what it was told — so the 3-month minimum on
+  // monthly plans cannot be stepped around by editing the page.
+  // -------------------------------------------------------------------------
+
+  function buildManage() {
+    var wrap = el('div', 'tc-closet-manage');
+    var toggle = el('button', 'tc-closet-manage__toggle', 'Manage membership');
+    toggle.type = 'button';
+    toggle.setAttribute('aria-expanded', 'false');
+    var body = el('div', 'tc-closet-manage__body');
+    body.hidden = true;
+
+    toggle.addEventListener('click', function () {
+      var open = body.hidden;
+      body.hidden = !open;
+      toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+      if (open && !body.hasChildNodes()) loadManage(body);
+    });
+
+    wrap.appendChild(toggle);
+    wrap.appendChild(body);
+    return wrap;
+  }
+
+  /** Same contract as the closet: always JSON, outcome in the body. */
+  function proxyJson(path, options) {
+    return fetch(base + path, Object.assign({
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      credentials: 'same-origin'
+    }, options || {}))
+      .then(function (response) { return response.json(); });
+  }
+
+  function manageMessage(body, text) {
+    body.textContent = '';
+    body.appendChild(el('p', 'tc-closet-manage__text', text));
+  }
+
+  var MANAGE_UNAVAILABLE =
+    'We could not load your membership just now. Please try again, or contact the studio.';
+
+  function loadManage(body) {
+    body.appendChild(el('p', 'tc-closet-manage__text', 'Loading your plan\u2026'));
+    proxyJson('/membership')
+      .then(function (result) {
+        if (!result || result.ok === false) throw new Error('failed');
+        renderManage(body, result.membership);
+      })
+      .catch(function () { manageMessage(body, MANAGE_UNAVAILABLE); });
+  }
+
+  function renderManage(body, plan) {
+    body.textContent = '';
+
+    if (!plan) {
+      body.appendChild(el('p', 'tc-closet-manage__text',
+        'We could not find a plan to manage on your account. If that seems wrong, contact the studio and we will sort it out.'));
+      return;
+    }
+
+    if (plan.cancelled) {
+      renderCancelled(body, plan);
+      return;
+    }
+
+    var rows = el('dl', 'tc-closet-manage__rows');
+    if (plan.planName) rows.appendChild(detailRow('Plan', plan.planName));
+    var next = formatDay(plan.nextBillingDate);
+    if (next) rows.appendChild(detailRow('Next payment', next));
+    body.appendChild(rows);
+
+    if (plan.canCancel) {
+      var cancel = el('button', 'tc-btn tc-btn--outline', 'Cancel membership');
+      cancel.type = 'button';
+      cancel.addEventListener('click', function () { confirmCancel(body, plan); });
+      body.appendChild(cancel);
+      return;
+    }
+
+    body.appendChild(el('p', 'tc-closet-manage__text', blockedSentence(plan)));
+  }
+
+  /** Why a member cannot cancel yet, in their terms. */
+  function blockedSentence(plan) {
+    if (plan.reason === 'minimum_term') {
+      var from = formatDay(plan.cancellableFrom);
+      var minimum = 'Your plan has a ' + plan.minCycles + '-month minimum.';
+      // The date is the day the last minimum payment falls due. If that has
+      // passed without the payment going through, the date would be no help.
+      if (from && new Date(plan.cancellableFrom).getTime() > Date.now()) {
+        return minimum + ' You can cancel from ' + from + '.';
+      }
+      return minimum + ' You can cancel once your final minimum payment has gone through.';
+    }
+    return 'Your membership cannot be cancelled from here right now. Contact the studio and we will help.';
+  }
+
+  function confirmCancel(body, plan) {
+    body.textContent = '';
+    var next = formatDay(plan.nextBillingDate);
+    body.appendChild(el('p', 'tc-closet-manage__text',
+      'Cancel your membership? It will not renew' +
+      (next ? ', and your benefits continue until ' + next + '.' : '.')));
+
+    var actions = el('div', 'tc-closet-manage__actions');
+    var keep = el('button', 'tc-closet-manage__toggle', 'Keep my membership');
+    keep.type = 'button';
+    keep.addEventListener('click', function () { renderManage(body, plan); });
+    var confirm = el('button', 'tc-btn tc-btn--dark', 'Yes, cancel');
+    confirm.type = 'button';
+    confirm.addEventListener('click', function () { submitCancel(body); });
+    actions.appendChild(keep);
+    actions.appendChild(confirm);
+    body.appendChild(actions);
+    confirm.focus();
+  }
+
+  /**
+   * Buttons are disabled for the round trip so a double click cannot post
+   * twice — though the app treats a second cancel as already done anyway.
+   */
+  function submitCancel(body) {
+    body.querySelectorAll('button').forEach(function (button) { button.disabled = true; });
+
+    proxyJson('/membership', { method: 'POST', body: '{}' })
+      .then(function (result) {
+        if (result && result.ok !== false && result.membership) {
+          // Redraw the whole card, so it stops promising a renewal.
+          if (closetData && closetData.membership) {
+            closetData.membership.endsOn = result.membership.endsOn || new Date().toISOString();
+            renderMembership(closetData);
+          } else {
+            renderCancelled(body, result.membership);
+          }
+          return;
+        }
+        // Refused with a reason — the minimum, most likely, if the page was
+        // open across the date. Say why, and show the plan as it now stands.
+        if (result && result.error === 'cannot_cancel' && result.membership) {
+          renderManage(body, result.membership);
+          return;
+        }
+        throw new Error('failed');
+      })
+      .catch(function () {
+        manageMessage(body, 'We could not cancel that just now. Please try again, or contact the studio.');
+      });
+  }
+
+  function renderCancelled(body, plan) {
+    var ends = formatDay(plan.endsOn);
+    manageMessage(body, ends
+      ? 'Your membership is cancelled and will not renew. Your benefits continue until ' + ends + '.'
+      : 'Your membership is cancelled and will not renew.');
   }
 
   function statusSentence(status) {
@@ -589,8 +760,10 @@
       }
       var remaining = typeof m.servicesRemaining === 'number' ? m.servicesRemaining : 0;
       if (remaining > 0) mrows.appendChild(detailRow('Included Rejuvenations left', String(remaining)));
+      var ends = formatDay(m.endsOn);
       var renews = formatDate(m.renewsOn);
-      if (renews) mrows.appendChild(detailRow('Renews', renews));
+      if (ends) mrows.appendChild(detailRow('Ends', ends));
+      else if (renews) mrows.appendChild(detailRow('Renews', renews));
       memberSection.appendChild(mrows);
       side.appendChild(memberSection);
     }
