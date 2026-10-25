@@ -79,7 +79,7 @@ export default function MembershipSetup() {
         </s-paragraph>
 
         {pricing.map((tier) => (
-          <s-section key={tier.tier} heading={`${tier.tier} — ${tier.discountPercent}% off additional services`}>
+          <s-section key={tier.tier} heading={`${tier.tier} — ${tier.discountPercent}% off additional services, extra Rejuvenations at full price`}>
             {tier.terms.map((term) => (
               <s-paragraph key={term.term}>
                 <s-text>{term.term}</s-text>: ${term.price.toFixed(2)}

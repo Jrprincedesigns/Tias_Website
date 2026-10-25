@@ -75,6 +75,90 @@ async function run<T>(
   return result;
 }
 
+/** The membership product as it stands in the store, when it exists. */
+export interface ExistingProduct {
+  id: string;
+  variants: Array<{
+    id: string;
+    title: string;
+    discount: { value: string } | null;
+    summary: { value: string } | null;
+  }>;
+}
+
+/**
+ * What to send productSet.
+ *
+ * Creating, it sends everything, and the product starts as a draft so nobody
+ * can buy it before it has been checked. Repairing, it must not undo what Tia
+ * has done in admin since:
+ *
+ *   - status and description are left out, and productSet leaves an omitted
+ *     scalar alone — so a published membership stays published;
+ *   - metafields are a list field, and productSet deletes list entries it is
+ *     not sent, so they are sent back with whatever value the store holds,
+ *     falling back to ours only where one is blank;
+ *   - each variant is sent with its id, so it is updated rather than replaced —
+ *     a replaced variant would drop its selling plan group.
+ */
+export function productSetInput(existing: ExistingProduct | null): Record<string, unknown> {
+  const variants = TIERS.map((tier) => {
+    const current = existing?.variants.find((variant) => variant.title === tier.name);
+    return {
+      ...(current ? { id: current.id } : {}),
+      optionValues: [{ optionName: 'Tier', name: tier.name }],
+      // Never what a member pays — every plan sets its own price.
+      price: variantPrice(tier).toFixed(2),
+      inventoryPolicy: 'CONTINUE',
+      // A membership is not a parcel. Left shippable, checkout asks a member for
+      // a delivery address and quotes them postage on a discount card — which is
+      // exactly what it did the first time this ran, because the flag lives on
+      // the inventory item and not on the variant.
+      inventoryItem: { requiresShipping: false, tracked: false },
+      metafields: [
+        {
+          namespace: MEMBER_DISCOUNT_METAFIELD.namespace,
+          key: MEMBER_DISCOUNT_METAFIELD.key,
+          type: 'number_integer',
+          value: current?.discount?.value?.trim() || String(tier.discountPercent),
+        },
+        {
+          namespace: TIER_SUMMARY_METAFIELD.namespace,
+          key: TIER_SUMMARY_METAFIELD.key,
+          type: 'single_line_text_field',
+          value: current?.summary?.value?.trim() || tier.summary,
+        },
+      ],
+    };
+  });
+
+  return {
+    handle: MEMBERSHIP_HANDLE,
+    title: 'The Wig Spa Membership',
+    ...(existing
+      ? {}
+      : {
+          descriptionHtml:
+            '<p>Included Rejuvenations every 3 months, 10% off additional Wig Spa services ' +
+            '(extra Rejuvenations are full price), and priority in the studio queue on ' +
+            'Signature and Collection. Pay monthly with a 3-month minimum, or save with a year up front.</p>',
+          status: 'DRAFT',
+        }),
+    productType: 'Membership',
+    vendor: 'The T Collection',
+    // Without this a membership can be bought outright, off a selling
+    // plan — which is what happened the first time it was tested. The
+    // order goes through at the variant's annual price, no subscription
+    // contract is created, so no webhook fires, no membership is recorded
+    // and no member tag is applied. The customer pays and gets nothing.
+    requiresSellingPlan: true,
+    productOptions: [
+      { name: 'Tier', values: TIERS.map((tier) => ({ name: tier.name })) },
+    ],
+    variants,
+  };
+}
+
 /** The product and its tier variants. Matched by handle, so re-runnable. */
 async function upsertProduct(admin: AdminClient): Promise<{
   id: string;
@@ -82,52 +166,37 @@ async function upsertProduct(admin: AdminClient): Promise<{
   created: boolean;
   variants: Array<{ id: string; title: string; price: string }>;
 }> {
-  const existing = await run<any>(
+  const existing = await run<ExistingProduct | null>(
     admin,
     `#graphql
       query MembershipProduct($handle: String!) {
         productByIdentifier(identifier: { handle: $handle }) {
           id
-          handle
-          variants(first: 20) { nodes { id title price } }
+          variants(first: 20) {
+            nodes {
+              id
+              title
+              discount: metafield(namespace: "${MEMBER_DISCOUNT_METAFIELD.namespace}", key: "${MEMBER_DISCOUNT_METAFIELD.key}") { value }
+              summary: metafield(namespace: "${TIER_SUMMARY_METAFIELD.namespace}", key: "${TIER_SUMMARY_METAFIELD.key}") { value }
+            }
+          }
         }
       }`,
     { handle: MEMBERSHIP_HANDLE },
-    (data) => ({ result: data.productByIdentifier, userErrors: [] }),
+    (data) => ({
+      result: data.productByIdentifier
+        ? { id: data.productByIdentifier.id, variants: data.productByIdentifier.variants.nodes }
+        : null,
+      userErrors: [],
+    }),
     'membership product lookup',
   );
-
-  const variants = TIERS.map((tier) => ({
-    optionValues: [{ optionName: 'Tier', name: tier.name }],
-    // Never what a member pays — every plan sets its own price.
-    price: variantPrice(tier).toFixed(2),
-    inventoryPolicy: 'CONTINUE',
-    // A membership is not a parcel. Left shippable, checkout asks a member for
-    // a delivery address and quotes them postage on a discount card — which is
-    // exactly what it did the first time this ran, because the flag lives on
-    // the inventory item and not on the variant.
-    inventoryItem: { requiresShipping: false, tracked: false },
-    metafields: [
-      {
-        namespace: MEMBER_DISCOUNT_METAFIELD.namespace,
-        key: MEMBER_DISCOUNT_METAFIELD.key,
-        type: 'number_integer',
-        value: String(tier.discountPercent),
-      },
-      {
-        namespace: TIER_SUMMARY_METAFIELD.namespace,
-        key: TIER_SUMMARY_METAFIELD.key,
-        type: 'single_line_text_field',
-        value: tier.summary,
-      },
-    ],
-  }));
 
   const product = await run<any>(
     admin,
     `#graphql
-      mutation MembershipProductSet($input: ProductSetInput!) {
-        productSet(input: $input, synchronous: true) {
+      mutation MembershipProductSet($identifier: ProductSetIdentifiers, $input: ProductSetInput!) {
+        productSet(identifier: $identifier, input: $input, synchronous: true) {
           product {
             id
             handle
@@ -137,28 +206,10 @@ async function upsertProduct(admin: AdminClient): Promise<{
         }
       }`,
     {
-      input: {
-        handle: MEMBERSHIP_HANDLE,
-        title: 'The Wig Spa Membership',
-        descriptionHtml:
-          '<p>Included Rejuvenations, 10% off all additional Wig Spa services, ' +
-          'and a place at the front of the studio queue. ' +
-          'Choose the tier that matches how many units you wear, and the term that suits you — ' +
-          'longer commitments cost less per month.</p>',
-        productType: 'Membership',
-        vendor: 'The T Collection',
-        status: 'DRAFT',
-        // Without this a membership can be bought outright, off a selling
-        // plan — which is what happened the first time it was tested. The
-        // order goes through at the variant's annual price, no subscription
-        // contract is created, so no webhook fires, no membership is recorded
-        // and no member tag is applied. The customer pays and gets nothing.
-        requiresSellingPlan: true,
-        productOptions: [
-          { name: 'Tier', values: TIERS.map((tier) => ({ name: tier.name })) },
-        ],
-        variants,
-      },
+      // Without an identifier productSet creates; with one it updates that
+      // product. Pinned to the id we just found rather than trusting a handle.
+      identifier: existing ? { id: existing.id } : null,
+      input: productSetInput(existing),
     },
     (data) => ({ result: data.productSet.product, userErrors: data.productSet.userErrors }),
     'membership product',

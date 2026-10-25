@@ -18,6 +18,9 @@ import {
   saveStaffNotes,
   registerWig,
   recordIntakePhotos,
+  upsertMembershipFromContract,
+  listHolds,
+  settleAllowance,
 } from '../app/lib/db.ts';
 
 /**
@@ -70,6 +73,14 @@ async function seedMemberWithMembership(opts: { granted: number; status?: string
   return { member, membershipId, wigId: wig.rows[0].id };
 }
 
+async function consumptions(membershipId: string): Promise<number> {
+  const { rows } = await pool.query(
+    `select count(*)::int as n from allowance_ledger where membership_id = $1 and kind = 'consumption'`,
+    [membershipId],
+  );
+  return rows[0].n;
+}
+
 test('creating a member twice returns the same row', { skip }, async () => {
   const first = await findOrCreateMember(pool, { shop: SHOP, shopifyCustomerId: 'gid://shopify/Customer/1' });
   const second = await findOrCreateMember(pool, {
@@ -106,16 +117,19 @@ test('a covered service spends exactly one allowance at approval', { skip }, asy
     serviceType: 'rejuvenation', coveredByAllowance: true,
   });
 
-  // Nothing is spent while the wig is still in the post.
+  // Held, not spent, while the wig is still in the post: off the balance the
+  // member can book from, but nothing written to the ledger.
   await advanceStatus(pool, { serviceRequestId: request.id, to: 'awaiting_shipment', actor: 'tia' });
   await advanceStatus(pool, { serviceRequestId: request.id, to: 'in_transit_to_studio', actor: 'tia' });
   await advanceStatus(pool, { serviceRequestId: request.id, to: 'received', actor: 'tia' });
   await advanceStatus(pool, { serviceRequestId: request.id, to: 'inspection', actor: 'tia' });
-  assert.equal(await getAllowanceBalance(pool, membershipId), 2, 'not spent before approval');
+  assert.equal(await getAllowanceBalance(pool, membershipId), 1, 'held from booking');
+  assert.equal(await consumptions(membershipId), 0, 'not spent before approval');
 
   const result = await advanceStatus(pool, { serviceRequestId: request.id, to: 'approved', actor: 'tia' });
   assert.equal(result.allowanceSpent, true);
-  assert.equal(await getAllowanceBalance(pool, membershipId), 1);
+  assert.equal(await getAllowanceBalance(pool, membershipId), 1, 'the hold became the use');
+  assert.equal(await consumptions(membershipId), 1);
 });
 
 test('an illegal move changes nothing at all', { skip }, async () => {
@@ -153,7 +167,7 @@ test('a lapsed membership blocks approval of a service sold as covered', { skip 
 
   const { rows } = await pool.query('select status from service_requests where id = $1', [request.id]);
   assert.equal(rows[0].status, 'inspection', 'the whole transaction rolled back');
-  assert.equal(await getAllowanceBalance(pool, membershipId), 2, 'nothing deducted');
+  assert.equal(await consumptions(membershipId), 0, 'nothing deducted');
 });
 
 test('an uncovered service advances without touching the ledger', { skip }, async () => {
@@ -243,7 +257,8 @@ test('a work order reads back with its wig, member and membership', { skip }, as
   assert.equal(order.wig.lengthInches, 26);
   assert.equal(order.member.shopifyCustomerId, 'gid://shopify/Customer/7401');
   assert.equal(order.membership?.tier, 'founding');
-  assert.equal(order.membership?.allowanceRemaining, 3);
+  // Three granted, one held by this booking.
+  assert.equal(order.membership?.allowanceRemaining, 2);
   assert.equal(order.customerNotes, 'lace lifting at the temples');
   assert.deepEqual(order.intake, { desiredPart: 'middle', hasBeenColored: false });
 });
@@ -408,4 +423,79 @@ test('the same photo path twice writes one row', { skip }, async () => {
     `select count(*)::int as n from photos where service_request_id = $1`, [request.id],
   );
   assert.equal(rows[0].n, 1);
+});
+
+test('a contract update records the new status', { skip }, async () => {
+  // Every update used to fail on an unreferenced parameter, so a cancelled or
+  // unpaid member stayed active and kept their tags.
+  const snapshot = {
+    shop: SHOP,
+    shopifyContractId: 'gid://shopify/SubscriptionContract/9001',
+    shopifyCustomerId: 'gid://shopify/Customer/9001',
+    status: 'ACTIVE',
+    tier: 'Essential Care',
+    discountPercent: 10,
+    rejuvenationsPerPeriod: 1,
+    nextBillingAt: null,
+  };
+  const created = await upsertMembershipFromContract(pool, snapshot);
+  assert.equal(created.created, true);
+
+  const updated = await upsertMembershipFromContract(pool, { ...snapshot, status: 'CANCELLED' });
+  assert.equal(updated.created, false);
+  assert.equal(updated.membershipId, created.membershipId);
+
+  const { rows } = await pool.query(
+    `select status, cancelled_at, discount_percent, rejuvenations_per_period
+       from memberships where id = $1`,
+    [created.membershipId],
+  );
+  assert.equal(rows[0].status, 'cancelled');
+  assert.ok(rows[0].cancelled_at, 'a cancellation is timestamped');
+  assert.equal(rows[0].discount_percent, 10);
+  assert.equal(rows[0].rejuvenations_per_period, 1);
+});
+
+test('a booked Rejuvenation is held until it is cancelled', { skip }, async () => {
+  const { member, membershipId, wigId } = await seedMemberWithMembership({ granted: 1 });
+  const request = await createServiceRequest(pool, {
+    memberId: member.id, wigId, membershipId, serviceType: 'rejuvenation', coveredByAllowance: true,
+  });
+  assert.equal((await listHolds(pool, membershipId)).length, 1);
+  assert.equal(await getAllowanceBalance(pool, membershipId), 0, 'cannot be booked twice');
+
+  await advanceStatus(pool, { serviceRequestId: request.id, to: 'cancelled', actor: 'tia' });
+  assert.equal((await listHolds(pool, membershipId)).length, 0);
+  assert.equal(await getAllowanceBalance(pool, membershipId), 1, 'cancelling gives it back');
+});
+
+test('a hold booked in time is honoured after its grant expires in the post', { skip }, async () => {
+  const { member, membershipId, wigId } = await seedMemberWithMembership({ granted: 0 });
+  // A grant whose window closed yesterday, booked against the week before.
+  const { rows } = await pool.query(
+    `insert into allowance_ledger (membership_id, kind, delta, reason, period_start, expires_at, created_at)
+     values ($1, 'grant', 1, 'seed', current_date - 120, now() - interval '1 day', now() - interval '120 days')
+     returning id`,
+    [membershipId],
+  );
+  const grantId = rows[0].id;
+  const request = await createServiceRequest(pool, {
+    memberId: member.id, wigId, membershipId, serviceType: 'rejuvenation', coveredByAllowance: true,
+  });
+  await pool.query(`update service_requests set submitted_at = now() - interval '7 days' where id = $1`, [request.id]);
+
+  // Settling after the window must not expire the held Rejuvenation.
+  await settleAllowance(pool, membershipId);
+  const expiries = await pool.query(
+    `select count(*)::int as n from allowance_ledger where expires_entry_id = $1`, [grantId],
+  );
+  assert.equal(expiries.rows[0].n, 0);
+
+  for (const to of ['awaiting_shipment', 'in_transit_to_studio', 'received', 'inspection']) {
+    await advanceStatus(pool, { serviceRequestId: request.id, to, actor: 'tia' });
+  }
+  const result = await advanceStatus(pool, { serviceRequestId: request.id, to: 'approved', actor: 'tia' });
+  assert.equal(result.allowanceSpent, true);
+  assert.equal(await getAllowanceBalance(pool, membershipId), 0);
+  assert.equal(await consumptions(membershipId), 1);
 });

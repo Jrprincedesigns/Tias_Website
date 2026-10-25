@@ -64,6 +64,24 @@ export const IN_STUDIO: ReadonlySet<ServiceStatus> = new Set<ServiceStatus>([
   'ready_to_ship',
 ]);
 
+/**
+ * Statuses in which a covered request holds a Rejuvenation it has not spent.
+ *
+ * Everything before approval. A hold keeps the Rejuvenation off the member's
+ * balance while the unit is in the post, so it cannot be booked twice, and
+ * keeps it from expiring under them; approval turns it into a real use.
+ * Cancelling or returning the unit unserviced leaves this set and so releases
+ * it.
+ */
+export const HOLDS_ALLOWANCE: readonly ServiceStatus[] = [
+  'requested',
+  'awaiting_shipment',
+  'in_transit_to_studio',
+  'received',
+  'inspection',
+  'awaiting_customer_approval',
+];
+
 /** Statuses that end the request's life. */
 export const TERMINAL: ReadonlySet<ServiceStatus> = new Set<ServiceStatus>(['completed', 'cancelled']);
 

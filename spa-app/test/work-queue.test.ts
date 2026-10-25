@@ -16,9 +16,14 @@ function daysAgo(days: number): Date {
   return new Date(NOW.getTime() - days * 86_400_000);
 }
 
-function item(status: ServiceStatus, sinceDays: number, nickname = 'Unit'): ServiceRequestSummary {
+function item(
+  status: ServiceStatus,
+  sinceDays: number,
+  nickname = 'Unit',
+  tier: string | null = null,
+): ServiceRequestSummary {
   return {
-    id: `${status}-${sinceDays}`,
+    id: `${status}-${sinceDays}-${tier ?? 'none'}`,
     wigId: 'wig',
     wigNickname: nickname,
     serviceType: 'rejuvenation',
@@ -26,6 +31,7 @@ function item(status: ServiceStatus, sinceDays: number, nickname = 'Unit'): Serv
     coveredByAllowance: true,
     submittedAt: daysAgo(sinceDays + 2),
     statusSince: daysAgo(sinceDays),
+    tier,
   };
 }
 
@@ -119,4 +125,39 @@ test('the threshold is configurable and falls back sanely', () => {
   assert.equal(staleAfterDays({ WIG_SPA_STALE_AFTER_DAYS: 'soon' }), DEFAULT_STALE_AFTER_DAYS);
   assert.equal(staleAfterDays({ WIG_SPA_STALE_AFTER_DAYS: '0' }), DEFAULT_STALE_AFTER_DAYS);
   assert.equal(staleAfterDays({ WIG_SPA_STALE_AFTER_DAYS: '-2' }), DEFAULT_STALE_AFTER_DAYS);
+});
+
+test('within a stage, Collection then Signature come before everyone else', () => {
+  const queue = buildQueue(
+    [
+      item('received', 9, 'Oldest, no membership'),
+      item('received', 5, 'Essential', 'Essential Care'),
+      item('received', 1, 'Signature', 'Signature Care'),
+      item('received', 0, 'Collection', 'Collection Care'),
+    ],
+    NOW,
+    7,
+  );
+  assert.deepEqual(
+    queue.buckets[0]!.items.map((i) => i.wigNickname),
+    ['Collection', 'Signature', 'Oldest, no membership', 'Essential'],
+  );
+});
+
+test('priority never moves work between stages', () => {
+  const queue = buildQueue(
+    [item('in_service', 10, 'Bench'), item('awaiting_customer_approval', 0, 'Collection', 'Collection Care')],
+    NOW,
+    7,
+  );
+  assert.deepEqual(queue.buckets.map((b) => b.key), ['approval', 'bench']);
+});
+
+test('members of the same tier still wait longest-first', () => {
+  const queue = buildQueue(
+    [item('received', 1, 'Newer', 'Collection Care'), item('received', 4, 'Older', 'Collection Care')],
+    NOW,
+    7,
+  );
+  assert.deepEqual(queue.buckets[0]!.items.map((i) => i.wigNickname), ['Older', 'Newer']);
 });

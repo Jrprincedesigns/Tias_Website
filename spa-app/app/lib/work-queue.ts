@@ -1,5 +1,6 @@
 import type { ServiceStatus } from './service-status.ts';
 import type { ServiceRequestSummary } from './db.ts';
+import { queueRank } from './membership-tiers.ts';
 
 /**
  * Turning a list of work orders into a morning.
@@ -71,9 +72,14 @@ export function buildQueue(
   const buckets = BUCKETS.map((definition) => {
     const matching = items
       .filter((item) => definition.statuses.includes(item.status))
-      // Longest-waiting first inside each bucket, so the top of every list is
-      // the one that has been ignored longest.
-      .sort((a, b) => a.statusSince.getTime() - b.statusSince.getTime());
+      // Members' tiers first (Collection, then Signature, then everyone else —
+      // the priority those tiers are sold on), and longest-waiting first within
+      // each, so the top of every list is the one that has been ignored longest.
+      .sort(
+        (a, b) =>
+          queueRank(a.tier) - queueRank(b.tier) ||
+          a.statusSince.getTime() - b.statusSince.getTime(),
+      );
 
     return {
       ...definition,

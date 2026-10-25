@@ -10,6 +10,8 @@ import {
   dueGrants,
   dueExpiries,
   availableBalance,
+  holdEntries,
+  type Hold,
   type LedgerEntry,
   type MembershipWindow,
 } from '../app/lib/allowance.ts';
@@ -272,4 +274,70 @@ test('only a Rejuvenation is covered by the allowance', () => {
     decideCoverage({ membership: activeMembership, entries: granted(2), serviceRequestId: 'x', serviceType: 'rejuvenation' }),
     { covered: true },
   );
+});
+
+// ─── Holds: a booked Rejuvenation is reserved until approval ────────────────
+
+const one: LedgerEntry = {
+  id: 'one', kind: 'grant', delta: 1, createdAt: d('2026-01-15'), periodStart: d('2026-01-15'), expiresAt: d('2026-05-15'),
+};
+const hold = (id: string, at: string): Hold => ({ serviceRequestId: id, heldAt: d(at) });
+
+test('a held Rejuvenation cannot be booked a second time', () => {
+  const holds = [hold('first', '2026-02-01')];
+  assert.equal(availableBalance([one, ...holdEntries(holds)], d('2026-02-02')), 0);
+  assert.deepEqual(
+    decideCoverage({ membership: activeMembership, entries: [one], holds, serviceRequestId: 'second', now: d('2026-02-02') }),
+    { covered: false, reason: 'no_services_left' },
+  );
+});
+
+test('a hold is not expired while the unit is in the post', () => {
+  const holds = [hold('first', '2026-05-10')];
+  assert.deepEqual(dueExpiries([one, ...holdEntries(holds)], d('2026-05-20')), []);
+});
+
+test('a hold booked in time is approved after its grant runs out', () => {
+  const holds = [hold('first', '2026-05-10')];
+  const decision = decideCoverage({
+    membership: activeMembership, entries: [one], holds, serviceRequestId: 'first', now: d('2026-05-20'),
+  });
+  assert.deepEqual(decision, { covered: true });
+  assert.equal(
+    consumptionEntry({ membership: activeMembership, entries: [one], holds, serviceRequestId: 'first', now: d('2026-05-20') }).delta,
+    -1,
+  );
+});
+
+test('approval spends the same grant the hold reserved', () => {
+  // Written at approval, dated to the booking: the ledger stays settled.
+  const spent: LedgerEntry = { kind: 'consumption', delta: -1, serviceRequestId: 'first', createdAt: d('2026-05-10') };
+  assert.deepEqual(dueExpiries([one, spent], d('2026-05-20')), []);
+  assert.equal(availableBalance([one, spent], d('2026-05-20')), 0);
+});
+
+test('only the holds that fit are covered at approval, earliest booking first', () => {
+  const holds = [hold('first', '2026-02-01'), hold('second', '2026-02-02')];
+  const ask = (id: string) =>
+    decideCoverage({ membership: activeMembership, entries: [one], holds, serviceRequestId: id, now: d('2026-02-03') });
+  assert.deepEqual(ask('first'), { covered: true });
+  assert.deepEqual(ask('second'), { covered: false, reason: 'no_services_left' });
+});
+
+test('a cancelled booking gives the Rejuvenation back while it is still in date', () => {
+  // Cancelling leaves the hold list, and nothing else changes.
+  assert.equal(availableBalance([one], d('2026-03-01')), 1);
+});
+
+test('a hold released after its grant expired does not bring it back', () => {
+  // Two granted, one held; the other expired at the window. The hold is
+  // cancelled after the window — the held one must not reappear.
+  const two: LedgerEntry = { ...one, id: 'two', delta: 2 };
+  const holds = [hold('first', '2026-05-01')];
+  const expiries = dueExpiries([two, ...holdEntries(holds)], d('2026-05-20'));
+  assert.deepEqual(expiries.map((e) => [e.expiresEntryId, e.delta]), [['two', -1]]);
+  const written: LedgerEntry = { ...expiries[0]!, createdAt: d('2026-05-20') };
+
+  assert.equal(availableBalance([two, written], d('2026-06-01')), 0);
+  assert.deepEqual(dueExpiries([two, written], d('2026-06-01')), []);
 });

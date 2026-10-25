@@ -52,9 +52,11 @@ function signedUrl(path: string, params: Record<string, string>): string {
   return `https://app.example.com${path}?${search}`;
 }
 
-async function seed() {
+/** Members belong to a store (0006); `shop` must match the signed request's. */
+async function seed(shop = 's') {
   const member = await pool.query(
-    `insert into members (shopify_customer_id, email) values ('gid://shopify/Customer/7401', 'm@example.com') returning id`,
+    `insert into members (shop, shopify_customer_id, email) values ($1, 'gid://shopify/Customer/7401', 'm@example.com') returning id`,
+    [shop],
   );
   const memberId = member.rows[0].id;
   const membership = await pool.query(
@@ -74,7 +76,7 @@ async function seed() {
 }
 
 test('a signed request from a member returns their closet', { skip }, async () => {
-  const seeded = await seed();
+  const seeded = await seed('theetcollection.myshopify.com');
   const request = new Request(signedUrl('/closet', {
     shop: 'theetcollection.myshopify.com',
     logged_in_customer_id: '7401',
@@ -130,7 +132,7 @@ test('a signed but logged-out visitor gets a normal answer, not an error', { ski
 });
 
 test('a member with no membership still gets their wigs', { skip }, async () => {
-  await pool.query(`insert into members (shopify_customer_id) values ('gid://shopify/Customer/7401')`);
+  await pool.query(`insert into members (shop, shopify_customer_id) values ('s', 'gid://shopify/Customer/7401')`);
   const request = new Request(signedUrl('/closet', { shop: 's', logged_in_customer_id: '7401' }));
   const body = await (await closetLoader({ request, params: {}, context: {} })).json();
   assert.equal(body.signedIn, true);
@@ -160,7 +162,7 @@ test("a service request against someone else's wig is refused", { skip }, async 
   await seed();
   // A second member with their own wig.
   const other = await pool.query(
-    `insert into members (shopify_customer_id) values ('gid://shopify/Customer/9999') returning id`,
+    `insert into members (shop, shopify_customer_id) values ('s', 'gid://shopify/Customer/9999') returning id`,
   );
   const otherWig = await pool.query(
     `insert into wigs (member_id, nickname) values ($1, 'Not Yours') returning id`,

@@ -1,8 +1,9 @@
 /**
  * The Wig Spa Membership — what gets sold, and on what terms.
  *
- * Every tier takes 10% off all additional Wig Spa services, and includes
- * Rejuvenations granted per three-month period (allowance.ts has the rules).
+ * Every tier takes 10% off additional Wig Spa services — extra Rejuvenations
+ * are full price — and includes Rejuvenations granted per three-month period
+ * (allowance.ts has the rules).
  * A Rejuvenation is 2.5 hours of Tia's time, so the allowance is a fixed count
  * rather than open-ended, and the fee is what pays for those hours.
  *
@@ -75,6 +76,12 @@ export interface MembershipTier {
   /** Percent off additional services, beyond what the tier includes. */
   discountPercent: number;
   summary: string;
+  /**
+   * Place in Tia's work queue, lowest first. Within each stage of the queue a
+   * member's work sorts ahead of everyone without one; tiers without a number
+   * wait in line like any other job.
+   */
+  queuePriority?: number;
   /** Shortest first. The storefront preselects the last, the best value. */
   terms: readonly MembershipTerm[];
 }
@@ -85,7 +92,7 @@ export const TIERS: readonly MembershipTier[] = [
     name: 'Essential Care',
     discountPercent: 10,
     summary:
-      'For one or two units you wear regularly. Includes 1 wig rejuvenation every 3 months, plus 10% off all additional Wig Spa services.',
+      'For one or two units you wear regularly. Includes 1 wig rejuvenation every 3 months, plus 10% off additional Wig Spa services (extra rejuvenations are full price).',
     terms: [
       {
         id: 'monthly', name: 'Monthly (3-month minimum)', months: 1, price: 18, minCycles: 3,
@@ -102,8 +109,9 @@ export const TIERS: readonly MembershipTier[] = [
     id: 'signature',
     name: 'Signature Care',
     discountPercent: 10,
+    queuePriority: 1,
     summary:
-      'For a rotation you move between. Includes 2 wig rejuvenations every 3 months, 10% off all additional Wig Spa services, and your work is booked ahead of standard jobs.',
+      'For a rotation you move between. Includes 2 wig rejuvenations every 3 months, 10% off additional Wig Spa services (extra rejuvenations are full price), and your work is booked ahead of standard jobs.',
     terms: [
       {
         id: 'monthly', name: 'Monthly (3-month minimum)', months: 1, price: 36, minCycles: 3,
@@ -120,8 +128,9 @@ export const TIERS: readonly MembershipTier[] = [
     id: 'collection',
     name: 'Collection Care',
     discountPercent: 10,
+    queuePriority: 0,
     summary:
-      'For a wardrobe worth protecting. Includes 4 wig rejuvenations every 3 months, 10% off all additional Wig Spa services, and your units go to the front of the queue.',
+      'For a wardrobe worth protecting. Includes 4 wig rejuvenations every 3 months, 10% off additional Wig Spa services (extra rejuvenations are full price), and your units go to the front of the queue.',
     terms: [
       {
         id: 'monthly', name: 'Monthly (3-month minimum)', months: 1, price: 70, minCycles: 3,
@@ -149,6 +158,15 @@ export function variantPrice(tier: MembershipTier): number {
 /** Monthly equivalent, for showing that a longer commitment costs less. */
 export function monthlyEquivalent(term: MembershipTerm): number {
   return Math.round((term.price / term.months) * 100) / 100;
+}
+
+/**
+ * Where a job sits in its stage of the queue: Collection, then Signature, then
+ * everyone else. Takes the tier as the membership stores it (its name), and
+ * null for a job with no active membership.
+ */
+export function queueRank(tier: string | null | undefined): number {
+  return (tier ? tierFromNames(tier)?.queuePriority : undefined) ?? Number.MAX_SAFE_INTEGER;
 }
 
 export function tierById(id: string): MembershipTier | undefined {

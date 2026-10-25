@@ -114,14 +114,42 @@ interface Lot {
 }
 
 /**
+ * A covered request not yet approved. It is not in the ledger — the ledger
+ * records what happened, and a booking can still be cancelled — but it is
+ * replayed as though it were a use on the day it was booked, so the
+ * Rejuvenation it holds is neither shown as available nor expired.
+ */
+export interface Hold {
+  serviceRequestId: string;
+  heldAt: Date;
+}
+
+export function holdEntries(holds: readonly Hold[]): LedgerEntry[] {
+  return holds.map((hold) => ({
+    kind: 'consumption',
+    delta: -1,
+    serviceRequestId: hold.serviceRequestId,
+    createdAt: hold.heldAt,
+    reason: 'Held for a booked Rejuvenation',
+  }));
+}
+
+/**
  * What is left of each grant, replaying the ledger in order.
  *
  * Every use is drawn from the grant that expires soonest and was still usable
  * when the use happened, so a member never loses a Rejuvenation to expiry
- * while holding an older one they could have spent instead.
+ * while holding an older one they could have spent instead. A use that finds
+ * nothing to draw from is counted in `unpaid`, by request where it has one.
  */
-function replayLots(entries: readonly LedgerEntry[]): Lot[] {
+function replayLots(entries: readonly LedgerEntry[]): {
+  lots: Lot[];
+  unpaid: number;
+  unpaidRequests: Set<string>;
+} {
   const lots: Lot[] = [];
+  let unpaid = 0;
+  const unpaidRequests = new Set<string>();
   const ordered = [...entries].sort(
     (a, b) => (a.createdAt?.getTime() ?? 0) - (b.createdAt?.getTime() ?? 0),
   );
@@ -149,18 +177,26 @@ function replayLots(entries: readonly LedgerEntry[]): Lot[] {
       lot.remaining -= take;
       owed -= take;
     }
+    if (owed > 0) {
+      unpaid += owed;
+      if (entry.serviceRequestId) unpaidRequests.add(entry.serviceRequestId);
+    }
   }
-  return lots;
+  return { lots, unpaid, unpaidRequests };
 }
 
-/** Expiry entries owed for grants whose grace window has closed. */
+/**
+ * Expiry entries owed for grants whose grace window has closed. Pass holds in
+ * with the ledger (holdEntries) so a held Rejuvenation is not expired while
+ * its unit is in the post.
+ */
 export function dueExpiries(entries: readonly LedgerEntry[], now: Date): LedgerEntry[] {
   const closed = new Set(
     entries.filter((e) => e.kind === 'expiry' && e.expiresEntryId).map((e) => e.expiresEntryId),
   );
 
   return replayLots(entries)
-    .filter((lot) => lot.id && lot.expiresAt && lot.expiresAt <= now && lot.remaining > 0 && !closed.has(lot.id))
+    .lots.filter((lot) => lot.id && lot.expiresAt && lot.expiresAt <= now && lot.remaining > 0 && !closed.has(lot.id))
     .map((lot) => {
       const entry: LedgerEntry = {
         kind: 'expiry',
@@ -174,11 +210,19 @@ export function dueExpiries(entries: readonly LedgerEntry[], now: Date): LedgerE
 }
 
 /**
- * Balance as of `now`, counting expiries that are due but not yet written.
- * Equal to balanceOf once the ledger has been settled.
+ * What a member can book as of `now`: what is left of every grant still inside
+ * its window, less anything used that no grant covered.
+ *
+ * Counted from the grants rather than by summing deltas, because a grant is
+ * expired once — a hold released after its grant's window closed must not
+ * bring the Rejuvenation back. Pass holds in with the ledger (holdEntries).
  */
 export function availableBalance(entries: readonly LedgerEntry[], now: Date = new Date()): number {
-  return balanceOf(entries) + balanceOf(dueExpiries(entries, now));
+  const { lots, unpaid } = replayLots(entries);
+  const live = lots
+    .filter((lot) => lot.expiresAt === null || lot.expiresAt > now)
+    .reduce((total, lot) => total + Math.max(0, lot.remaining), 0);
+  return Math.max(0, live - unpaid);
 }
 
 /** The only service the allowance pays for. */
@@ -222,12 +266,15 @@ export type CoverageDecision =
 export function decideCoverage(input: {
   membership: MembershipWindow | null;
   entries: readonly LedgerEntry[];
+  /** Every covered request of this membership not yet approved. */
+  holds?: readonly Hold[];
   serviceRequestId: string;
   /** When given, anything but a Rejuvenation is not covered. */
   serviceType?: string;
   now?: Date;
 }): CoverageDecision {
   const { membership, entries, serviceRequestId } = input;
+  const holds = input.holds ?? [];
 
   if (!membership) return { covered: false, reason: 'no_membership' };
 
@@ -247,7 +294,19 @@ export function decideCoverage(input: {
   );
   if (alreadyConsumed) return { covered: false, reason: 'already_consumed' };
 
-  if (availableBalance(entries, input.now) < 1) return { covered: false, reason: 'no_services_left' };
+  const withHolds = [...entries, ...holdEntries(holds)];
+
+  // At approval this request already holds its Rejuvenation: it is covered if
+  // the hold was met on the day it was booked, even if that grant has since
+  // run out — the member booked in time, and the post is not their fault.
+  if (holds.some((hold) => hold.serviceRequestId === serviceRequestId)) {
+    return replayLots(withHolds).unpaidRequests.has(serviceRequestId)
+      ? { covered: false, reason: 'no_services_left' }
+      : { covered: true };
+  }
+
+  // A new booking needs one free after everything already held.
+  if (availableBalance(withHolds, input.now) < 1) return { covered: false, reason: 'no_services_left' };
 
   return { covered: true };
 }
@@ -260,6 +319,7 @@ export function decideCoverage(input: {
 export function consumptionEntry(input: {
   membership: MembershipWindow | null;
   entries: readonly LedgerEntry[];
+  holds?: readonly Hold[];
   serviceRequestId: string;
   now?: Date;
 }): LedgerEntry {
