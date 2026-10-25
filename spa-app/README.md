@@ -153,6 +153,24 @@ unset `DATABASE_URL` is the first thing to check.
   re-serialising it changes the bytes and the HMAC will not match. There is a
   test for exactly this.
 
+## Members cancelling
+
+Members cancel from *Manage membership* in the Wig Closet
+(`/apps/spa/membership`; rules in `app/lib/membership-cancellation.ts`).
+
+- **The 3-month minimum is enforced here, not by Shopify.** Shopify honours a
+  plan's `minCycles` only in its own subscription UI, so an API cancel would go
+  straight through. The route counts paid cycles (the checkout plus each
+  successful billing attempt) and refuses until the contract's minimum is met.
+- **Cancelling keeps what was paid for.** `subscriptionContractCancel` ends the
+  contract at once, so nothing more can be charged, but the membership stays
+  active until the contract's next billing date (`memberships.access_until`).
+  A daily Vercel cron (`vercel.json` → `/cron/memberships`) then removes the
+  member tags and closes it. **Set `CRON_SECRET` in Vercel** or the job refuses
+  to run and cancelled members keep member pricing.
+- A cancellation made in Shopify admin sets no `access_until` and still ends
+  everything immediately.
+
 ## Deployment note
 
 This lives in the theme repository, which Shopify's GitHub integration syncs

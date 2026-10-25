@@ -1,7 +1,7 @@
 import type { ActionFunctionArgs } from 'react-router';
 import { authenticate } from '../shopify.server';
 import pool from '../db.server';
-import { membershipStatusFromContract, upsertMembershipFromContract } from '../lib/db';
+import { upsertMembershipFromContract } from '../lib/db';
 import { syncMemberTags } from '../lib/membership-provisioning';
 import { termFromPlanName, tierFromNames } from '../lib/membership-tiers';
 
@@ -89,7 +89,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     );
   }
 
-  const { membershipId, created } = await upsertMembershipFromContract(pool, {
+  const { membershipId, created, status } = await upsertMembershipFromContract(pool, {
     shop,
     shopifyContractId: contract.id,
     shopifyCustomerId: contract.customer.id,
@@ -102,10 +102,11 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     nextBillingAt: contract.nextBillingDate ? new Date(contract.nextBillingDate) : null,
   });
 
-  // Tags are what actually apply member pricing, so they follow the contract's
-  // status rather than its existence: a paused or cancelled membership loses
-  // the discount at the same moment it stops being paid for.
-  const status = membershipStatusFromContract(contract.status);
+  // Tags are what actually apply member pricing, so they follow the
+  // membership's status rather than the contract's existence: a paused or
+  // cancelled membership loses the discount at the same moment it stops being
+  // paid for. A member who cancelled from the closet is still active until the
+  // date they paid through; the daily job takes the tags off then.
   await syncMemberTags(admin, {
     customerId: contract.customer.id,
     tierId: matched?.id ?? null,
