@@ -1,3 +1,12 @@
+/*
+ * ------------------------------------------------------------
+ * IMPORTANT: The contents of this file are auto-generated.
+ *
+ * This file may be updated by the Shopify admin theme editor
+ * or related systems. Please exercise caution as any changes
+ * made to this file may be overwritten.
+ * ------------------------------------------------------------
+ */
 {
   "sections": {
     "closet": {
@@ -6,6 +15,8 @@
         "eyebrow": "Your Wig Closet",
         "greeting": "Welcome back,",
         "proxy_base": "/apps/spa",
+        "service_page": "shopify://pages/send-a-wig",
+        "membership_page": "shopify://pages/membership",
         "signed_out_title": "Your closet is behind the door.",
         "signed_out_body": "Sign in to see your units, their service history, and what your membership covers.",
         "signed_out_cta": "Sign in",
@@ -14,5 +25,7 @@
       }
     }
   },
-  "order": ["closet"]
+  "order": [
+    "closet"
+  ]
 }
