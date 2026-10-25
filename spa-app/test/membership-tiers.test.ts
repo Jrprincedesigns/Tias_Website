@@ -42,7 +42,7 @@ test('included rejuvenations per three-month period, by term', () => {
     TIERS.map((t) => [t.id, t.terms.map((term) => [term.id, term.rejuvenationsPerPeriod])]),
   );
   assert.deepEqual(perPeriod, {
-    essential: [['monthly', 0], ['annual', 1]],
+    essential: [['monthly', 1], ['annual', 1]],
     signature: [['monthly', 2], ['annual', 2]],
     collection: [['monthly', 4], ['annual', 4]],
   });

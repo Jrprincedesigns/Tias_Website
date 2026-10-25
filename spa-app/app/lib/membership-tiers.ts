@@ -14,7 +14,7 @@
  * nothing says the other tiers' will either.
  *
  *                Monthly (3-month min)        Annual
- *   Essential     $18, no Rejuvenations        $195, 1 per 3 months (4 a year)
+ *   Essential     $18, 1 per 3 months          $195, 1 per 3 months (4 a year)
  *   Signature     $36, 2 per 3 months          $390, 2 per 3 months (8 a year)
  *   Collection    $70, 4 per 3 months          $760, 4 per 3 months (16 a year)
  *
@@ -85,11 +85,11 @@ export const TIERS: readonly MembershipTier[] = [
     name: 'Essential Care',
     discountPercent: 10,
     summary:
-      'For one or two units you wear regularly. 10% off all additional Wig Spa services, and 4 rejuvenations a year on the annual plan.',
+      'For one or two units you wear regularly. Includes 1 wig rejuvenation every 3 months, plus 10% off additional spa services.',
     terms: [
       {
         id: 'monthly', name: 'Monthly (3-month minimum)', months: 1, price: 18, minCycles: 3,
-        rejuvenationsPerPeriod: 0,
+        rejuvenationsPerPeriod: 1,
       },
       {
         id: 'annual', name: 'Annual', months: 12, price: 195, minCycles: 1,

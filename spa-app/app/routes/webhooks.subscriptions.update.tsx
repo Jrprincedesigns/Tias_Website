@@ -78,8 +78,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   // all, because an unmatched tier means no tag can be chosen.
   const matched = tierFromNames(line?.variantTitle, line?.sellingPlanName, line?.title);
   const tier = matched?.name ?? line?.variantTitle ?? line?.sellingPlanName ?? 'Membership';
-  // The term decides the Rejuvenations — Essential monthly includes none,
-  // Essential annual includes one a quarter.
+  // The term decides the Rejuvenations, so it is read off the plan name.
   const term = matched ? termFromPlanName(matched, line?.sellingPlanName) : undefined;
 
   if (!matched) {
