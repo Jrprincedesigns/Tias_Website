@@ -16,10 +16,18 @@ export const ALLOWANCE_KINDS = ['grant', 'consumption', 'rollover', 'expiry', 'a
 export type AllowanceKind = (typeof ALLOWANCE_KINDS)[number];
 
 export interface LedgerEntry {
+  id?: string;
   kind: AllowanceKind;
   delta: number;
   serviceRequestId?: string | null;
   reason?: string | null;
+  createdAt?: Date;
+  /** Grants only: the first day of the three-month period they belong to. */
+  periodStart?: Date | null;
+  /** Grants only: when whatever is left of this grant stops being usable. */
+  expiresAt?: Date | null;
+  /** Expiries only: the grant this expiry closes out. */
+  expiresEntryId?: string | null;
 }
 
 export interface MembershipWindow {
@@ -32,6 +40,193 @@ export interface MembershipWindow {
 export function balanceOf(entries: readonly LedgerEntry[]): number {
   return entries.reduce((total, entry) => total + entry.delta, 0);
 }
+
+// ─── Quarterly Rejuvenations ───────────────────────────────────────────────
+//
+// Included Rejuvenations are granted per three-month period, counted from the
+// day the membership started. Unused ones roll into the next period, but each
+// period's grant expires 30 days after that period ends — so a member has the
+// quarter itself plus a 30-day grace to use it, and no longer.
+
+export const PERIOD_MONTHS = 3;
+export const GRACE_DAYS = 30;
+
+/** Calendar months, clamped so Jan 31 + 1 month is Feb 28, not Mar 3. */
+export function addMonths(date: Date, months: number): Date {
+  const y = date.getUTCFullYear();
+  const m = date.getUTCMonth() + months;
+  const lastDay = new Date(Date.UTC(y, m + 1, 0)).getUTCDate();
+  return new Date(Date.UTC(y, m, Math.min(date.getUTCDate(), lastDay)));
+}
+
+export function periodExpiry(periodStart: Date): Date {
+  const end = addMonths(periodStart, PERIOD_MONTHS);
+  return new Date(end.getTime() + GRACE_DAYS * 24 * 60 * 60 * 1000);
+}
+
+/**
+ * Grants owed but not yet written.
+ *
+ * Written lazily — whenever a balance is read — rather than by a scheduler, so
+ * an annual member, who is billed once a year, still receives each quarter's
+ * Rejuvenations. Only periods that have started and are still inside their
+ * grace window are granted: a period whose grant would already have expired
+ * is skipped rather than granted and immediately taken back.
+ *
+ * Nothing is granted to a membership that is not active. Past due, paused and
+ * cancelled members stop accruing at the moment they stop paying.
+ */
+export function dueGrants(input: {
+  membershipStart: Date;
+  status: MembershipWindow['status'];
+  perPeriod: number | null;
+  existingPeriodStarts: readonly Date[];
+  now: Date;
+}): LedgerEntry[] {
+  const { membershipStart, status, perPeriod, now } = input;
+  if (status !== 'active' || !perPeriod || perPeriod <= 0) return [];
+
+  const existing = new Set(input.existingPeriodStarts.map((d) => d.getTime()));
+  const grants: LedgerEntry[] = [];
+
+  for (let n = 0; ; n++) {
+    const periodStart = addMonths(membershipStart, n * PERIOD_MONTHS);
+    if (periodStart > now) break;
+    const expiresAt = periodExpiry(periodStart);
+    if (expiresAt <= now || existing.has(periodStart.getTime())) continue;
+    const entry: LedgerEntry = {
+      kind: 'grant',
+      delta: perPeriod,
+      periodStart,
+      expiresAt,
+      reason: `${perPeriod} Rejuvenation${perPeriod === 1 ? '' : 's'} for the period starting ${periodStart.toISOString().slice(0, 10)}`,
+    };
+    assertDeltaDirection(entry.kind, entry.delta);
+    grants.push(entry);
+  }
+  return grants;
+}
+
+interface Lot {
+  id: string | undefined;
+  expiresAt: Date | null;
+  remaining: number;
+}
+
+/**
+ * A covered request not yet approved. It is not in the ledger — the ledger
+ * records what happened, and a booking can still be cancelled — but it is
+ * replayed as though it were a use on the day it was booked, so the
+ * Rejuvenation it holds is neither shown as available nor expired.
+ */
+export interface Hold {
+  serviceRequestId: string;
+  heldAt: Date;
+}
+
+export function holdEntries(holds: readonly Hold[]): LedgerEntry[] {
+  return holds.map((hold) => ({
+    kind: 'consumption',
+    delta: -1,
+    serviceRequestId: hold.serviceRequestId,
+    createdAt: hold.heldAt,
+    reason: 'Held for a booked Rejuvenation',
+  }));
+}
+
+/**
+ * What is left of each grant, replaying the ledger in order.
+ *
+ * Every use is drawn from the grant that expires soonest and was still usable
+ * when the use happened, so a member never loses a Rejuvenation to expiry
+ * while holding an older one they could have spent instead. A use that finds
+ * nothing to draw from is counted in `unpaid`, by request where it has one.
+ */
+function replayLots(entries: readonly LedgerEntry[]): {
+  lots: Lot[];
+  unpaid: number;
+  unpaidRequests: Set<string>;
+} {
+  const lots: Lot[] = [];
+  let unpaid = 0;
+  const unpaidRequests = new Set<string>();
+  const ordered = [...entries].sort(
+    (a, b) => (a.createdAt?.getTime() ?? 0) - (b.createdAt?.getTime() ?? 0),
+  );
+
+  for (const entry of ordered) {
+    if (entry.delta > 0) {
+      lots.push({ id: entry.id, expiresAt: entry.expiresAt ?? null, remaining: entry.delta });
+      continue;
+    }
+
+    if (entry.kind === 'expiry' && entry.expiresEntryId) {
+      const lot = lots.find((l) => l.id === entry.expiresEntryId);
+      if (lot) lot.remaining += entry.delta;
+      continue;
+    }
+
+    const at = entry.createdAt ?? new Date(0);
+    let owed = -entry.delta;
+    const usable = lots
+      .filter((l) => l.remaining > 0 && (l.expiresAt === null || l.expiresAt > at))
+      .sort((a, b) => (a.expiresAt?.getTime() ?? Infinity) - (b.expiresAt?.getTime() ?? Infinity));
+    for (const lot of usable) {
+      if (owed === 0) break;
+      const take = Math.min(lot.remaining, owed);
+      lot.remaining -= take;
+      owed -= take;
+    }
+    if (owed > 0) {
+      unpaid += owed;
+      if (entry.serviceRequestId) unpaidRequests.add(entry.serviceRequestId);
+    }
+  }
+  return { lots, unpaid, unpaidRequests };
+}
+
+/**
+ * Expiry entries owed for grants whose grace window has closed. Pass holds in
+ * with the ledger (holdEntries) so a held Rejuvenation is not expired while
+ * its unit is in the post.
+ */
+export function dueExpiries(entries: readonly LedgerEntry[], now: Date): LedgerEntry[] {
+  const closed = new Set(
+    entries.filter((e) => e.kind === 'expiry' && e.expiresEntryId).map((e) => e.expiresEntryId),
+  );
+
+  return replayLots(entries)
+    .lots.filter((lot) => lot.id && lot.expiresAt && lot.expiresAt <= now && lot.remaining > 0 && !closed.has(lot.id))
+    .map((lot) => {
+      const entry: LedgerEntry = {
+        kind: 'expiry',
+        delta: -lot.remaining,
+        expiresEntryId: lot.id!,
+        reason: `${lot.remaining} unused, expired ${lot.expiresAt!.toISOString().slice(0, 10)}`,
+      };
+      assertDeltaDirection(entry.kind, entry.delta);
+      return entry;
+    });
+}
+
+/**
+ * What a member can book as of `now`: what is left of every grant still inside
+ * its window, less anything used that no grant covered.
+ *
+ * Counted from the grants rather than by summing deltas, because a grant is
+ * expired once — a hold released after its grant's window closed must not
+ * bring the Rejuvenation back. Pass holds in with the ledger (holdEntries).
+ */
+export function availableBalance(entries: readonly LedgerEntry[], now: Date = new Date()): number {
+  const { lots, unpaid } = replayLots(entries);
+  const live = lots
+    .filter((lot) => lot.expiresAt === null || lot.expiresAt > now)
+    .reduce((total, lot) => total + Math.max(0, lot.remaining), 0);
+  return Math.max(0, live - unpaid);
+}
+
+/** The only service the allowance pays for. */
+export const INCLUDED_SERVICE = 'rejuvenation';
 
 /**
  * Direction rules. A grant that subtracts, or a consumption that adds, means
@@ -55,7 +250,10 @@ export function assertDeltaDirection(kind: AllowanceKind, delta: number): void {
 
 export type CoverageDecision =
   | { covered: true }
-  | { covered: false; reason: 'no_membership' | 'membership_inactive' | 'no_services_left' | 'already_consumed' };
+  | {
+      covered: false;
+      reason: 'no_membership' | 'membership_inactive' | 'not_included' | 'no_services_left' | 'already_consumed';
+    };
 
 /**
  * Whether a service request can be covered by the membership.
@@ -68,11 +266,23 @@ export type CoverageDecision =
 export function decideCoverage(input: {
   membership: MembershipWindow | null;
   entries: readonly LedgerEntry[];
+  /** Every covered request of this membership not yet approved. */
+  holds?: readonly Hold[];
   serviceRequestId: string;
+  /** When given, anything but a Rejuvenation is not covered. */
+  serviceType?: string;
+  now?: Date;
 }): CoverageDecision {
   const { membership, entries, serviceRequestId } = input;
+  const holds = input.holds ?? [];
 
   if (!membership) return { covered: false, reason: 'no_membership' };
+
+  // The allowance is Rejuvenations. Repairs, colour and the rest are charged,
+  // at the member discount.
+  if (input.serviceType !== undefined && input.serviceType !== INCLUDED_SERVICE) {
+    return { covered: false, reason: 'not_included' };
+  }
 
   // Past due deliberately blocks new coverage: a membership that isn't being
   // paid for shouldn't keep handing out services. Work already authorised is
@@ -84,7 +294,19 @@ export function decideCoverage(input: {
   );
   if (alreadyConsumed) return { covered: false, reason: 'already_consumed' };
 
-  if (balanceOf(entries) < 1) return { covered: false, reason: 'no_services_left' };
+  const withHolds = [...entries, ...holdEntries(holds)];
+
+  // At approval this request already holds its Rejuvenation: it is covered if
+  // the hold was met on the day it was booked, even if that grant has since
+  // run out — the member booked in time, and the post is not their fault.
+  if (holds.some((hold) => hold.serviceRequestId === serviceRequestId)) {
+    return replayLots(withHolds).unpaidRequests.has(serviceRequestId)
+      ? { covered: false, reason: 'no_services_left' }
+      : { covered: true };
+  }
+
+  // A new booking needs one free after everything already held.
+  if (availableBalance(withHolds, input.now) < 1) return { covered: false, reason: 'no_services_left' };
 
   return { covered: true };
 }
@@ -97,7 +319,9 @@ export function decideCoverage(input: {
 export function consumptionEntry(input: {
   membership: MembershipWindow | null;
   entries: readonly LedgerEntry[];
+  holds?: readonly Hold[];
   serviceRequestId: string;
+  now?: Date;
 }): LedgerEntry {
   const decision = decideCoverage(input);
   if (!decision.covered) {
@@ -119,6 +343,9 @@ export function consumptionEntry(input: {
  * studio has to honour in some future month it can't forecast — §14 of the
  * brief, and the reason the cap is a parameter rather than a constant is that
  * the policy isn't settled yet.
+ *
+ * Superseded for included Rejuvenations, which expire per grant (see
+ * dueExpiries) rather than at the end of a membership year.
  */
 export function rolloverEntries(input: {
   balanceAtYearEnd: number;

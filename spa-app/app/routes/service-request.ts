@@ -3,7 +3,8 @@ import pool from '../db.server.ts';
 import {
   createServiceRequest,
   findOrCreateMember,
-  getAllowanceEntries,
+  settleAllowance,
+  listHolds,
   getMembership,
   recordIntakePhotos,
 } from '../lib/db.ts';
@@ -54,7 +55,10 @@ export const action = async ({ request }: ActionFunctionArgs) =>
     }
 
     const membership = await getMembership(pool, member.id);
-    const entries = membership ? await getAllowanceEntries(pool, membership.id) : [];
+    const entries = membership ? await settleAllowance(pool, membership.id) : [];
+    // Wigs already booked in hold their Rejuvenations, so one left cannot be
+    // booked twice while the first unit is in the post.
+    const holds = membership ? await listHolds(pool, membership.id) : [];
 
     // Coverage is decided here the same way the staff app decides it at
     // approval — one rule, so the badge the member saw and the charge they
@@ -63,7 +67,9 @@ export const action = async ({ request }: ActionFunctionArgs) =>
     const decision = decideCoverage({
       membership,
       entries,
+      holds,
       serviceRequestId: '00000000-0000-0000-0000-000000000000',
+      serviceType: intake.serviceType,
     });
 
     // Storage paths come from the browser. recordIntakePhotos verifies every

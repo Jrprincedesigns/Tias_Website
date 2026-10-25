@@ -53,6 +53,8 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     return {
       ok: true as const,
       created: result.created,
+      sellingPlanGroups: result.sellingPlanGroups,
+      detachedLegacyGroup: result.detachedLegacyGroup,
       variants: result.variants,
     };
   } catch (error) {
@@ -72,26 +74,30 @@ export default function MembershipSetup() {
     <s-page heading="Membership">
       <s-section heading="What members pay">
         <s-paragraph>
-          Membership carries no included services. It is member pricing on every Wig Spa service and
-          a place in the queue — so the fee is not tied to how many hours a member uses.
+          Every tier takes 10% off all additional Wig Spa services. Rejuvenations are credited every
+          three months; unused ones roll over, and each period's expire 30 days after it ends.
         </s-paragraph>
 
         {pricing.map((tier) => (
-          <s-section key={tier.tier} heading={`${tier.tier} — ${tier.discountPercent}% off services`}>
+          <s-section key={tier.tier} heading={`${tier.tier} — ${tier.discountPercent}% off additional services, extra Rejuvenations at full price`}>
             {tier.terms.map((term) => (
               <s-paragraph key={term.term}>
                 <s-text>{term.term}</s-text>: ${term.price.toFixed(2)}
-                {' '}(${term.perMonth.toFixed(2)} per month)
+                {term.months > 1 && ` ($${term.perMonth.toFixed(2)} per month)`}
+                {' · '}
+                {term.rejuvenationsPerPeriod
+                  ? `${term.rejuvenationsPerPeriod} Rejuvenation${term.rejuvenationsPerPeriod === 1 ? '' : 's'} every 3 months`
+                  : 'no Rejuvenations included'}
               </s-paragraph>
             ))}
           </s-section>
         ))}
 
         <s-paragraph>
-          Prices live on the product's variants and the discount on each variant's{' '}
-          <s-text>member_discount_percent</s-text> metafield, so both can be changed in the product
-          screen. Changes apply to new members only — Shopify fixes a subscription's terms when it is
-          bought.
+          Each tier has its own selling plans, and each plan sets its own price. The discount lives
+          on each variant's <s-text>member_discount_percent</s-text> metafield, so it can be changed
+          in the product screen. Price and term changes apply to new members only — Shopify fixes a
+          subscription's terms when it is bought.
         </s-paragraph>
       </s-section>
 
@@ -119,9 +125,11 @@ export default function MembershipSetup() {
           <s-banner tone="success">
             {result.created.product ? 'Created the membership product' : 'Membership product already existed'}
             {'. '}
-            {result.created.sellingPlanGroup
-              ? 'Created the three terms.'
-              : 'The three terms were already set up and were left untouched.'}
+            {result.sellingPlanGroups
+              .map((group) => `${group.tier}: ${group.created ? 'created its terms' : 'terms already set up, left untouched'}`)
+              .join('; ')}
+            {'. '}
+            {result.detachedLegacyGroup && 'The old shared terms were taken off the product; existing members keep theirs.'}
           </s-banner>
         )}
 

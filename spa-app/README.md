@@ -76,9 +76,17 @@ rejects, which is how the missing enum casts in `advanceStatus` were found. They
 skip when `TEST_DATABASE_URL` is unset:
 
 ```
-createdb wigspa && psql -d wigspa -f ../supabase/migrations/0001_wig_spa_core.sql
+createdb wigspa
+for f in ../supabase/migrations/0*.sql; do psql -v ON_ERROR_STOP=1 -d wigspa -f "$f"; done
 TEST_DATABASE_URL=postgresql://localhost/wigspa npm test
 ```
+
+Apply every migration, in order — the code reads columns added after `0001`
+(`members.shop` in 0006, the quarterly ledger columns in 0007). Without a local
+Postgres, a throwaway container works the same way:
+`docker run -d -e POSTGRES_PASSWORD=test -e POSTGRES_DB=wigspa -p 54329:5432 postgres:16`,
+apply the migrations with `docker exec -i <container> psql -U postgres -d wigspa < <file>`,
+then `TEST_DATABASE_URL=postgresql://postgres:test@localhost:54329/wigspa npm test`.
 
 Note the role you connect as must bypass row level security, the way Supabase's
 `service_role` does — every table has RLS on with no permissive policies, so an

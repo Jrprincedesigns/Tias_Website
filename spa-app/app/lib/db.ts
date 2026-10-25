@@ -1,5 +1,15 @@
-import { assertTransition, consumesAllowanceOn, type ServiceStatus } from './service-status.ts';
-import { balanceOf, consumptionEntry, type LedgerEntry, type MembershipWindow } from './allowance.ts';
+import { assertTransition, consumesAllowanceOn, HOLDS_ALLOWANCE, type ServiceStatus } from './service-status.ts';
+import {
+  availableBalance,
+  balanceOf,
+  consumptionEntry,
+  dueExpiries,
+  dueGrants,
+  holdEntries,
+  type Hold,
+  type LedgerEntry,
+  type MembershipWindow,
+} from './allowance.ts';
 
 /**
  * Data access for the Wig Spa.
@@ -53,6 +63,8 @@ export interface Membership extends MembershipWindow {
   /** What this member gets off every service. Null for memberships that
    *  predate the discount model and were never backfilled. */
   discountPercent: number | null;
+  /** Rejuvenations granted each three-month period. Null for none. */
+  rejuvenationsPerPeriod: number | null;
 }
 
 export interface ServiceRequestSummary {
@@ -64,6 +76,8 @@ export interface ServiceRequestSummary {
   coveredByAllowance: boolean;
   submittedAt: Date;
   statusSince: Date;
+  /** The member's tier while their membership is active, for queue priority. */
+  tier: string | null;
 }
 
 /** Run `fn` inside a transaction, rolling back on any throw. */
@@ -164,7 +178,7 @@ export async function listWigs(db: Queryable, memberId: string): Promise<Wig[]> 
 export async function getMembership(db: Queryable, memberId: string): Promise<Membership | null> {
   const { rows } = await db.query(
     `select id, tier, status, membership_year_start, membership_year_end, next_billing_at,
-            discount_percent
+            discount_percent, rejuvenations_per_period
        from memberships
       where member_id = $1
       order by (status = 'active') desc, membership_year_end desc
@@ -181,33 +195,124 @@ export async function getMembership(db: Queryable, memberId: string): Promise<Me
     membershipYearEnd: new Date(row.membership_year_end),
     nextBillingAt: row.next_billing_at ? new Date(row.next_billing_at) : null,
     discountPercent: row.discount_percent,
+    rejuvenationsPerPeriod: row.rejuvenations_per_period,
   };
 }
 
+/** A Postgres `date` read as text, so it means the same day in every timezone. */
+const utcDate = (text: string): Date => new Date(`${text}T00:00:00Z`);
+const isoDate = (date: Date): string => date.toISOString().slice(0, 10);
+
 export async function getAllowanceEntries(db: Queryable, membershipId: string): Promise<LedgerEntry[]> {
   const { rows } = await db.query(
-    `select kind, delta, service_request_id, reason
+    `select id, kind, delta, service_request_id, reason, created_at,
+            period_start::text as period_start, expires_at, expires_entry_id
        from allowance_ledger
       where membership_id = $1
       order by created_at`,
     [membershipId],
   );
   return rows.map((row) => ({
+    id: row.id,
     kind: row.kind,
     delta: row.delta,
     serviceRequestId: row.service_request_id,
     reason: row.reason,
+    createdAt: new Date(row.created_at),
+    periodStart: row.period_start ? utcDate(row.period_start) : null,
+    expiresAt: row.expires_at ? new Date(row.expires_at) : null,
+    expiresEntryId: row.expires_entry_id,
   }));
 }
 
-export async function getAllowanceBalance(db: Queryable, membershipId: string): Promise<number> {
+/**
+ * Covered requests not yet approved — each holding a Rejuvenation. The
+ * statuses come from service-status.ts so the rule is stated once.
+ */
+export async function listHolds(db: Queryable, membershipId: string): Promise<Hold[]> {
   const { rows } = await db.query(
-    `select coalesce(balance, 0) as balance
-       from membership_allowance_balance
-      where membership_id = $1`,
+    `select sr.id, sr.submitted_at
+       from service_requests sr
+      where sr.membership_id = $1
+        and sr.covered_by_allowance
+        and sr.status = any($2::service_status[])
+        and not exists (
+          select 1 from allowance_ledger l
+           where l.service_request_id = sr.id and l.kind = 'consumption'
+        )
+      order by sr.submitted_at`,
+    [membershipId, HOLDS_ALLOWANCE],
+  );
+  return rows.map((row) => ({ serviceRequestId: row.id, heldAt: new Date(row.submitted_at) }));
+}
+
+/**
+ * Bring a membership's ledger up to date, and return it.
+ *
+ * Writes any quarterly Rejuvenation grants that are owed and any expiries that
+ * have come due, then reads the ledger back. Called before every balance is
+ * shown or spent, which is what lets grants and expiries happen without a
+ * scheduler. Safe to race: the unique indexes from migration 0007 turn a
+ * second writer's insert into nothing.
+ */
+export async function settleAllowance(
+  db: Queryable,
+  membershipId: string,
+  now: Date = new Date(),
+): Promise<LedgerEntry[]> {
+  const { rows } = await db.query(
+    `select status, membership_year_start::text as membership_year_start, rejuvenations_per_period
+       from memberships where id = $1`,
     [membershipId],
   );
-  return rows[0]?.balance ?? 0;
+  const membership = rows[0];
+  let entries = await getAllowanceEntries(db, membershipId);
+  if (!membership) return entries;
+
+  const grants = dueGrants({
+    membershipStart: utcDate(membership.membership_year_start),
+    status: membership.status,
+    perPeriod: membership.rejuvenations_per_period,
+    existingPeriodStarts: entries
+      .filter((e) => e.kind === 'grant' && e.periodStart)
+      .map((e) => e.periodStart!),
+    now,
+  });
+  for (const grant of grants) {
+    await db.query(
+      `insert into allowance_ledger
+         (membership_id, kind, delta, reason, period_start, expires_at, created_by)
+       values ($1, 'grant', $2, $3, $4::date, $5, 'membership')
+       on conflict (membership_id, period_start) where kind = 'grant' and period_start is not null
+       do nothing`,
+      [membershipId, grant.delta, grant.reason, isoDate(grant.periodStart!), grant.expiresAt],
+    );
+  }
+  if (grants.length > 0) entries = await getAllowanceEntries(db, membershipId);
+
+  // Held Rejuvenations are replayed alongside the ledger so they are not
+  // expired while their unit is in the post. Only real expiries are written.
+  const holds = await listHolds(db, membershipId);
+  const expiries = dueExpiries([...entries, ...holdEntries(holds)], now);
+  for (const expiry of expiries) {
+    await db.query(
+      `insert into allowance_ledger (membership_id, kind, delta, reason, expires_entry_id, created_by)
+       values ($1, 'expiry', $2, $3, $4, 'membership')
+       on conflict (expires_entry_id) where kind = 'expiry' and expires_entry_id is not null
+       do nothing`,
+      [membershipId, expiry.delta, expiry.reason, expiry.expiresEntryId],
+    );
+  }
+  if (expiries.length > 0) entries = await getAllowanceEntries(db, membershipId);
+
+  return entries;
+}
+
+/** What the member can still book: settled ledger, less what is held. */
+export async function getAllowanceBalance(db: Queryable, membershipId: string): Promise<number> {
+  const entries = await settleAllowance(db, membershipId);
+  const holds = await listHolds(db, membershipId);
+  return availableBalance([...entries, ...holdEntries(holds)]);
 }
 
 export async function createServiceRequest(
@@ -258,7 +363,7 @@ export async function advanceStatus(
 ): Promise<{ from: ServiceStatus; to: ServiceStatus; allowanceSpent: boolean }> {
   return withTransaction(pool, async (tx) => {
     const { rows } = await tx.query(
-      `select id, member_id, membership_id, status, covered_by_allowance
+      `select id, member_id, membership_id, status, covered_by_allowance, submitted_at
          from service_requests
         where id = $1
         for update`,
@@ -271,31 +376,9 @@ export async function advanceStatus(
     assertTransition(from, input.to);
     const to = input.to;
 
-    let allowanceSpent = false;
-
-    if (consumesAllowanceOn(to) && request.covered_by_allowance) {
-      if (!request.membership_id) {
-        throw new Error('Request is marked covered by allowance but has no membership attached');
-      }
-      const membership = await getMembershipById(tx, request.membership_id);
-      const entries = await getAllowanceEntries(tx, request.membership_id);
-
-      // Throws when the request was promised as covered but no longer is —
-      // a lapsed membership, or an allowance spent elsewhere since. Better
-      // Tia finds out now than after $200 of labour.
-      const entry = consumptionEntry({
-        membership,
-        entries,
-        serviceRequestId: request.id,
-      });
-
-      await tx.query(
-        `insert into allowance_ledger (membership_id, service_request_id, kind, delta, created_by)
-         values ($1, $2, $3, $4, $5)`,
-        [request.membership_id, request.id, entry.kind, entry.delta, input.actor],
-      );
-      allowanceSpent = true;
-    }
+    const allowanceSpent = consumesAllowanceOn(to)
+      ? await spendHeldAllowance(tx, request, input.actor)
+      : false;
 
     await tx.query(
       // Every use of $2 is cast to the enum. Without the casts Postgres sees it
@@ -319,10 +402,50 @@ export async function advanceStatus(
   });
 }
 
+/**
+ * Turn a covered request's hold into a use, at the moment the work is
+ * authorised. Must run before the request's status leaves HOLDS_ALLOWANCE, and
+ * inside the caller's transaction with the request row locked. Returns false
+ * for a request that was never covered.
+ */
+async function spendHeldAllowance(
+  tx: Queryable,
+  request: { id: string; membership_id: string | null; covered_by_allowance: boolean; submitted_at: Date },
+  actor: string,
+): Promise<boolean> {
+  if (!request.covered_by_allowance) return false;
+  if (!request.membership_id) {
+    throw new Error('Request is marked covered by allowance but has no membership attached');
+  }
+  const membership = await getMembershipById(tx, request.membership_id);
+  const entries = await settleAllowance(tx, request.membership_id);
+  // Still lists this request: its status has not changed yet.
+  const holds = await listHolds(tx, request.membership_id);
+
+  // Throws when the request was promised as covered but no longer is —
+  // a lapsed membership, or a hold that was never met. Better Tia finds
+  // out now than after $200 of labour.
+  const entry = consumptionEntry({
+    membership,
+    entries,
+    holds,
+    serviceRequestId: request.id,
+  });
+
+  // Dated to the booking, so the replay spends the same grant the hold
+  // did — one that may have expired since, while the unit was in the post.
+  await tx.query(
+    `insert into allowance_ledger (membership_id, service_request_id, kind, delta, created_by, created_at)
+     values ($1, $2, $3, $4, $5, $6)`,
+    [request.membership_id, request.id, entry.kind, entry.delta, actor, request.submitted_at],
+  );
+  return true;
+}
+
 async function getMembershipById(db: Queryable, membershipId: string): Promise<Membership | null> {
   const { rows } = await db.query(
     `select id, tier, status, membership_year_start, membership_year_end, next_billing_at,
-            discount_percent
+            discount_percent, rejuvenations_per_period
        from memberships where id = $1`,
     [membershipId],
   );
@@ -336,6 +459,7 @@ async function getMembershipById(db: Queryable, membershipId: string): Promise<M
     membershipYearEnd: new Date(row.membership_year_end),
     nextBillingAt: row.next_billing_at ? new Date(row.next_billing_at) : null,
     discountPercent: row.discount_percent,
+    rejuvenationsPerPeriod: row.rejuvenations_per_period,
   };
 }
 
@@ -387,6 +511,7 @@ function toSummary(row: any): ServiceRequestSummary {
     coveredByAllowance: row.covered_by_allowance,
     submittedAt: new Date(row.submitted_at),
     statusSince: new Date(row.status_since),
+    tier: row.tier ?? null,
   };
 }
 
@@ -405,10 +530,12 @@ export async function listOpenWorkOrders(
     `select sr.id, sr.wig_id, w.nickname as wig_nickname, sr.service_type, sr.status,
             sr.covered_by_allowance, sr.submitted_at,
             coalesce((select max(e.created_at) from events e where e.service_request_id = sr.id),
-                     sr.submitted_at) as status_since
+                     sr.submitted_at) as status_since,
+            case when mb.status = 'active' then mb.tier end as tier
        from service_requests sr
        join wigs w on w.id = sr.wig_id
        join members m on m.id = sr.member_id
+       left join memberships mb on mb.id = sr.membership_id
       where sr.status not in ('completed', 'cancelled')
         and m.shop = $1
       order by status_since asc`,
@@ -871,12 +998,14 @@ export async function recordInspectionDecision(
 ): Promise<'recorded' | 'not_found' | 'already_answered'> {
   return withTransaction(pool, async (tx) => {
     const { rows } = await tx.query(
-      `select sr.id, sr.status, i.id as inspection_id, i.customer_approved
+      `select sr.id, sr.status, sr.membership_id, sr.covered_by_allowance, sr.submitted_at,
+              i.id as inspection_id, i.customer_approved
          from service_requests sr
          join inspections i on i.service_request_id = sr.id
         where sr.id = $1 and sr.member_id = $2
         order by i.created_at desc
-        limit 1`,
+        limit 1
+        for update of sr`,
       [input.serviceRequestId, input.memberId],
     );
     if (rows.length === 0) return 'not_found';
@@ -890,6 +1019,9 @@ export async function recordInspectionDecision(
     );
 
     const nextStatus = input.approved ? 'approved' : 'returned_unserviced';
+    // Approving here authorises the work just as the staff app does, so it
+    // spends the held Rejuvenation the same way; declining releases it.
+    if (consumesAllowanceOn(nextStatus)) await spendHeldAllowance(tx, rows[0], 'customer');
     await tx.query(
       `update service_requests set status = $2::service_status, updated_at = now() where id = $1`,
       [input.serviceRequestId, nextStatus],
@@ -945,6 +1077,8 @@ export interface ContractSnapshot {
   tier: string;
   /** From the tier the member bought. Stored, not derived — see the migration. */
   discountPercent: number | null;
+  /** From the tier and term the member bought. Stored for the same reason. */
+  rejuvenationsPerPeriod: number | null;
   nextBillingAt: Date | null;
 }
 
@@ -985,12 +1119,20 @@ export async function upsertMembershipFromContract(
             set status = $2::membership_status,
                 tier = $3,
                 next_billing_at = $4,
-                discount_percent = coalesce($6, discount_percent),
+                discount_percent = coalesce($5, discount_percent),
+                rejuvenations_per_period = coalesce($6, rejuvenations_per_period),
                 cancelled_at = case when $2::membership_status = 'cancelled'
                                     then coalesce(cancelled_at, now()) else null end,
                 updated_at = now()
           where id = $1`,
-        [membershipId, status, snapshot.tier, snapshot.nextBillingAt, null, snapshot.discountPercent],
+        [
+          membershipId,
+          status,
+          snapshot.tier,
+          snapshot.nextBillingAt,
+          snapshot.discountPercent,
+          snapshot.rejuvenationsPerPeriod,
+        ],
       );
       await tx.query(
         `insert into events (membership_id, kind, actor, payload)
@@ -1000,17 +1142,26 @@ export async function upsertMembershipFromContract(
       return { membershipId, created: false };
     }
 
-    // A new contract starts a membership year today. The allowance grant that
-    // goes with it belongs to whatever creates the plan, not here — this
-    // handler must stay safe to run twice.
+    // A new contract starts a membership year today. Rejuvenations are granted
+    // from that date by settleAllowance, not here — this handler must stay
+    // safe to run twice.
     const inserted = await tx.query(
       `insert into memberships
          (member_id, shopify_contract_id, tier, status,
-          membership_year_start, membership_year_end, next_billing_at, discount_percent)
+          membership_year_start, membership_year_end, next_billing_at, discount_percent,
+          rejuvenations_per_period)
        values ($1, $2, $3, $4::membership_status,
-               current_date, current_date + interval '1 year', $5, $6)
+               current_date, current_date + interval '1 year', $5, $6, $7)
        returning id`,
-      [member.id, snapshot.shopifyContractId, snapshot.tier, status, snapshot.nextBillingAt, snapshot.discountPercent],
+      [
+        member.id,
+        snapshot.shopifyContractId,
+        snapshot.tier,
+        status,
+        snapshot.nextBillingAt,
+        snapshot.discountPercent,
+        snapshot.rejuvenationsPerPeriod,
+      ],
     );
     const membershipId = inserted.rows[0].id;
 

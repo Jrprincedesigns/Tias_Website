@@ -4,7 +4,7 @@ import { boundary } from '@shopify/shopify-app-react-router/server';
 import { authenticate } from '../shopify.server';
 import { listOpenWorkOrders } from '../lib/db.ts';
 import pool from '../db.server.ts';
-import { buildQueue, staleAfterDays, waitingFor } from '../lib/work-queue.ts';
+import { buildQueue, isStale, staleAfterDays, waitingFor } from '../lib/work-queue.ts';
 
 /**
  * The Wig Spa work queue.
@@ -44,8 +44,11 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
           wigNickname: item.wigNickname,
           serviceType: item.serviceType,
           coveredByAllowance: item.coveredByAllowance,
+          tier: item.tier,
           waiting: waitingFor(item, now),
-          stale: bucket.items.indexOf(item) < bucket.staleCount,
+          // Asked of each item: members sort ahead, so the stale ones are no
+          // longer guaranteed to be the first staleCount in the list.
+          stale: isStale(item, now, threshold),
         })),
       })),
     };
@@ -118,6 +121,7 @@ export default function WorkQueue() {
                 <s-link href={`/app/orders/${item.id}`}>{item.wigNickname}</s-link>
                 <s-text>{item.serviceType}</s-text>
                 <s-badge tone={item.stale ? 'warning' : 'info'}>{item.waiting}</s-badge>
+                {item.tier ? <s-badge>{item.tier}</s-badge> : null}
                 {item.coveredByAllowance ? <s-badge tone="success">included</s-badge> : null}
               </s-stack>
             ))}

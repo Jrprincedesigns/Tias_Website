@@ -1,10 +1,10 @@
 import {
   MEMBER_DISCOUNT_METAFIELD,
   TIER_SUMMARY_METAFIELD,
-  TERMS,
   TIERS,
-  priceAdjustmentPercent,
-  priceForTerm,
+  monthlyEquivalent,
+  variantPrice,
+  type MembershipTerm,
   type MembershipTier,
 } from './membership-tiers.ts';
 
@@ -17,12 +17,23 @@ import {
  * never be a script someone is afraid to re-run, and must never quietly create
  * a second group alongside the first.
  *
- * The product is matched by handle and the group by its merchant code, both of
- * which are stable strings rather than ids we would otherwise have to store.
+ * The product is matched by handle and each tier's group by its merchant code,
+ * both of which are stable strings rather than ids we would otherwise have to
+ * store.
  */
 
 export const MEMBERSHIP_HANDLE = 'wig-spa-membership';
-export const SELLING_PLAN_MERCHANT_CODE = 'wig-spa-membership-terms';
+
+/** One selling plan group per tier, attached to that tier's variant. */
+export function sellingPlanMerchantCode(tierId: string): string {
+  return `wig-spa-membership-${tierId}`;
+}
+
+/**
+ * The group every tier used to share. Still in the store, because members
+ * bought on it — provisioning only takes it off the product.
+ */
+export const LEGACY_SELLING_PLAN_MERCHANT_CODE = 'wig-spa-membership-terms';
 
 /** Anything the Admin API can be asked a GraphQL question. */
 export interface AdminClient {
@@ -32,8 +43,10 @@ export interface AdminClient {
 export interface ProvisionResult {
   productId: string;
   productHandle: string;
-  sellingPlanGroupId: string;
-  created: { product: boolean; sellingPlanGroup: boolean };
+  sellingPlanGroups: Array<{ tier: string; id: string; created: boolean }>;
+  created: { product: boolean };
+  /** Whether the old shared group was found and taken off the product. */
+  detachedLegacyGroup: boolean;
   variants: Array<{ id: string; tier: string; price: number }>;
 }
 
@@ -62,59 +75,128 @@ async function run<T>(
   return result;
 }
 
-/** The product and its three tier variants. Matched by handle, so re-runnable. */
+/** The membership product as it stands in the store, when it exists. */
+export interface ExistingProduct {
+  id: string;
+  variants: Array<{
+    id: string;
+    title: string;
+    discount: { value: string } | null;
+    summary: { value: string } | null;
+  }>;
+}
+
+/**
+ * What to send productSet.
+ *
+ * Creating, it sends everything, and the product starts as a draft so nobody
+ * can buy it before it has been checked. Repairing, it must not undo what Tia
+ * has done in admin since:
+ *
+ *   - status and description are left out, and productSet leaves an omitted
+ *     scalar alone — so a published membership stays published;
+ *   - metafields are a list field, and productSet deletes list entries it is
+ *     not sent, so they are sent back with whatever value the store holds,
+ *     falling back to ours only where one is blank;
+ *   - each variant is sent with its id, so it is updated rather than replaced —
+ *     a replaced variant would drop its selling plan group.
+ */
+export function productSetInput(existing: ExistingProduct | null): Record<string, unknown> {
+  const variants = TIERS.map((tier) => {
+    const current = existing?.variants.find((variant) => variant.title === tier.name);
+    return {
+      ...(current ? { id: current.id } : {}),
+      optionValues: [{ optionName: 'Tier', name: tier.name }],
+      // Never what a member pays — every plan sets its own price.
+      price: variantPrice(tier).toFixed(2),
+      inventoryPolicy: 'CONTINUE',
+      // A membership is not a parcel. Left shippable, checkout asks a member for
+      // a delivery address and quotes them postage on a discount card — which is
+      // exactly what it did the first time this ran, because the flag lives on
+      // the inventory item and not on the variant.
+      inventoryItem: { requiresShipping: false, tracked: false },
+      metafields: [
+        {
+          namespace: MEMBER_DISCOUNT_METAFIELD.namespace,
+          key: MEMBER_DISCOUNT_METAFIELD.key,
+          type: 'number_integer',
+          value: current?.discount?.value?.trim() || String(tier.discountPercent),
+        },
+        {
+          namespace: TIER_SUMMARY_METAFIELD.namespace,
+          key: TIER_SUMMARY_METAFIELD.key,
+          type: 'single_line_text_field',
+          value: current?.summary?.value?.trim() || tier.summary,
+        },
+      ],
+    };
+  });
+
+  return {
+    handle: MEMBERSHIP_HANDLE,
+    title: 'The Wig Spa Membership',
+    ...(existing
+      ? {}
+      : {
+          descriptionHtml:
+            '<p>Included Rejuvenations every 3 months, 10% off additional Wig Spa services ' +
+            '(extra Rejuvenations are full price), and priority in the studio queue on ' +
+            'Signature and Collection. Pay monthly with a 3-month minimum, or save with a year up front.</p>',
+          status: 'DRAFT',
+        }),
+    productType: 'Membership',
+    vendor: 'The T Collection',
+    // Without this a membership can be bought outright, off a selling
+    // plan — which is what happened the first time it was tested. The
+    // order goes through at the variant's annual price, no subscription
+    // contract is created, so no webhook fires, no membership is recorded
+    // and no member tag is applied. The customer pays and gets nothing.
+    requiresSellingPlan: true,
+    productOptions: [
+      { name: 'Tier', values: TIERS.map((tier) => ({ name: tier.name })) },
+    ],
+    variants,
+  };
+}
+
+/** The product and its tier variants. Matched by handle, so re-runnable. */
 async function upsertProduct(admin: AdminClient): Promise<{
   id: string;
   handle: string;
   created: boolean;
   variants: Array<{ id: string; title: string; price: string }>;
 }> {
-  const existing = await run<any>(
+  const existing = await run<ExistingProduct | null>(
     admin,
     `#graphql
       query MembershipProduct($handle: String!) {
         productByIdentifier(identifier: { handle: $handle }) {
           id
-          handle
-          variants(first: 20) { nodes { id title price } }
+          variants(first: 20) {
+            nodes {
+              id
+              title
+              discount: metafield(namespace: "${MEMBER_DISCOUNT_METAFIELD.namespace}", key: "${MEMBER_DISCOUNT_METAFIELD.key}") { value }
+              summary: metafield(namespace: "${TIER_SUMMARY_METAFIELD.namespace}", key: "${TIER_SUMMARY_METAFIELD.key}") { value }
+            }
+          }
         }
       }`,
     { handle: MEMBERSHIP_HANDLE },
-    (data) => ({ result: data.productByIdentifier, userErrors: [] }),
+    (data) => ({
+      result: data.productByIdentifier
+        ? { id: data.productByIdentifier.id, variants: data.productByIdentifier.variants.nodes }
+        : null,
+      userErrors: [],
+    }),
     'membership product lookup',
   );
-
-  const variants = TIERS.map((tier) => ({
-    optionValues: [{ optionName: 'Tier', name: tier.name }],
-    // The variant carries the ANNUAL price; shorter terms discount from it.
-    price: tier.annualPrice.toFixed(2),
-    inventoryPolicy: 'CONTINUE',
-    // A membership is not a parcel. Left shippable, checkout asks a member for
-    // a delivery address and quotes them postage on a discount card — which is
-    // exactly what it did the first time this ran, because the flag lives on
-    // the inventory item and not on the variant.
-    inventoryItem: { requiresShipping: false, tracked: false },
-    metafields: [
-      {
-        namespace: MEMBER_DISCOUNT_METAFIELD.namespace,
-        key: MEMBER_DISCOUNT_METAFIELD.key,
-        type: 'number_integer',
-        value: String(tier.discountPercent),
-      },
-      {
-        namespace: TIER_SUMMARY_METAFIELD.namespace,
-        key: TIER_SUMMARY_METAFIELD.key,
-        type: 'single_line_text_field',
-        value: tier.summary,
-      },
-    ],
-  }));
 
   const product = await run<any>(
     admin,
     `#graphql
-      mutation MembershipProductSet($input: ProductSetInput!) {
-        productSet(input: $input, synchronous: true) {
+      mutation MembershipProductSet($identifier: ProductSetIdentifiers, $input: ProductSetInput!) {
+        productSet(identifier: $identifier, input: $input, synchronous: true) {
           product {
             id
             handle
@@ -124,27 +206,10 @@ async function upsertProduct(admin: AdminClient): Promise<{
         }
       }`,
     {
-      input: {
-        handle: MEMBERSHIP_HANDLE,
-        title: 'The Wig Spa Membership',
-        descriptionHtml:
-          '<p>Member pricing on every Wig Spa service, and a place at the front of the studio queue. ' +
-          'Choose the tier that matches how many units you wear, and the term that suits you — ' +
-          'longer commitments cost less per month.</p>',
-        productType: 'Membership',
-        vendor: 'The T Collection',
-        status: 'DRAFT',
-        // Without this a membership can be bought outright, off a selling
-        // plan — which is what happened the first time it was tested. The
-        // order goes through at the variant's annual price, no subscription
-        // contract is created, so no webhook fires, no membership is recorded
-        // and no member tag is applied. The customer pays and gets nothing.
-        requiresSellingPlan: true,
-        productOptions: [
-          { name: 'Tier', values: TIERS.map((tier) => ({ name: tier.name })) },
-        ],
-        variants,
-      },
+      // Without an identifier productSet creates; with one it updates that
+      // product. Pinned to the id we just found rather than trusting a handle.
+      identifier: existing ? { id: existing.id } : null,
+      input: productSetInput(existing),
     },
     (data) => ({ result: data.productSet.product, userErrors: data.productSet.userErrors }),
     'membership product',
@@ -159,37 +224,36 @@ async function upsertProduct(admin: AdminClient): Promise<{
 }
 
 /** Turns a term into the selling plan Shopify stores. */
-function sellingPlanInput(term: (typeof TERMS)[number]) {
-  const percentOff = priceAdjustmentPercent(term);
+function sellingPlanInput(tier: MembershipTier, term: MembershipTerm) {
+  const cadence = term.months === 1 ? 'every month' : `once every ${term.months} months`;
+  const minimum = term.minCycles > 1 ? `, ${term.minCycles * term.months}-month minimum` : '';
+  const note = term.note ? `. ${term.note}` : '';
 
   return {
     name: term.name,
     // Shown to the member at checkout, so it says the thing they care about.
-    description: `Billed once every ${term.months} months`,
+    description: `Billed $${term.price.toFixed(2)} ${cadence}${minimum}${note}`,
     options: [term.name],
     category: 'SUBSCRIPTION',
     billingPolicy: {
       recurring: {
         interval: 'MONTH',
         intervalCount: term.months,
-        // Prepaid: the whole term is charged at the start of the cycle, which
-        // is what makes a member unable to take the discount and leave before
-        // paying for it. No minimum cycle count is needed on top of that.
-        minCycles: 1,
+        minCycles: term.minCycles,
       },
     },
     deliveryPolicy: {
       recurring: { interval: 'MONTH', intervalCount: term.months, preAnchorBehavior: 'ASAP' },
     },
-    // Omitted entirely for the annual term: it is charged at the variant price,
-    // and an adjustment of zero is not the same thing as no adjustment.
-    ...(percentOff > 0
+    // Omitted when the plan charges the variant price: an adjustment that
+    // changes nothing is not the same thing as no adjustment.
+    ...(term.price !== variantPrice(tier)
       ? {
           pricingPolicies: [
             {
               fixed: {
-                adjustmentType: 'PERCENTAGE',
-                adjustmentValue: { percentage: percentOff },
+                adjustmentType: 'PRICE',
+                adjustmentValue: { fixedValue: term.price },
               },
             },
           ],
@@ -198,7 +262,7 @@ function sellingPlanInput(term: (typeof TERMS)[number]) {
   };
 }
 
-async function findSellingPlanGroup(admin: AdminClient): Promise<string | null> {
+async function findSellingPlanGroup(admin: AdminClient, merchantCode: string): Promise<string | null> {
   const groups = await run<any>(
     admin,
     `#graphql
@@ -207,45 +271,47 @@ async function findSellingPlanGroup(admin: AdminClient): Promise<string | null> 
           nodes { id merchantCode }
         }
       }`,
-    { query: `merchant_code:${SELLING_PLAN_MERCHANT_CODE}` },
+    { query: `merchant_code:${merchantCode}` },
     (data) => ({ result: data.sellingPlanGroups.nodes, userErrors: [] }),
     'selling plan group lookup',
   );
 
-  const match = groups.find((g: any) => g.merchantCode === SELLING_PLAN_MERCHANT_CODE);
+  const match = groups.find((g: any) => g.merchantCode === merchantCode);
   return match?.id ?? null;
 }
 
 /**
- * Create the three terms, or attach the existing group to the product.
+ * Create a tier's terms, or attach its existing group to the tier's variant.
  *
  * Existing plans are deliberately left alone. Editing a plan changes the terms
  * under members already on it, and Shopify does not ask twice — so a re-run
  * confirms the group is attached and stops there. Changing a term means a new
  * plan for new members, which is a decision, not a deploy.
  */
-async function upsertSellingPlanGroup(
+async function upsertTierSellingPlanGroup(
   admin: AdminClient,
-  productId: string,
+  tier: MembershipTier,
+  variantId: string,
 ): Promise<{ id: string; created: boolean }> {
-  const existingId = await findSellingPlanGroup(admin);
+  const merchantCode = sellingPlanMerchantCode(tier.id);
+  const existingId = await findSellingPlanGroup(admin, merchantCode);
 
   if (existingId) {
     await run<any>(
       admin,
       `#graphql
-        mutation AttachMembershipPlans($id: ID!, $productIds: [ID!]!) {
-          sellingPlanGroupAddProducts(id: $id, productIds: $productIds) {
+        mutation AttachMembershipPlans($id: ID!, $productVariantIds: [ID!]!) {
+          sellingPlanGroupAddProductVariants(id: $id, productVariantIds: $productVariantIds) {
             sellingPlanGroup { id }
             userErrors { field message }
           }
         }`,
-      { id: existingId, productIds: [productId] },
+      { id: existingId, productVariantIds: [variantId] },
       (data) => ({
-        result: data.sellingPlanGroupAddProducts.sellingPlanGroup,
-        userErrors: data.sellingPlanGroupAddProducts.userErrors,
+        result: data.sellingPlanGroupAddProductVariants.sellingPlanGroup,
+        userErrors: data.sellingPlanGroupAddProductVariants.userErrors,
       }),
-      'attaching membership plans',
+      `attaching ${tier.name} plans`,
     );
     return { id: existingId, created: false };
   }
@@ -264,22 +330,52 @@ async function upsertSellingPlanGroup(
       }`,
     {
       input: {
-        name: 'Wig Spa Membership',
-        merchantCode: SELLING_PLAN_MERCHANT_CODE,
+        name: `Wig Spa Membership — ${tier.name}`,
+        merchantCode,
         options: ['Term'],
         position: 1,
-        sellingPlansToCreate: TERMS.map(sellingPlanInput),
+        sellingPlansToCreate: tier.terms.map((term) => sellingPlanInput(tier, term)),
       },
-      resources: { productIds: [productId] },
+      // The variant, not the product: a group on the product would offer
+      // this tier's prices on every tier.
+      resources: { productVariantIds: [variantId] },
     },
     (data) => ({
       result: data.sellingPlanGroupCreate.sellingPlanGroup,
       userErrors: data.sellingPlanGroupCreate.userErrors,
     }),
-    'membership selling plans',
+    `${tier.name} selling plans`,
   );
 
   return { id: group.id, created: true };
+}
+
+/**
+ * Take the old shared group off the product, so new members only see the
+ * per-tier terms. Members already on its plans are unaffected — a contract
+ * carries its own copy of the terms it was bought on.
+ */
+async function detachLegacySellingPlanGroup(admin: AdminClient, productId: string): Promise<boolean> {
+  const legacyId = await findSellingPlanGroup(admin, LEGACY_SELLING_PLAN_MERCHANT_CODE);
+  if (!legacyId) return false;
+
+  await run<any>(
+    admin,
+    `#graphql
+      mutation DetachLegacyMembershipPlans($id: ID!, $productIds: [ID!]!) {
+        sellingPlanGroupRemoveProducts(id: $id, productIds: $productIds) {
+          removedProductIds
+          userErrors { field message }
+        }
+      }`,
+    { id: legacyId, productIds: [productId] },
+    (data) => ({
+      result: data.sellingPlanGroupRemoveProducts.removedProductIds,
+      userErrors: data.sellingPlanGroupRemoveProducts.userErrors,
+    }),
+    'detaching the old shared membership plans',
+  );
+  return true;
 }
 
 /**
@@ -291,13 +387,25 @@ async function upsertSellingPlanGroup(
  */
 export async function provisionMembership(admin: AdminClient): Promise<ProvisionResult> {
   const product = await upsertProduct(admin);
-  const group = await upsertSellingPlanGroup(admin, product.id);
+
+  const groups: ProvisionResult['sellingPlanGroups'] = [];
+  for (const tier of TIERS) {
+    const variant = product.variants.find((v) => v.title === tier.name);
+    if (!variant) throw new Error(`The membership product has no "${tier.name}" variant`);
+    const group = await upsertTierSellingPlanGroup(admin, tier, variant.id);
+    groups.push({ tier: tier.id, ...group });
+  }
+
+  // Only after every tier has its own terms, so there is no moment where the
+  // product is on sale with no plans at all.
+  const detachedLegacyGroup = await detachLegacySellingPlanGroup(admin, product.id);
 
   return {
     productId: product.id,
     productHandle: product.handle,
-    sellingPlanGroupId: group.id,
-    created: { product: product.created, sellingPlanGroup: group.created },
+    sellingPlanGroups: groups,
+    created: { product: product.created },
+    detachedLegacyGroup,
     variants: product.variants.map((variant) => {
       const tier = TIERS.find((t) => t.name === variant.title);
       return { id: variant.id, tier: tier?.id ?? variant.title, price: Number(variant.price) };
@@ -309,15 +417,25 @@ export async function provisionMembership(admin: AdminClient): Promise<Provision
 export function pricingPreview(): Array<{
   tier: string;
   discountPercent: number;
-  terms: Array<{ term: string; price: number; perMonth: number }>;
+  terms: Array<{
+    term: string;
+    price: number;
+    months: number;
+    perMonth: number;
+    minCycles: number;
+    rejuvenationsPerPeriod: number;
+  }>;
 }> {
   return TIERS.map((tier: MembershipTier) => ({
     tier: tier.name,
     discountPercent: tier.discountPercent,
-    terms: TERMS.map((term) => ({
+    terms: tier.terms.map((term) => ({
       term: term.name,
-      price: priceForTerm(tier, term),
-      perMonth: Math.round((priceForTerm(tier, term) / term.months) * 100) / 100,
+      price: term.price,
+      months: term.months,
+      perMonth: monthlyEquivalent(term),
+      minCycles: term.minCycles,
+      rejuvenationsPerPeriod: term.rejuvenationsPerPeriod,
     })),
   }));
 }

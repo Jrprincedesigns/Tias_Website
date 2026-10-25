@@ -30,10 +30,10 @@ export const loader = async ({ request }: LoaderFunctionArgs) =>
             status: closet.membership.status,
             renewsOn: closet.membership.membershipYearEnd.toISOString(),
             nextBillingAt: closet.membership.nextBillingAt?.toISOString() ?? null,
-            // What the membership is actually worth to them. Membership no
-            // longer includes services, so the count below is legacy: it is
-            // still sent for anyone whose ledger has entries, and the page
-            // only shows it when it is above zero.
+            // What the membership is worth to them: the discount on additional
+            // services, and the Rejuvenations they can still book — granted
+            // every three months, less any already held by a booking. The page
+            // only shows the count when it is above zero.
             discountPercent: closet.membership.discountPercent,
             servicesRemaining: closet.allowanceRemaining,
           }

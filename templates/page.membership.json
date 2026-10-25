@@ -14,7 +14,7 @@
       "settings": {
         "eyebrow": "The Wig Spa Membership",
         "title": "<p>Your wig wardrobe,<br/>professionally <em>maintained</em>.</p>",
-        "sub": "Send your units in for scheduled care, keep a record of every service, and pay member rates on everything else. Care that keeps pace with how often you actually wear them."
+        "sub": "Rejuvenations included every 3 months, 10% off additional services, and a record of every service. Care that keeps pace with how often you actually wear them."
       }
     },
     "tiers": {
@@ -23,12 +23,12 @@
         "product": "wig-spa-membership",
         "eyebrow": "Choose your care",
         "title": "<p>Three ways to<br/>be <em>looked after</em>.</p>",
-        "intro": "Every membership includes a set number of Wig Spa services each year, member pricing beyond that, and priority in the studio queue.",
+        "intro": "Every membership includes Wig Rejuvenations every 3 months — 1, 2 or 4 depending on your tier — and 10% off additional Wig Spa services. Extra Rejuvenations are full price. Signature and Collection members also get priority in the studio queue.",
         "featured_tier": "Signature",
         "badge": "Most popular",
         "cta_label": "Join",
         "unavailable_label": "Coming soon",
-        "footnote": "Pricing is being finalised. Membership will renew automatically and can be cancelled from your account."
+        "footnote": "Pay monthly with a 3-month minimum, or for the year up front. Membership renews automatically and can be cancelled from your account."
       }
     },
     "process": {
@@ -39,7 +39,7 @@
           "settings": {
             "number": "01",
             "heading": "Join",
-            "body": "Choose your membership. Your included services are available from day one of your membership year."
+            "body": "Choose your tier and how you pay. Your first Rejuvenations are ready the day you join, and more are added every 3 months."
           }
         },
         "s2": {
@@ -114,7 +114,7 @@
           "settings": {
             "number": "03",
             "heading": "First in the queue",
-            "body": "<p>Member units are scheduled ahead of one-off bookings, especially in the busy weeks.</p>"
+            "body": "<p>Signature and Collection units are scheduled ahead of standard jobs, with Collection at the front of the queue.</p>"
           }
         }
       },
@@ -136,14 +136,14 @@
           "type": "qa",
           "settings": {
             "question": "What if I don't send a wig every month?",
-            "answer": "You aren't expected to. Membership includes a set number of services per membership year, not per month — use them whenever your units need them."
+            "answer": "You aren't expected to. Rejuvenations are added every 3 months — use them whenever your units need them."
           }
         },
         "q2": {
           "type": "qa",
           "settings": {
             "question": "Do unused services roll over?",
-            "answer": "Rollover terms are being finalised and will be stated here before membership opens."
+            "answer": "Yes. Unused Rejuvenations carry into the next 3 months. Each batch stays usable until 30 days after the 3 months it was given for, then expires. A Rejuvenation you have booked is held for you while your unit is in the post."
           }
         },
         "q3": {
@@ -171,7 +171,7 @@
           "type": "qa",
           "settings": {
             "question": "Can I cancel?",
-            "answer": "Yes, from your account. Any minimum term will be stated clearly at checkout before you join."
+            "answer": "Yes, from your account. Monthly memberships have a 3-month minimum; annual memberships are paid for the year up front."
           }
         }
       },

@@ -1,38 +1,34 @@
 /**
  * The Wig Spa Membership — what gets sold, and on what terms.
  *
- * Membership carries no included services. It is a discount, a place in the
- * queue, and nothing else. That is deliberate: a Rejuvenation is 2.5 hours of
- * Tia's time, and any plan that hands those out for a flat fee turns her
- * hourly rate into a function of how heavily members use it. Selling the
- * discount instead means the fee is margin and the labour is always paid for.
+ * Every tier takes 10% off additional Wig Spa services — extra Rejuvenations
+ * are full price — and includes Rejuvenations granted per three-month period
+ * (allowance.ts has the rules).
+ * A Rejuvenation is 2.5 hours of Tia's time, so the allowance is a fixed count
+ * rather than open-ended, and the fee is what pays for those hours.
  *
- * Shape in Shopify: one product, three variants (the tiers), one selling plan
- * group with three plans (the terms). A tier's variant price is its TWELVE
- * MONTH price; the shorter terms reach their own price by discounting that per
- * cycle. That is what keeps a single selling plan group correct for all three
- * tiers — the ratios are identical, so one set of adjustments fits every row.
+ * Shape in Shopify: one product, three variants (the tiers), and one selling
+ * plan group PER TIER, attached to that tier's variant. Each plan charges a
+ * fixed price. Tiers used to share one group whose plans discounted from the
+ * variant price, which only worked while every tier priced its terms in the
+ * same ratio — Essential's monthly and annual prices do not fit that ratio, and
+ * nothing says the other tiers' will either.
  *
- *   Essential   $48/yr    $27/6mo   $15/3mo
- *   Signature   $80/yr    $45/6mo   $25/3mo
- *   Collection  $144/yr   $81/6mo   $45/3mo
+ *                Monthly (3-month min)        Annual
+ *   Essential     $18, 1 per 3 months          $195, 1 per 3 months (4 a year)
+ *   Signature     $36, 2 per 3 months          $390, 2 per 3 months (8 a year)
+ *   Collection    $70, 4 per 3 months          $760, 4 per 3 months (16 a year)
  *
- * Longer commitments cost less per month, which is the point: 3 months is the
- * full rate, 6 months saves ten percent, 12 months saves twenty.
+ * Longer commitments cost less per month, which is the point.
  *
  * ─── What Tia can change without a developer ───────────────────────────────
  *
- * Prices live on the Shopify variants. She edits them in admin like any other
- * product and all three terms move with them, because the shorter terms are
- * expressed as a share of the annual price rather than as their own numbers.
+ * The member discount lives in a metafield on each variant, editable in admin.
  *
- * The member discount lives in a metafield on each variant, so it sits beside
- * the price in the same screen.
- *
- * What she cannot change here is the set of tiers or the term lengths — those
- * are the selling plans themselves, and Shopify fixes a contract's terms at
- * the moment it is created. Changing them means new plans for new members
- * while existing members keep what they bought.
+ * Prices and terms are the selling plans themselves, and Shopify fixes a
+ * contract's terms at the moment it is created. Changing them means new plans
+ * for new members while existing members keep what they bought — so they live
+ * here, not on the variant.
  */
 
 /** Metafield holding the member discount, so it is editable beside the price. */
@@ -52,82 +48,125 @@ export const TIER_SUMMARY_METAFIELD = {
   key: 'tier_summary',
 } as const;
 
+export interface MembershipTerm {
+  id: 'monthly' | 'annual';
+  /** The plan name a member sees at checkout and on their cart line. */
+  name: string;
+  /** Billing interval, in months. */
+  months: number;
+  /** What one billing cycle costs. */
+  price: number;
+  /**
+   * Cycles a member must pay before they can cancel. A prepaid term needs
+   * only one — the whole term is charged up front — but a monthly plan would
+   * let a member take the discount for a month and leave, so it carries a
+   * minimum commitment instead.
+   */
+  minCycles: number;
+  /** Rejuvenations granted each three-month period on this term. */
+  rejuvenationsPerPeriod: number;
+  /** Extra line for checkout, e.g. what an annual plan includes. */
+  note?: string;
+}
+
 export interface MembershipTier {
   /** Stable key. Never shown to a member; used to match a contract to a tier. */
   id: 'essential' | 'signature' | 'collection';
   name: string;
-  /** The twelve-month price. Shorter terms are derived from it. */
-  annualPrice: number;
-  /** Percent off other services. The whole value of the membership. */
+  /** Percent off additional services, beyond what the tier includes. */
   discountPercent: number;
   summary: string;
+  /**
+   * Place in Tia's work queue, lowest first. Within each stage of the queue a
+   * member's work sorts ahead of everyone without one; tiers without a number
+   * wait in line like any other job.
+   */
+  queuePriority?: number;
+  /** Shortest first. The storefront preselects the last, the best value. */
+  terms: readonly MembershipTerm[];
 }
 
 export const TIERS: readonly MembershipTier[] = [
   {
     id: 'essential',
     name: 'Essential Care',
-    annualPrice: 48,
     discountPercent: 10,
-    summary: 'For one or two units you wear regularly. Ten percent off every service in the spa.',
+    summary:
+      'For one or two units you wear regularly. Includes 1 wig rejuvenation every 3 months, plus 10% off additional Wig Spa services (extra rejuvenations are full price).',
+    terms: [
+      {
+        id: 'monthly', name: 'Monthly (3-month minimum)', months: 1, price: 18, minCycles: 3,
+        rejuvenationsPerPeriod: 1,
+      },
+      {
+        id: 'annual', name: 'Annual', months: 12, price: 195, minCycles: 1,
+        rejuvenationsPerPeriod: 1,
+        note: '4 rejuvenations, a $240 value',
+      },
+    ],
   },
   {
     id: 'signature',
     name: 'Signature Care',
-    annualPrice: 80,
-    discountPercent: 15,
-    summary: 'For a rotation you move between. Fifteen percent off, and your work is booked ahead of standard jobs.',
+    discountPercent: 10,
+    queuePriority: 1,
+    summary:
+      'For a rotation you move between. Includes 2 wig rejuvenations every 3 months, 10% off additional Wig Spa services (extra rejuvenations are full price), and your work is booked ahead of standard jobs.',
+    terms: [
+      {
+        id: 'monthly', name: 'Monthly (3-month minimum)', months: 1, price: 36, minCycles: 3,
+        rejuvenationsPerPeriod: 2,
+      },
+      {
+        id: 'annual', name: 'Annual', months: 12, price: 390, minCycles: 1,
+        rejuvenationsPerPeriod: 2,
+        note: '8 rejuvenations, a $480 value',
+      },
+    ],
   },
   {
     id: 'collection',
     name: 'Collection Care',
-    annualPrice: 144,
-    discountPercent: 20,
-    summary: 'For a wardrobe worth protecting. Twenty percent off, and your units go to the front of the queue.',
+    discountPercent: 10,
+    queuePriority: 0,
+    summary:
+      'For a wardrobe worth protecting. Includes 4 wig rejuvenations every 3 months, 10% off additional Wig Spa services (extra rejuvenations are full price), and your units go to the front of the queue.',
+    terms: [
+      {
+        id: 'monthly', name: 'Monthly (3-month minimum)', months: 1, price: 70, minCycles: 3,
+        rejuvenationsPerPeriod: 4,
+      },
+      {
+        id: 'annual', name: 'Annual', months: 12, price: 760, minCycles: 1,
+        rejuvenationsPerPeriod: 4,
+        note: '16 rejuvenations, a $960 value',
+      },
+    ],
   },
 ];
 
-export interface MembershipTerm {
-  id: 'quarterly' | 'biannual' | 'annual';
-  name: string;
-  /** Billing interval, in months. Also the prepaid window. */
-  months: number;
-  /**
-   * What one cycle costs as a share of the annual price. Shopify expresses a
-   * selling plan's price as an adjustment to the variant price, and it can
-   * only adjust downward — which is why the variant holds the annual price
-   * and every shorter term is a reduction from it rather than an increase.
-   */
-  shareOfAnnual: number;
-}
-
-export const TERMS: readonly MembershipTerm[] = [
-  { id: 'quarterly', name: 'Every 3 months', months: 3, shareOfAnnual: 0.3125 },
-  { id: 'biannual', name: 'Every 6 months', months: 6, shareOfAnnual: 0.5625 },
-  { id: 'annual', name: 'Every 12 months', months: 12, shareOfAnnual: 1 },
-];
-
-/** What one cycle of this term costs for this tier. */
-export function priceForTerm(tier: MembershipTier, term: MembershipTerm): number {
-  return Math.round(tier.annualPrice * term.shareOfAnnual * 100) / 100;
-}
-
 /**
- * The percentage Shopify needs to reach that price from the variant price.
- *
- * Worth knowing before it surprises someone: the three-month plan is stored as
- * a ~69% discount, because it charges a quarter-year's share of an annual
- * price. It is not a 69% saving and should never be displayed as one — a theme
- * that renders "Save 69%" on a selling plan is reading this number out of
- * context.
+ * The price on the variant itself. Every plan sets its own price, so this is
+ * never what a member pays — but it is what a product listing shows before a
+ * term is chosen, so it is the full annual price rather than a low monthly
+ * figure that reads as the cost of membership.
  */
-export function priceAdjustmentPercent(term: MembershipTerm): number {
-  return Math.round((1 - term.shareOfAnnual) * 10000) / 100;
+export function variantPrice(tier: MembershipTier): number {
+  return Math.max(...tier.terms.map((term) => term.price));
 }
 
 /** Monthly equivalent, for showing that a longer commitment costs less. */
-export function monthlyEquivalent(tier: MembershipTier, term: MembershipTerm): number {
-  return Math.round((priceForTerm(tier, term) / term.months) * 100) / 100;
+export function monthlyEquivalent(term: MembershipTerm): number {
+  return Math.round((term.price / term.months) * 100) / 100;
+}
+
+/**
+ * Where a job sits in its stage of the queue: Collection, then Signature, then
+ * everyone else. Takes the tier as the membership stores it (its name), and
+ * null for a job with no active membership.
+ */
+export function queueRank(tier: string | null | undefined): number {
+  return (tier ? tierFromNames(tier)?.queuePriority : undefined) ?? Number.MAX_SAFE_INTEGER;
 }
 
 export function tierById(id: string): MembershipTier | undefined {
@@ -145,4 +184,23 @@ export function tierById(id: string): MembershipTier | undefined {
 export function tierFromNames(...names: (string | null | undefined)[]): MembershipTier | undefined {
   const haystack = names.filter(Boolean).join(' ').toLowerCase();
   return TIERS.find((tier) => haystack.includes(tier.name.toLowerCase()) || haystack.includes(tier.id));
+}
+
+/**
+ * Match a contract's selling plan name back to the term within its tier.
+ * Legacy plans ("Every 12 months") match nothing, which is correct: they were
+ * sold without included Rejuvenations.
+ */
+export function termFromPlanName(
+  tier: MembershipTier,
+  planName: string | null | undefined,
+): MembershipTerm | undefined {
+  const name = planName?.trim().toLowerCase();
+  if (!name) return undefined;
+  // Exact first; then by its id word, so a plan renamed in admin from
+  // "Annual" to "Annual membership" still finds its allowance.
+  return (
+    tier.terms.find((term) => term.name.toLowerCase() === name) ??
+    tier.terms.find((term) => name.includes(term.id))
+  );
 }
