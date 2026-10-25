@@ -141,7 +141,8 @@ async function upsertProduct(admin: AdminClient): Promise<{
         handle: MEMBERSHIP_HANDLE,
         title: 'The Wig Spa Membership',
         descriptionHtml:
-          '<p>Member pricing on every Wig Spa service, and a place at the front of the studio queue. ' +
+          '<p>Member pricing on every Wig Spa service, included Rejuvenations on Signature and Collection, ' +
+          'and a place at the front of the studio queue. ' +
           'Choose the tier that matches how many units you wear, and the term that suits you — ' +
           'longer commitments cost less per month.</p>',
         productType: 'Membership',
@@ -175,11 +176,12 @@ async function upsertProduct(admin: AdminClient): Promise<{
 function sellingPlanInput(tier: MembershipTier, term: MembershipTerm) {
   const cadence = term.months === 1 ? 'every month' : `once every ${term.months} months`;
   const minimum = term.minCycles > 1 ? `, ${term.minCycles * term.months}-month minimum` : '';
+  const note = term.note ? `. ${term.note}` : '';
 
   return {
     name: term.name,
     // Shown to the member at checkout, so it says the thing they care about.
-    description: `Billed $${term.price.toFixed(2)} ${cadence}${minimum}`,
+    description: `Billed $${term.price.toFixed(2)} ${cadence}${minimum}${note}`,
     options: [term.name],
     category: 'SUBSCRIPTION',
     billingPolicy: {
@@ -364,11 +366,13 @@ export async function provisionMembership(admin: AdminClient): Promise<Provision
 export function pricingPreview(): Array<{
   tier: string;
   discountPercent: number;
+  rejuvenationsPerQuarter: number;
   terms: Array<{ term: string; price: number; months: number; perMonth: number; minCycles: number }>;
 }> {
   return TIERS.map((tier: MembershipTier) => ({
     tier: tier.name,
     discountPercent: tier.discountPercent,
+    rejuvenationsPerQuarter: tier.rejuvenationsPerQuarter,
     terms: tier.terms.map((term) => ({
       term: term.name,
       price: term.price,

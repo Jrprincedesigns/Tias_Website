@@ -5,7 +5,6 @@ import {
   variantPrice,
   monthlyEquivalent,
   tierFromNames,
-  tierById,
 } from '../app/lib/membership-tiers.ts';
 
 /**
@@ -18,8 +17,8 @@ test('the published prices come out of the model', () => {
   const expected: Record<string, Array<[number, number]>> = {
     // [months per cycle, price per cycle]
     essential: [[1, 18], [12, 195]],
-    signature: [[3, 25], [6, 45], [12, 80]],
-    collection: [[3, 45], [6, 81], [12, 144]],
+    signature: [[1, 36], [12, 390]],
+    collection: [[1, 70], [12, 760]],
   };
   for (const tier of TIERS) {
     const actual = tier.terms.map((term) => [term.months, term.price]);
@@ -27,13 +26,21 @@ test('the published prices come out of the model', () => {
   }
 });
 
-test('Essential Care is monthly with a three-month minimum, or annual', () => {
-  const essential = tierById('essential')!;
-  const monthly = essential.terms.find((t) => t.id === 'monthly')!;
-  const annual = essential.terms.find((t) => t.id === 'annual')!;
-  assert.equal(essential.terms.length, 2);
-  assert.equal(monthly.minCycles * monthly.months, 3, 'monthly commits to three months');
-  assert.equal(annual.minCycles, 1, 'annual is prepaid, so needs no further minimum');
+test('every tier is monthly with a three-month minimum, or annual', () => {
+  for (const tier of TIERS) {
+    const monthly = tier.terms.find((t) => t.id === 'monthly')!;
+    const annual = tier.terms.find((t) => t.id === 'annual')!;
+    assert.equal(tier.terms.length, 2, tier.name);
+    assert.equal(monthly.minCycles * monthly.months, 3, `${tier.name}: monthly commits to three months`);
+    assert.equal(annual.minCycles, 1, `${tier.name}: annual is prepaid, so needs no further minimum`);
+  }
+});
+
+test('included rejuvenations', () => {
+  assert.deepEqual(
+    TIERS.map((t) => t.rejuvenationsPerQuarter),
+    [0, 2, 4],
+  );
 });
 
 test('a longer commitment always costs less per month', () => {
@@ -76,10 +83,8 @@ test('an unrecognised plan matches nothing rather than guessing', () => {
   assert.equal(tierFromNames(null, undefined), undefined);
 });
 
-test('discounts rise with the tier', () => {
-  const percents = TIERS.map((t) => t.discountPercent);
-  assert.deepEqual(percents, [...percents].sort((a, b) => a - b));
-  assert.deepEqual(percents, [10, 15, 20]);
+test('every tier takes ten percent off additional services', () => {
+  assert.deepEqual(TIERS.map((t) => t.discountPercent), [10, 10, 10]);
 });
 
 test('the tier is found on the variant title, not the plan or product name', () => {

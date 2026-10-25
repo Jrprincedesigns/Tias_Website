@@ -1,11 +1,10 @@
 /**
  * The Wig Spa Membership — what gets sold, and on what terms.
  *
- * Membership carries no included services. It is a discount, a place in the
- * queue, and nothing else. That is deliberate: a Rejuvenation is 2.5 hours of
- * Tia's time, and any plan that hands those out for a flat fee turns her
- * hourly rate into a function of how heavily members use it. Selling the
- * discount instead means the fee is margin and the labour is always paid for.
+ * Every tier takes 10% off additional spa services. Signature and Collection
+ * also include Rejuvenations, granted per three-month period — a Rejuvenation
+ * is 2.5 hours of Tia's time, so the allowance is a fixed count rather than
+ * open-ended, and the fee is what pays for those hours.
  *
  * Shape in Shopify: one product, three variants (the tiers), and one selling
  * plan group PER TIER, attached to that tier's variant. Each plan charges a
@@ -14,9 +13,10 @@
  * same ratio — Essential's monthly and annual prices do not fit that ratio, and
  * nothing says the other tiers' will either.
  *
- *   Essential   $18/mo (3-month minimum)   $195/yr
- *   Signature   $25/3mo   $45/6mo   $80/yr
- *   Collection  $45/3mo   $81/6mo   $144/yr
+ *                Monthly (3-month min)   Annual, upfront   Rejuvenations
+ *   Essential     $18                     $195              none
+ *   Signature     $36                     $390              2 per 3 months
+ *   Collection    $70                     $760              4 per 3 months
  *
  * Longer commitments cost less per month, which is the point.
  *
@@ -48,7 +48,7 @@ export const TIER_SUMMARY_METAFIELD = {
 } as const;
 
 export interface MembershipTerm {
-  id: 'monthly' | 'quarterly' | 'biannual' | 'annual';
+  id: 'monthly' | 'annual';
   /** The plan name a member sees at checkout and on their cart line. */
   name: string;
   /** Billing interval, in months. */
@@ -62,14 +62,18 @@ export interface MembershipTerm {
    * minimum commitment instead.
    */
   minCycles: number;
+  /** Extra line for checkout, e.g. what an annual plan includes. */
+  note?: string;
 }
 
 export interface MembershipTier {
   /** Stable key. Never shown to a member; used to match a contract to a tier. */
   id: 'essential' | 'signature' | 'collection';
   name: string;
-  /** Percent off other services. The whole value of the membership. */
+  /** Percent off additional services, beyond what the tier includes. */
   discountPercent: number;
+  /** Rejuvenations included in each three-month period. */
+  rejuvenationsPerQuarter: number;
   summary: string;
   /** Shortest first. The storefront preselects the last, the best value. */
   terms: readonly MembershipTerm[];
@@ -80,6 +84,7 @@ export const TIERS: readonly MembershipTier[] = [
     id: 'essential',
     name: 'Essential Care',
     discountPercent: 10,
+    rejuvenationsPerQuarter: 0,
     summary: 'For one or two units you wear regularly. Ten percent off every service in the spa.',
     terms: [
       { id: 'monthly', name: 'Monthly (3-month minimum)', months: 1, price: 18, minCycles: 3 },
@@ -89,23 +94,31 @@ export const TIERS: readonly MembershipTier[] = [
   {
     id: 'signature',
     name: 'Signature Care',
-    discountPercent: 15,
-    summary: 'For a rotation you move between. Fifteen percent off, and your work is booked ahead of standard jobs.',
+    discountPercent: 10,
+    rejuvenationsPerQuarter: 2,
+    summary:
+      'For a rotation you move between. Includes 2 wig rejuvenations every 3 months, 10% off additional spa services, and your work is booked ahead of standard jobs.',
     terms: [
-      { id: 'quarterly', name: 'Every 3 months', months: 3, price: 25, minCycles: 1 },
-      { id: 'biannual', name: 'Every 6 months', months: 6, price: 45, minCycles: 1 },
-      { id: 'annual', name: 'Every 12 months', months: 12, price: 80, minCycles: 1 },
+      { id: 'monthly', name: 'Monthly (3-month minimum)', months: 1, price: 36, minCycles: 3 },
+      {
+        id: 'annual', name: 'Annual, paid upfront', months: 12, price: 390, minCycles: 1,
+        note: '8 rejuvenations, a $480 value',
+      },
     ],
   },
   {
     id: 'collection',
     name: 'Collection Care',
-    discountPercent: 20,
-    summary: 'For a wardrobe worth protecting. Twenty percent off, and your units go to the front of the queue.',
+    discountPercent: 10,
+    rejuvenationsPerQuarter: 4,
+    summary:
+      'For a wardrobe worth protecting. Includes 4 wig rejuvenations every 3 months, 10% off additional spa services, and your units go to the front of the queue.',
     terms: [
-      { id: 'quarterly', name: 'Every 3 months', months: 3, price: 45, minCycles: 1 },
-      { id: 'biannual', name: 'Every 6 months', months: 6, price: 81, minCycles: 1 },
-      { id: 'annual', name: 'Every 12 months', months: 12, price: 144, minCycles: 1 },
+      { id: 'monthly', name: 'Monthly (3-month minimum)', months: 1, price: 70, minCycles: 3 },
+      {
+        id: 'annual', name: 'Annual, paid upfront', months: 12, price: 760, minCycles: 1,
+        note: '16 rejuvenations, a $960 value',
+      },
     ],
   },
 ];

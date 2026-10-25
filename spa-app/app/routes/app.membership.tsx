@@ -74,12 +74,12 @@ export default function MembershipSetup() {
     <s-page heading="Membership">
       <s-section heading="What members pay">
         <s-paragraph>
-          Membership carries no included services. It is member pricing on every Wig Spa service and
-          a place in the queue — so the fee is not tied to how many hours a member uses.
+          Every tier takes 10% off additional spa services. Signature and Collection also include
+          a fixed number of Rejuvenations every three months.
         </s-paragraph>
 
         {pricing.map((tier) => (
-          <s-section key={tier.tier} heading={`${tier.tier} — ${tier.discountPercent}% off services`}>
+          <s-section key={tier.tier} heading={`${tier.tier} — ${tier.discountPercent}% off services${tier.rejuvenationsPerQuarter ? `, ${tier.rejuvenationsPerQuarter} Rejuvenations every 3 months` : ''}`}>
             {tier.terms.map((term) => (
               <s-paragraph key={term.term}>
                 <s-text>{term.term}</s-text>: ${term.price.toFixed(2)}
