@@ -141,7 +141,7 @@ async function upsertProduct(admin: AdminClient): Promise<{
         handle: MEMBERSHIP_HANDLE,
         title: 'The Wig Spa Membership',
         descriptionHtml:
-          '<p>Member pricing on every Wig Spa service, included Rejuvenations on Signature and Collection, ' +
+          '<p>Included Rejuvenations, 10% off all additional Wig Spa services, ' +
           'and a place at the front of the studio queue. ' +
           'Choose the tier that matches how many units you wear, and the term that suits you — ' +
           'longer commitments cost less per month.</p>',
@@ -366,19 +366,25 @@ export async function provisionMembership(admin: AdminClient): Promise<Provision
 export function pricingPreview(): Array<{
   tier: string;
   discountPercent: number;
-  rejuvenationsPerQuarter: number;
-  terms: Array<{ term: string; price: number; months: number; perMonth: number; minCycles: number }>;
+  terms: Array<{
+    term: string;
+    price: number;
+    months: number;
+    perMonth: number;
+    minCycles: number;
+    rejuvenationsPerPeriod: number;
+  }>;
 }> {
   return TIERS.map((tier: MembershipTier) => ({
     tier: tier.name,
     discountPercent: tier.discountPercent,
-    rejuvenationsPerQuarter: tier.rejuvenationsPerQuarter,
     terms: tier.terms.map((term) => ({
       term: term.name,
       price: term.price,
       months: term.months,
       perMonth: monthlyEquivalent(term),
       minCycles: term.minCycles,
+      rejuvenationsPerPeriod: term.rejuvenationsPerPeriod,
     })),
   }));
 }

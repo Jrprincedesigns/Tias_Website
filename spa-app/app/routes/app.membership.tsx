@@ -74,16 +74,20 @@ export default function MembershipSetup() {
     <s-page heading="Membership">
       <s-section heading="What members pay">
         <s-paragraph>
-          Every tier takes 10% off additional spa services. Signature and Collection also include
-          a fixed number of Rejuvenations every three months.
+          Every tier takes 10% off all additional Wig Spa services. Rejuvenations are credited every
+          three months; unused ones roll over, and each period's expire 30 days after it ends.
         </s-paragraph>
 
         {pricing.map((tier) => (
-          <s-section key={tier.tier} heading={`${tier.tier} — ${tier.discountPercent}% off services${tier.rejuvenationsPerQuarter ? `, ${tier.rejuvenationsPerQuarter} Rejuvenations every 3 months` : ''}`}>
+          <s-section key={tier.tier} heading={`${tier.tier} — ${tier.discountPercent}% off additional services`}>
             {tier.terms.map((term) => (
               <s-paragraph key={term.term}>
                 <s-text>{term.term}</s-text>: ${term.price.toFixed(2)}
                 {term.months > 1 && ` ($${term.perMonth.toFixed(2)} per month)`}
+                {' · '}
+                {term.rejuvenationsPerPeriod
+                  ? `${term.rejuvenationsPerPeriod} Rejuvenation${term.rejuvenationsPerPeriod === 1 ? '' : 's'} every 3 months`
+                  : 'no Rejuvenations included'}
               </s-paragraph>
             ))}
           </s-section>

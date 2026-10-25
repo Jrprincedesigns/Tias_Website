@@ -3,7 +3,7 @@ import { authenticate } from '../shopify.server';
 import pool from '../db.server';
 import { membershipStatusFromContract, upsertMembershipFromContract } from '../lib/db';
 import { syncMemberTags } from '../lib/membership-provisioning';
-import { tierFromNames } from '../lib/membership-tiers';
+import { termFromPlanName, tierFromNames } from '../lib/membership-tiers';
 
 /**
  * subscription_contracts/create and /update.
@@ -78,6 +78,9 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   // all, because an unmatched tier means no tag can be chosen.
   const matched = tierFromNames(line?.variantTitle, line?.sellingPlanName, line?.title);
   const tier = matched?.name ?? line?.variantTitle ?? line?.sellingPlanName ?? 'Membership';
+  // The term decides the Rejuvenations — Essential monthly includes none,
+  // Essential annual includes one a quarter.
+  const term = matched ? termFromPlanName(matched, line?.sellingPlanName) : undefined;
 
   if (!matched) {
     console.warn(
@@ -96,6 +99,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     // From the tier they bought, and stored on the membership: a member keeps
     // the discount they signed up for even if the tier's rate changes later.
     discountPercent: matched?.discountPercent ?? null,
+    rejuvenationsPerPeriod: term?.rejuvenationsPerPeriod ?? null,
     nextBillingAt: contract.nextBillingDate ? new Date(contract.nextBillingDate) : null,
   });
 

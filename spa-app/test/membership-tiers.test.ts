@@ -5,6 +5,7 @@ import {
   variantPrice,
   monthlyEquivalent,
   tierFromNames,
+  termFromPlanName,
 } from '../app/lib/membership-tiers.ts';
 
 /**
@@ -36,11 +37,28 @@ test('every tier is monthly with a three-month minimum, or annual', () => {
   }
 });
 
-test('included rejuvenations', () => {
-  assert.deepEqual(
-    TIERS.map((t) => t.rejuvenationsPerQuarter),
-    [0, 2, 4],
+test('included rejuvenations per three-month period, by term', () => {
+  const perPeriod = Object.fromEntries(
+    TIERS.map((t) => [t.id, t.terms.map((term) => [term.id, term.rejuvenationsPerPeriod])]),
   );
+  assert.deepEqual(perPeriod, {
+    essential: [['monthly', 0], ['annual', 1]],
+    signature: [['monthly', 2], ['annual', 2]],
+    collection: [['monthly', 4], ['annual', 4]],
+  });
+});
+
+test('an annual year grants 4, 8 and 16 rejuvenations', () => {
+  const annual = TIERS.map((t) => t.terms.find((term) => term.id === 'annual')!.rejuvenationsPerPeriod * 4);
+  assert.deepEqual(annual, [4, 8, 16]);
+});
+
+test('a contract finds its term by plan name, and legacy plans find none', () => {
+  const signature = TIERS.find((t) => t.id === 'signature')!;
+  assert.equal(termFromPlanName(signature, 'Annual')?.id, 'annual');
+  assert.equal(termFromPlanName(signature, 'Monthly (3-month minimum)')?.id, 'monthly');
+  assert.equal(termFromPlanName(signature, 'Every 12 months'), undefined);
+  assert.equal(termFromPlanName(signature, null), undefined);
 });
 
 test('a longer commitment always costs less per month', () => {

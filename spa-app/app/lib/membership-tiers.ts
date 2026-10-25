@@ -1,10 +1,10 @@
 /**
  * The Wig Spa Membership — what gets sold, and on what terms.
  *
- * Every tier takes 10% off additional spa services. Signature and Collection
- * also include Rejuvenations, granted per three-month period — a Rejuvenation
- * is 2.5 hours of Tia's time, so the allowance is a fixed count rather than
- * open-ended, and the fee is what pays for those hours.
+ * Every tier takes 10% off all additional Wig Spa services, and includes
+ * Rejuvenations granted per three-month period (allowance.ts has the rules).
+ * A Rejuvenation is 2.5 hours of Tia's time, so the allowance is a fixed count
+ * rather than open-ended, and the fee is what pays for those hours.
  *
  * Shape in Shopify: one product, three variants (the tiers), and one selling
  * plan group PER TIER, attached to that tier's variant. Each plan charges a
@@ -13,10 +13,10 @@
  * same ratio — Essential's monthly and annual prices do not fit that ratio, and
  * nothing says the other tiers' will either.
  *
- *                Monthly (3-month min)   Annual, upfront   Rejuvenations
- *   Essential     $18                     $195              none
- *   Signature     $36                     $390              2 per 3 months
- *   Collection    $70                     $760              4 per 3 months
+ *                Monthly (3-month min)        Annual
+ *   Essential     $18, no Rejuvenations        $195, 1 per 3 months (4 a year)
+ *   Signature     $36, 2 per 3 months          $390, 2 per 3 months (8 a year)
+ *   Collection    $70, 4 per 3 months          $760, 4 per 3 months (16 a year)
  *
  * Longer commitments cost less per month, which is the point.
  *
@@ -62,6 +62,8 @@ export interface MembershipTerm {
    * minimum commitment instead.
    */
   minCycles: number;
+  /** Rejuvenations granted each three-month period on this term. */
+  rejuvenationsPerPeriod: number;
   /** Extra line for checkout, e.g. what an annual plan includes. */
   note?: string;
 }
@@ -72,8 +74,6 @@ export interface MembershipTier {
   name: string;
   /** Percent off additional services, beyond what the tier includes. */
   discountPercent: number;
-  /** Rejuvenations included in each three-month period. */
-  rejuvenationsPerQuarter: number;
   summary: string;
   /** Shortest first. The storefront preselects the last, the best value. */
   terms: readonly MembershipTerm[];
@@ -84,24 +84,34 @@ export const TIERS: readonly MembershipTier[] = [
     id: 'essential',
     name: 'Essential Care',
     discountPercent: 10,
-    rejuvenationsPerQuarter: 0,
-    summary: 'For one or two units you wear regularly. Ten percent off every service in the spa.',
+    summary:
+      'For one or two units you wear regularly. 10% off all additional Wig Spa services, and 4 rejuvenations a year on the annual plan.',
     terms: [
-      { id: 'monthly', name: 'Monthly (3-month minimum)', months: 1, price: 18, minCycles: 3 },
-      { id: 'annual', name: 'Annual', months: 12, price: 195, minCycles: 1 },
+      {
+        id: 'monthly', name: 'Monthly (3-month minimum)', months: 1, price: 18, minCycles: 3,
+        rejuvenationsPerPeriod: 0,
+      },
+      {
+        id: 'annual', name: 'Annual', months: 12, price: 195, minCycles: 1,
+        rejuvenationsPerPeriod: 1,
+        note: '4 rejuvenations, a $240 value',
+      },
     ],
   },
   {
     id: 'signature',
     name: 'Signature Care',
     discountPercent: 10,
-    rejuvenationsPerQuarter: 2,
     summary:
-      'For a rotation you move between. Includes 2 wig rejuvenations every 3 months, 10% off additional spa services, and your work is booked ahead of standard jobs.',
+      'For a rotation you move between. Includes 2 wig rejuvenations every 3 months, 10% off all additional Wig Spa services, and your work is booked ahead of standard jobs.',
     terms: [
-      { id: 'monthly', name: 'Monthly (3-month minimum)', months: 1, price: 36, minCycles: 3 },
       {
-        id: 'annual', name: 'Annual, paid upfront', months: 12, price: 390, minCycles: 1,
+        id: 'monthly', name: 'Monthly (3-month minimum)', months: 1, price: 36, minCycles: 3,
+        rejuvenationsPerPeriod: 2,
+      },
+      {
+        id: 'annual', name: 'Annual', months: 12, price: 390, minCycles: 1,
+        rejuvenationsPerPeriod: 2,
         note: '8 rejuvenations, a $480 value',
       },
     ],
@@ -110,13 +120,16 @@ export const TIERS: readonly MembershipTier[] = [
     id: 'collection',
     name: 'Collection Care',
     discountPercent: 10,
-    rejuvenationsPerQuarter: 4,
     summary:
-      'For a wardrobe worth protecting. Includes 4 wig rejuvenations every 3 months, 10% off additional spa services, and your units go to the front of the queue.',
+      'For a wardrobe worth protecting. Includes 4 wig rejuvenations every 3 months, 10% off all additional Wig Spa services, and your units go to the front of the queue.',
     terms: [
-      { id: 'monthly', name: 'Monthly (3-month minimum)', months: 1, price: 70, minCycles: 3 },
       {
-        id: 'annual', name: 'Annual, paid upfront', months: 12, price: 760, minCycles: 1,
+        id: 'monthly', name: 'Monthly (3-month minimum)', months: 1, price: 70, minCycles: 3,
+        rejuvenationsPerPeriod: 4,
+      },
+      {
+        id: 'annual', name: 'Annual', months: 12, price: 760, minCycles: 1,
+        rejuvenationsPerPeriod: 4,
         note: '16 rejuvenations, a $960 value',
       },
     ],
@@ -153,4 +166,23 @@ export function tierById(id: string): MembershipTier | undefined {
 export function tierFromNames(...names: (string | null | undefined)[]): MembershipTier | undefined {
   const haystack = names.filter(Boolean).join(' ').toLowerCase();
   return TIERS.find((tier) => haystack.includes(tier.name.toLowerCase()) || haystack.includes(tier.id));
+}
+
+/**
+ * Match a contract's selling plan name back to the term within its tier.
+ * Legacy plans ("Every 12 months") match nothing, which is correct: they were
+ * sold without included Rejuvenations.
+ */
+export function termFromPlanName(
+  tier: MembershipTier,
+  planName: string | null | undefined,
+): MembershipTerm | undefined {
+  const name = planName?.trim().toLowerCase();
+  if (!name) return undefined;
+  // Exact first; then by its id word, so a plan renamed in admin from
+  // "Annual" to "Annual membership" still finds its allowance.
+  return (
+    tier.terms.find((term) => term.name.toLowerCase() === name) ??
+    tier.terms.find((term) => name.includes(term.id))
+  );
 }
