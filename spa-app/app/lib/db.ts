@@ -1440,3 +1440,274 @@ export async function savePricing(
     }
   });
 }
+
+// ─── Renewal billing ────────────────────────────────────────────────────────
+//
+// The rules — which cycle is due, when to retry, when to give up — are in
+// renewal-billing.ts. These only read and write what it decides.
+
+/**
+ * The session table the Shopify session store keeps in this database. It
+ * creates it itself on first connect (shopify.server.ts), under this name.
+ */
+const SESSION_TABLE = 'shopify_sessions';
+
+/** Every store the app holds an offline session for: the ones it can bill. */
+export async function listShopsWithOfflineSessions(db: Queryable): Promise<string[]> {
+  const { rows } = await db.query(
+    `select distinct shop from ${SESSION_TABLE} where "isOnline" = false order by shop`,
+  );
+  return rows.map((row) => row.shop);
+}
+
+/** An active, contract-backed membership whose next charge date has come. */
+export interface RenewalCandidate {
+  membershipId: string;
+  shopifyContractId: string;
+}
+
+/**
+ * Memberships in a store that may have a renewal to charge.
+ *
+ * `next_billing_at` is the contract's nextBillingDate, which this app moves
+ * forward after every successful charge. So a membership drops out of this
+ * list once it is paid, and stays in it — retried daily — while a charge is
+ * still failing. Shopify's billing cycles have the final say on what is due;
+ * this only saves asking about members who are plainly paid up.
+ */
+export async function listRenewalCandidates(
+  db: Queryable,
+  shop: string,
+  now: Date = new Date(),
+): Promise<RenewalCandidate[]> {
+  const { rows } = await db.query(
+    `select ms.id, ms.shopify_contract_id
+       from memberships ms
+       join members m on m.id = ms.member_id
+      where m.shop = $1
+        and ms.status = 'active'
+        and ms.shopify_contract_id is not null
+        and ms.next_billing_at is not null
+        and ms.next_billing_at <= $2
+      order by ms.next_billing_at`,
+    [shop, now],
+  );
+  return rows.map((row) => ({ membershipId: row.id, shopifyContractId: row.shopify_contract_id }));
+}
+
+export type BillingAttemptStatus = 'requested' | 'succeeded' | 'failed' | 'challenged';
+
+export interface BillingAttemptRow {
+  id: string;
+  membershipId: string;
+  shop: string;
+  shopifyContractId: string;
+  cycleIndex: number;
+  attemptNumber: number;
+  idempotencyKey: string;
+  status: BillingAttemptStatus;
+  shopifyAttemptId: string | null;
+  requestedAt: Date;
+  resolvedAt: Date | null;
+}
+
+const BILLING_ATTEMPT_COLUMNS = `id, membership_id, shop, shopify_contract_id, cycle_index, attempt_number,
+  idempotency_key, status, shopify_attempt_id, requested_at, resolved_at`;
+
+function billingAttemptFromRow(row: any): BillingAttemptRow {
+  return {
+    id: row.id,
+    membershipId: row.membership_id,
+    shop: row.shop,
+    shopifyContractId: row.shopify_contract_id,
+    cycleIndex: row.cycle_index,
+    attemptNumber: row.attempt_number,
+    idempotencyKey: row.idempotency_key,
+    status: row.status,
+    shopifyAttemptId: row.shopify_attempt_id,
+    requestedAt: new Date(row.requested_at),
+    resolvedAt: row.resolved_at ? new Date(row.resolved_at) : null,
+  };
+}
+
+/** Every charge asked for on one billing cycle, first attempt first. */
+export async function listBillingAttempts(
+  db: Queryable,
+  shopifyContractId: string,
+  cycleIndex: number,
+): Promise<BillingAttemptRow[]> {
+  const { rows } = await db.query(
+    `select ${BILLING_ATTEMPT_COLUMNS} from billing_attempts
+      where shopify_contract_id = $1 and cycle_index = $2
+      order by attempt_number`,
+    [shopifyContractId, cycleIndex],
+  );
+  return rows.map(billingAttemptFromRow);
+}
+
+/**
+ * Claim the right to send one charge. True only for the caller that wrote the
+ * row; anyone else — an overlapping run, a retried one — gets false and must
+ * not call Shopify.
+ */
+export async function claimBillingAttempt(
+  db: Queryable,
+  claim: {
+    membershipId: string;
+    shop: string;
+    shopifyContractId: string;
+    cycleIndex: number;
+    attemptNumber: number;
+    idempotencyKey: string;
+  },
+  now: Date = new Date(),
+): Promise<boolean> {
+  const { rowCount } = await db.query(
+    `insert into billing_attempts
+       (membership_id, shop, shopify_contract_id, cycle_index, attempt_number, idempotency_key, requested_at)
+     values ($1, $2, $3, $4, $5, $6, $7)
+     on conflict do nothing`,
+    [
+      claim.membershipId,
+      claim.shop,
+      claim.shopifyContractId,
+      claim.cycleIndex,
+      claim.attemptNumber,
+      claim.idempotencyKey,
+      now,
+    ],
+  );
+  return rowCount === 1;
+}
+
+/** Note the attempt Shopify created, so its outcome webhook can find the row. */
+export async function setBillingAttemptShopifyId(
+  db: Queryable,
+  idempotencyKey: string,
+  shopifyAttemptId: string,
+): Promise<void> {
+  await db.query(
+    `update billing_attempts set shopify_attempt_id = coalesce(shopify_attempt_id, $2)
+      where idempotency_key = $1`,
+    [idempotencyKey, shopifyAttemptId],
+  );
+}
+
+/**
+ * Give up a claim that never became a charge — Shopify refused the request,
+ * or it was sent and nothing ever came back. Only while it is still
+ * unresolved; an outcome, once recorded, stays.
+ */
+export async function releaseBillingAttempt(db: Queryable, idempotencyKey: string): Promise<boolean> {
+  const { rowCount } = await db.query(
+    `delete from billing_attempts where idempotency_key = $1 and status = 'requested'`,
+    [idempotencyKey],
+  );
+  return rowCount === 1;
+}
+
+/**
+ * The row an outcome webhook is about.
+ *
+ * By Shopify's attempt id first. The charge is processed asynchronously, so
+ * the webhook can in principle beat the app to writing that id down; then it
+ * is the contract's open attempt — the app never has two open at once.
+ */
+export async function findBillingAttempt(
+  db: Queryable,
+  ref: { shopifyAttemptId: string | null; shopifyContractId: string | null },
+): Promise<BillingAttemptRow | null> {
+  if (ref.shopifyAttemptId) {
+    const { rows } = await db.query(
+      `select ${BILLING_ATTEMPT_COLUMNS} from billing_attempts where shopify_attempt_id = $1`,
+      [ref.shopifyAttemptId],
+    );
+    if (rows[0]) return billingAttemptFromRow(rows[0]);
+  }
+  if (ref.shopifyContractId) {
+    const { rows } = await db.query(
+      `select ${BILLING_ATTEMPT_COLUMNS} from billing_attempts
+        where shopify_contract_id = $1 and status in ('requested', 'challenged')
+          and ($2::text is null or shopify_attempt_id is null)
+        order by requested_at desc
+        limit 1`,
+      [ref.shopifyContractId, ref.shopifyAttemptId],
+    );
+    if (rows[0]) return billingAttemptFromRow(rows[0]);
+  }
+  return null;
+}
+
+/**
+ * Record what became of a charge, with its event, in one transaction.
+ *
+ * Returns false when the outcome was already recorded — webhooks are
+ * delivered at least once — so the caller acts on each outcome once. A
+ * challenge can still end in success or failure; success and failure are
+ * final.
+ */
+export async function resolveBillingAttempt(
+  pool: Transactable,
+  attempt: BillingAttemptRow,
+  outcome: {
+    status: Exclude<BillingAttemptStatus, 'requested'>;
+    shopifyAttemptId: string | null;
+    shopifyOrderId?: string | null;
+    errorCode?: string | null;
+    errorMessage?: string | null;
+    event: { kind: string; payload: Record<string, unknown> };
+  },
+  now: Date = new Date(),
+): Promise<boolean> {
+  const from = outcome.status === 'challenged' ? ['requested'] : ['requested', 'challenged'];
+  return withTransaction(pool, async (tx) => {
+    const { rowCount } = await tx.query(
+      `update billing_attempts
+          set status = $2,
+              shopify_attempt_id = coalesce(shopify_attempt_id, $3),
+              shopify_order_id = coalesce($4, shopify_order_id),
+              error_code = $5,
+              error_message = $6,
+              resolved_at = $8
+        where id = $1 and status = any($7::text[])`,
+      [
+        attempt.id,
+        outcome.status,
+        outcome.shopifyAttemptId,
+        outcome.shopifyOrderId ?? null,
+        outcome.errorCode ?? null,
+        outcome.errorMessage ?? null,
+        from,
+        now,
+      ],
+    );
+    if (!rowCount) return false;
+    await recordMembershipEvent(tx, attempt.membershipId, outcome.event.kind, outcome.event.payload);
+    return true;
+  });
+}
+
+export async function recordMembershipEvent(
+  db: Queryable,
+  membershipId: string,
+  kind: string,
+  payload: Record<string, unknown>,
+): Promise<void> {
+  await db.query(
+    `insert into events (membership_id, kind, actor, payload)
+     values ($1, $2, 'system', $3::jsonb)`,
+    [membershipId, kind, JSON.stringify(payload)],
+  );
+}
+
+/** Mirror the contract's nextBillingDate straight after moving it. */
+export async function setMembershipNextBillingAt(
+  db: Queryable,
+  membershipId: string,
+  nextBillingAt: Date,
+): Promise<void> {
+  await db.query(
+    `update memberships set next_billing_at = $2, updated_at = now() where id = $1`,
+    [membershipId, nextBillingAt],
+  );
+}

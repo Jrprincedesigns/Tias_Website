@@ -50,6 +50,17 @@ api_version = "2026-10"
     "subscription_contracts/update",
   ]
 
+  # Renewal outcomes. The daily job asks Shopify to charge each renewal; these
+  # say whether it went through. Without them a payment is never recorded, the
+  # next billing date never moves, and a failed card is never retried.
+  [[webhooks.subscriptions]]
+  uri = "/webhooks/subscriptions/billing"
+  topics = [
+    "subscription_billing_attempts/success",
+    "subscription_billing_attempts/failure",
+    "subscription_billing_attempts/challenged",
+  ]
+
   [[webhooks.subscriptions]]
   uri = "/webhooks/orders/paid"
   topics = [ "orders/paid" ]
