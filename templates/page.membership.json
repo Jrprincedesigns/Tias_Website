@@ -87,7 +87,7 @@
         "title": "<p>Wear it. Send it.<br/><em>Restored</em>.</p>",
         "intro": "The same studio process you already know — just scheduled, tracked, and covered by your membership.",
         "cta_label": "See what we do in the Spa",
-        "cta_link": "shopify://pages/wig-spa"
+        "cta_link": "shopify://collections/byoh-service"
       }
     },
     "pillars": {
@@ -201,7 +201,7 @@
         "submit_label": "Subscribe",
         "fineprint": "Most services turn around in 5-7 business days.",
         "cta1_label": "See Spa services",
-        "cta1_link": "shopify://pages/wig-spa",
+        "cta1_link": "shopify://collections/byoh-service",
         "cta2_label": "Ask a question",
         "cta2_link": "shopify://pages/contact"
       }
