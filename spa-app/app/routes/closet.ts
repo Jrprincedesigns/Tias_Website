@@ -28,7 +28,10 @@ export const loader = async ({ request }: LoaderFunctionArgs) =>
         ? {
             tier: closet.membership.tier,
             status: closet.membership.status,
-            renewsOn: closet.membership.membershipYearEnd.toISOString(),
+            // The next charge, which Shopify moves on each renewal. The
+            // membership year ends a year after joining whatever the plan, so
+            // it is only a fallback for a contract with no billing date.
+            renewsOn: (closet.membership.nextBillingAt ?? closet.membership.membershipYearEnd).toISOString(),
             nextBillingAt: closet.membership.nextBillingAt?.toISOString() ?? null,
             // Set once a member has cancelled from the closet: the membership
             // stays active until this date, and then does not renew.
