@@ -104,6 +104,8 @@ function signedRequest(params: Record<string, string>, init?: RequestInit): Requ
 
 const asMember = (init?: RequestInit) => signedRequest({ shop: SHOP, logged_in_customer_id: '7401' }, init);
 const post = () => asMember({ method: 'POST', body: '{}', headers: { 'Content-Type': 'application/json' } });
+const postIntent = (intent: string) =>
+  asMember({ method: 'POST', body: JSON.stringify({ intent }), headers: { 'Content-Type': 'application/json' } });
 
 async function seedMembership(customer = CUSTOMER, contractId = CONTRACT) {
   const member = await pool.query(
@@ -345,4 +347,181 @@ test('the closet says when a cancelled membership ends, instead of a renewal', {
   body = await (await closetLoader({ request: asMember(), params: {}, context: {} } as any)).json();
   assert.equal(body.membership.status, 'active');
   assert.equal(body.membership.endsOn, '2026-12-15T12:00:00.000Z');
+});
+
+// ─── Asking to cancel during the minimum ────────────────────────────────────
+
+test('under the minimum, the member is offered a request and told when it would end', { skip }, async () => {
+  await seedMembership();
+  const body = await (await membershipLoader({ request: asMember(), params: {}, context: {} })).json();
+  assert.equal(body.membership.canCancel, false);
+  assert.equal(body.membership.canRequestCancel, true);
+  assert.equal(body.membership.cancelRequested, false);
+  assert.equal(body.membership.cancelEndsOn, '2026-12-15T12:00:00.000Z');
+});
+
+test('a request under the minimum is recorded, and nothing reaches Shopify', { skip }, async () => {
+  const membershipId = await seedMembership();
+  shopify.contract = shopifyContract({ renewals: 1 });
+
+  const body = await (await membershipAction({ request: postIntent('request_cancel'), params: {}, context: {} })).json();
+  assert.equal(body.ok, true);
+  assert.equal(body.membership.cancelRequested, true);
+  assert.equal(body.membership.canRequestCancel, false);
+  assert.equal(body.membership.cancelEndsOn, '2026-12-15T12:00:00.000Z');
+  assert.equal(cancels().length, 0);
+
+  const row = await pool.query(
+    `select status, cancelled_at, cancel_requested_at, cancel_ends_on from memberships where id = $1`,
+    [membershipId],
+  );
+  assert.equal(row.rows[0].status, 'active');
+  assert.equal(row.rows[0].cancelled_at, null);
+  assert.ok(row.rows[0].cancel_requested_at);
+  assert.equal(new Date(row.rows[0].cancel_ends_on).toISOString(), '2026-12-15T12:00:00.000Z');
+
+  // Asking again is answered, not recorded twice.
+  const again = await (await membershipAction({ request: postIntent('request_cancel'), params: {}, context: {} })).json();
+  assert.equal(again.ok, true);
+  const events = await pool.query(`select count(*)::int as n from events where kind = 'membership_cancel_scheduled'`);
+  assert.equal(events.rows[0].n, 1);
+
+  const loaded = await (await membershipLoader({ request: asMember(), params: {}, context: {} })).json();
+  assert.equal(loaded.membership.cancelRequested, true);
+});
+
+test('past the minimum there is nothing to request: the member cancels instead', { skip }, async () => {
+  const membershipId = await seedMembership();
+  shopify.contract = shopifyContract({ renewals: 2 });
+  const body = await (await membershipAction({ request: postIntent('request_cancel'), params: {}, context: {} })).json();
+  assert.equal(body.ok, false);
+  assert.equal(body.error, 'cannot_request');
+  assert.equal(body.membership.canCancel, true);
+  const row = await pool.query(`select cancel_requested_at from memberships where id = $1`, [membershipId]);
+  assert.equal(row.rows[0].cancel_requested_at, null);
+});
+
+test('a member can take their request back', { skip }, async () => {
+  const membershipId = await seedMembership();
+  await membershipAction({ request: postIntent('request_cancel'), params: {}, context: {} });
+
+  const body = await (await membershipAction({ request: postIntent('withdraw'), params: {}, context: {} })).json();
+  assert.equal(body.ok, true);
+  assert.equal(body.membership.cancelRequested, false);
+  assert.equal(body.membership.canRequestCancel, true);
+
+  const row = await pool.query(`select cancel_requested_at, cancel_ends_on from memberships where id = $1`, [membershipId]);
+  assert.equal(row.rows[0].cancel_requested_at, null);
+  assert.equal(row.rows[0].cancel_ends_on, null);
+});
+
+test('an unknown intent changes nothing', { skip }, async () => {
+  await seedMembership();
+  shopify.contract = shopifyContract({ renewals: 2 });
+  const response = await membershipAction({ request: postIntent('delete_everything'), params: {}, context: {} });
+  const body = await response.json();
+  assert.equal(body.ok, false);
+  assert.equal(body.error, 'invalid_request');
+  assert.equal(shopify.calls.length, 0);
+});
+
+test('the daily job waits while the minimum is still being paid', { skip }, async () => {
+  const membershipId = await seedMembership();
+  await membershipAction({ request: postIntent('request_cancel'), params: {}, context: {} });
+  shopify.contract = shopifyContract({ renewals: 1 });
+  shopify.calls = [];
+
+  const result = await cancellation.carryOutCancelRequests(pool, async () => fakeAdmin());
+  assert.deepEqual(result, { carriedOut: [], failed: [] });
+  assert.equal(cancels().length, 0);
+  const row = await pool.query(`select cancelled_at, cancel_requested_at from memberships where id = $1`, [membershipId]);
+  assert.equal(row.rows[0].cancelled_at, null);
+  assert.ok(row.rows[0].cancel_requested_at);
+});
+
+test('once the minimum is paid the daily job cancels, and the member keeps what they paid for', { skip }, async () => {
+  const membershipId = await seedMembership();
+  await membershipAction({ request: postIntent('request_cancel'), params: {}, context: {} });
+  shopify.contract = shopifyContract({ renewals: 2 });
+  const paidThrough = shopify.contract.nextBillingDate as string;
+
+  const result = await cancellation.carryOutCancelRequests(pool, async () => fakeAdmin());
+  assert.deepEqual(result.carriedOut, [membershipId]);
+  assert.deepEqual(cancels().map((call) => call.variables.id), [CONTRACT]);
+
+  const row = await pool.query(`select status, cancelled_at, access_until from memberships where id = $1`, [membershipId]);
+  assert.equal(row.rows[0].status, 'active');
+  assert.ok(row.rows[0].cancelled_at);
+  assert.equal(new Date(row.rows[0].access_until).toISOString(), new Date(paidThrough).toISOString());
+
+  // Carried out once only, and from here it reads as an ordinary cancel.
+  shopify.contract = shopifyContract({ renewals: 2, status: 'CANCELLED' });
+  const again = await cancellation.carryOutCancelRequests(pool, async () => fakeAdmin());
+  assert.deepEqual(again.carriedOut, []);
+  assert.equal(cancels().length, 1);
+  const loaded = await (await membershipLoader({ request: asMember(), params: {}, context: {} })).json();
+  assert.equal(loaded.membership.cancelled, true);
+  assert.equal(loaded.membership.cancelRequested, false);
+});
+
+test('a withdrawn request is never carried out', { skip }, async () => {
+  await seedMembership();
+  await membershipAction({ request: postIntent('request_cancel'), params: {}, context: {} });
+  await membershipAction({ request: postIntent('withdraw'), params: {}, context: {} });
+  shopify.contract = shopifyContract({ renewals: 2 });
+
+  const result = await cancellation.carryOutCancelRequests(pool, async () => fakeAdmin());
+  assert.deepEqual(result.carriedOut, []);
+  assert.equal(cancels().length, 0);
+});
+
+test('if Shopify refuses the cancel, the request stays for tomorrow', { skip }, async () => {
+  const membershipId = await seedMembership();
+  await membershipAction({ request: postIntent('request_cancel'), params: {}, context: {} });
+  shopify.contract = shopifyContract({ renewals: 2 });
+  shopify.cancelError = 'Internal error';
+
+  const result = await cancellation.carryOutCancelRequests(pool, async () => fakeAdmin());
+  assert.equal(result.failed.length, 1);
+  const row = await pool.query(
+    `select cancelled_at, access_until, cancel_requested_at from memberships where id = $1`,
+    [membershipId],
+  );
+  assert.equal(row.rows[0].cancelled_at, null);
+  assert.equal(row.rows[0].access_until, null);
+  assert.ok(row.rows[0].cancel_requested_at);
+});
+
+test('no renewal past the end of a requested minimum is ever charged', { skip }, async () => {
+  const membershipId = await seedMembership();
+  // Third payment due: still owed, request or not.
+  await pool.query(
+    `update memberships set cancel_requested_at = now(), cancel_ends_on = now() + interval '30 days',
+            next_billing_at = now() - interval '1 hour' where id = $1`,
+    [membershipId],
+  );
+  let candidates = await db.listRenewalCandidates(pool, SHOP);
+  assert.deepEqual(candidates.map((c) => c.membershipId), [membershipId]);
+
+  // The minimum is paid and the job has not cancelled yet: the next is not charged.
+  await pool.query(
+    `update memberships set cancel_ends_on = now() - interval '2 hours' where id = $1`,
+    [membershipId],
+  );
+  candidates = await db.listRenewalCandidates(pool, SHOP);
+  assert.deepEqual(candidates, []);
+});
+
+test('the closet shows a requested cancel and the date it ends', { skip }, async () => {
+  const { loader: closetLoader } = await import('../app/routes/closet.ts');
+  await seedMembership();
+  let body = await (await closetLoader({ request: asMember(), params: {}, context: {} } as any)).json();
+  assert.equal(body.membership.cancelRequested, false);
+  assert.equal(body.membership.cancelEndsOn, null);
+
+  await membershipAction({ request: postIntent('request_cancel'), params: {}, context: {} });
+  body = await (await closetLoader({ request: asMember(), params: {}, context: {} } as any)).json();
+  assert.equal(body.membership.cancelRequested, true);
+  assert.equal(body.membership.cancelEndsOn, '2026-12-15T12:00:00.000Z');
+  assert.equal(body.membership.endsOn, null);
 });

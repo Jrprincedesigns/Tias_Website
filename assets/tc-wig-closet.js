@@ -149,6 +149,11 @@
     if (ends) {
       card.appendChild(el('div', 'tc-closet-flag',
         'Your membership is cancelled and will not renew. Your benefits continue until ' + ends + '.'));
+    } else if (m.cancelRequested) {
+      // Asked to cancel during the minimum: still billed for what is left of
+      // it, so no renewal date — the date it ends instead.
+      card.appendChild(el('div', 'tc-closet-flag', requestedSentence(m.cancelEndsOn)));
+      if (m.status === 'active') card.appendChild(buildManage());
     } else {
       var renews = formatDate(m.renewsOn);
       if (renews) card.appendChild(el('div', 'tc-closet-card__meta', 'Renews ' + renews));
@@ -235,6 +240,15 @@
     if (next) rows.appendChild(detailRow('Next payment', next));
     body.appendChild(rows);
 
+    if (plan.cancelRequested) {
+      body.appendChild(el('p', 'tc-closet-manage__text', requestedSentence(plan.cancelEndsOn)));
+      var stay = el('button', 'tc-btn tc-btn--outline', 'Keep my membership');
+      stay.type = 'button';
+      stay.addEventListener('click', function () { submitIntent(body, 'withdraw'); });
+      body.appendChild(stay);
+      return;
+    }
+
     if (plan.canCancel) {
       var cancel = el('button', 'tc-btn tc-btn--outline', 'Cancel membership');
       cancel.type = 'button';
@@ -244,6 +258,21 @@
     }
 
     body.appendChild(el('p', 'tc-closet-manage__text', blockedSentence(plan)));
+
+    if (plan.canRequestCancel) {
+      var request = el('button', 'tc-btn tc-btn--outline', 'Request cancellation');
+      request.type = 'button';
+      request.addEventListener('click', function () { confirmRequest(body, plan); });
+      body.appendChild(request);
+    }
+  }
+
+  /** A requested cancel, waiting on the last minimum payment. */
+  function requestedSentence(endsOn) {
+    var ends = formatDay(endsOn);
+    return ends
+      ? 'You have asked to cancel. Your remaining minimum payments still go through, and your membership ends on ' + ends + '.'
+      : 'You have asked to cancel. Your membership ends once your remaining minimum payments have gone through.';
   }
 
   /** Why a member cannot cancel yet, in their terms. */
@@ -259,6 +288,63 @@
       return minimum + ' You can cancel once your final minimum payment has gone through.';
     }
     return 'Your membership cannot be cancelled from here right now. Contact the studio and we will help.';
+  }
+
+  function confirmRequest(body, plan) {
+    body.textContent = '';
+    var ends = formatDay(plan.cancelEndsOn);
+    body.appendChild(el('p', 'tc-closet-manage__text',
+      'Cancel at the end of your minimum? Your remaining ' +
+      (plan.minCycles - plan.paidCycles === 1 ? 'payment' : 'payments') +
+      ' still go through, and you keep every benefit until ' +
+      (ends ? ends : 'then') + '. You can change your mind before then.'));
+
+    var actions = el('div', 'tc-closet-manage__actions');
+    var keep = el('button', 'tc-closet-manage__toggle', 'Keep my membership');
+    keep.type = 'button';
+    keep.addEventListener('click', function () { renderManage(body, plan); });
+    var confirm = el('button', 'tc-btn tc-btn--dark', 'Yes, request cancellation');
+    confirm.type = 'button';
+    confirm.addEventListener('click', function () { submitIntent(body, 'request_cancel'); });
+    actions.appendChild(keep);
+    actions.appendChild(confirm);
+    body.appendChild(actions);
+    confirm.focus();
+  }
+
+  /**
+   * Asking to cancel, or taking it back. Neither touches Shopify, so the card
+   * is redrawn from the answer and the closet data kept in step with it.
+   */
+  function submitIntent(body, intent) {
+    body.querySelectorAll('button').forEach(function (button) { button.disabled = true; });
+
+    proxyJson('/membership', { method: 'POST', body: JSON.stringify({ intent: intent }) })
+      .then(function (result) {
+        if (!result || !result.membership) throw new Error('failed');
+        var plan = result.membership;
+        if (closetData && closetData.membership) {
+          closetData.membership.cancelRequested = Boolean(plan.cancelRequested);
+          closetData.membership.cancelEndsOn = plan.cancelRequested ? plan.cancelEndsOn : null;
+          if (plan.cancelled) closetData.membership.endsOn = plan.endsOn || new Date().toISOString();
+          renderMembership(closetData);
+          // Keep the panel open on the new state rather than snapping shut.
+          var reopened = root.querySelector('[data-closet-membership] .tc-closet-manage__body');
+          if (reopened) {
+            reopened.hidden = false;
+            var toggle = root.querySelector('[data-closet-membership] .tc-closet-manage__toggle');
+            if (toggle) toggle.setAttribute('aria-expanded', 'true');
+            renderManage(reopened, plan);
+          }
+          return;
+        }
+        renderManage(body, plan);
+      })
+      .catch(function () {
+        manageMessage(body, intent === 'withdraw'
+          ? 'We could not update that just now. Please try again, or contact the studio.'
+          : 'We could not send your request just now. Please try again, or contact the studio.');
+      });
   }
 
   function confirmCancel(body, plan) {
@@ -760,9 +846,10 @@
       }
       var remaining = typeof m.servicesRemaining === 'number' ? m.servicesRemaining : 0;
       if (remaining > 0) mrows.appendChild(detailRow('Included Rejuvenations left', String(remaining)));
-      var ends = formatDay(m.endsOn);
+      var ends = formatDay(m.endsOn) || (m.cancelRequested ? formatDay(m.cancelEndsOn) : null);
       var renews = formatDate(m.renewsOn);
       if (ends) mrows.appendChild(detailRow('Ends', ends));
+      else if (m.cancelRequested) mrows.appendChild(detailRow('Ends', 'After your minimum'));
       else if (renews) mrows.appendChild(detailRow('Renews', renews));
       memberSection.appendChild(mrows);
       side.appendChild(memberSection);

@@ -70,6 +70,10 @@ export interface Membership extends MembershipWindow {
   cancelledAt: Date | null;
   /** After cancelling: the date the membership stays active until. */
   accessUntil: Date | null;
+  /** When the member asked to cancel during their minimum term, if they have. */
+  cancelRequestedAt: Date | null;
+  /** The date that request ends the membership: the end of the minimum. */
+  cancelEndsOn: Date | null;
 }
 
 export interface ServiceRequestSummary {
@@ -183,7 +187,8 @@ export async function listWigs(db: Queryable, memberId: string): Promise<Wig[]> 
 export async function getMembership(db: Queryable, memberId: string): Promise<Membership | null> {
   const { rows } = await db.query(
     `select id, tier, status, membership_year_start, membership_year_end, next_billing_at,
-            discount_percent, rejuvenations_per_period, cancelled_at, access_until
+            discount_percent, rejuvenations_per_period, cancelled_at, access_until,
+            cancel_requested_at, cancel_ends_on
        from memberships
       where member_id = $1
       order by (status = 'active') desc, membership_year_end desc
@@ -203,6 +208,8 @@ export async function getMembership(db: Queryable, memberId: string): Promise<Me
     rejuvenationsPerPeriod: row.rejuvenations_per_period,
     cancelledAt: row.cancelled_at ? new Date(row.cancelled_at) : null,
     accessUntil: row.access_until ? new Date(row.access_until) : null,
+    cancelRequestedAt: row.cancel_requested_at ? new Date(row.cancel_requested_at) : null,
+    cancelEndsOn: row.cancel_ends_on ? new Date(row.cancel_ends_on) : null,
   };
 }
 
@@ -452,7 +459,8 @@ async function spendHeldAllowance(
 async function getMembershipById(db: Queryable, membershipId: string): Promise<Membership | null> {
   const { rows } = await db.query(
     `select id, tier, status, membership_year_start, membership_year_end, next_billing_at,
-            discount_percent, rejuvenations_per_period, cancelled_at, access_until
+            discount_percent, rejuvenations_per_period, cancelled_at, access_until,
+            cancel_requested_at, cancel_ends_on
        from memberships where id = $1`,
     [membershipId],
   );
@@ -469,6 +477,8 @@ async function getMembershipById(db: Queryable, membershipId: string): Promise<M
     rejuvenationsPerPeriod: row.rejuvenations_per_period,
     cancelledAt: row.cancelled_at ? new Date(row.cancelled_at) : null,
     accessUntil: row.access_until ? new Date(row.access_until) : null,
+    cancelRequestedAt: row.cancel_requested_at ? new Date(row.cancel_requested_at) : null,
+    cancelEndsOn: row.cancel_ends_on ? new Date(row.cancel_ends_on) : null,
   };
 }
 
@@ -1196,6 +1206,10 @@ export interface CancellableMembership {
   status: MembershipWindow['status'];
   cancelledAt: Date | null;
   accessUntil: Date | null;
+  /** When the member asked to cancel during their minimum term, if they have. */
+  cancelRequestedAt: Date | null;
+  /** The date that request ends the membership: the end of the minimum. */
+  cancelEndsOn: Date | null;
 }
 
 /**
@@ -1209,7 +1223,8 @@ export async function getCancellableMembership(
   shopifyCustomerId: string,
 ): Promise<CancellableMembership | null> {
   const { rows } = await db.query(
-    `select ms.id, ms.shopify_contract_id, ms.status, ms.cancelled_at, ms.access_until
+    `select ms.id, ms.shopify_contract_id, ms.status, ms.cancelled_at, ms.access_until,
+            ms.cancel_requested_at, ms.cancel_ends_on
        from memberships ms
        join members m on m.id = ms.member_id
       where m.shop = $1 and m.shopify_customer_id = $2 and ms.shopify_contract_id is not null
@@ -1225,6 +1240,8 @@ export async function getCancellableMembership(
     status: row.status,
     cancelledAt: row.cancelled_at ? new Date(row.cancelled_at) : null,
     accessUntil: row.access_until ? new Date(row.access_until) : null,
+    cancelRequestedAt: row.cancel_requested_at ? new Date(row.cancel_requested_at) : null,
+    cancelEndsOn: row.cancel_ends_on ? new Date(row.cancel_ends_on) : null,
   };
 }
 
@@ -1241,6 +1258,7 @@ export async function recordCancellationRequest(
   db: Queryable,
   membershipId: string,
   accessUntil: Date | null,
+  actor: 'member' | 'system' = 'member',
 ): Promise<void> {
   await db.query(
     `update memberships
@@ -1250,8 +1268,8 @@ export async function recordCancellationRequest(
   );
   await db.query(
     `insert into events (membership_id, kind, actor, payload)
-     values ($1, 'membership_cancel_requested', 'member', $2::jsonb)`,
-    [membershipId, JSON.stringify({ accessUntil: accessUntil?.toISOString() ?? null })],
+     values ($1, 'membership_cancel_requested', $3, $2::jsonb)`,
+    [membershipId, JSON.stringify({ accessUntil: accessUntil?.toISOString() ?? null }), actor],
   );
 }
 
@@ -1262,6 +1280,84 @@ export async function undoCancellationRequest(db: Queryable, membershipId: strin
       where id = $1 and status = 'active'`,
     [membershipId],
   );
+}
+
+/**
+ * A member asking to cancel while still inside their minimum term. Nothing
+ * changes in Shopify: the daily job cancels the contract once the minimum is
+ * paid (membership-cancellation.ts). Returns false if the membership is not
+ * open to a request — already cancelled, already requested, or not active.
+ */
+export async function recordCancelRequest(
+  db: Queryable,
+  membershipId: string,
+  endsOn: Date | null,
+): Promise<boolean> {
+  const { rowCount } = await db.query(
+    `update memberships
+        set cancel_requested_at = now(), cancel_ends_on = $2, updated_at = now()
+      where id = $1 and status = 'active' and cancelled_at is null and cancel_requested_at is null`,
+    [membershipId, endsOn],
+  );
+  if (!rowCount) return false;
+  await db.query(
+    `insert into events (membership_id, kind, actor, payload)
+     values ($1, 'membership_cancel_scheduled', 'member', $2::jsonb)`,
+    [membershipId, JSON.stringify({ endsOn: endsOn?.toISOString() ?? null })],
+  );
+  return true;
+}
+
+/**
+ * A member taking back a requested cancel. Only until the daily job has
+ * carried it out — after that the contract is cancelled in Shopify and there
+ * is nothing here to undo. Returns false if there was no request to withdraw.
+ */
+export async function withdrawCancelRequest(db: Queryable, membershipId: string): Promise<boolean> {
+  const { rowCount } = await db.query(
+    `update memberships
+        set cancel_requested_at = null, cancel_ends_on = null, updated_at = now()
+      where id = $1 and status = 'active' and cancelled_at is null and cancel_requested_at is not null`,
+    [membershipId],
+  );
+  if (!rowCount) return false;
+  await db.query(
+    `insert into events (membership_id, kind, actor, payload)
+     values ($1, 'membership_cancel_withdrawn', 'member', '{}'::jsonb)`,
+    [membershipId],
+  );
+  return true;
+}
+
+/** A requested cancel the daily job has not yet carried out. */
+export interface DueCancelRequest {
+  membershipId: string;
+  shop: string;
+  shopifyContractId: string;
+  cancelEndsOn: Date | null;
+}
+
+/**
+ * Every requested cancel not yet carried out. Whether the minimum has been
+ * paid is Shopify's to say, so the job asks for each one.
+ */
+export async function listDueCancelRequests(db: Queryable): Promise<DueCancelRequest[]> {
+  const { rows } = await db.query(
+    `select ms.id, m.shop, ms.shopify_contract_id, ms.cancel_ends_on
+       from memberships ms
+       join members m on m.id = ms.member_id
+      where ms.status = 'active'
+        and ms.cancelled_at is null
+        and ms.cancel_requested_at is not null
+        and ms.shopify_contract_id is not null
+      order by ms.cancel_requested_at`,
+  );
+  return rows.map((row) => ({
+    membershipId: row.id,
+    shop: row.shop,
+    shopifyContractId: row.shopify_contract_id,
+    cancelEndsOn: row.cancel_ends_on ? new Date(row.cancel_ends_on) : null,
+  }));
 }
 
 /** A held-open membership whose paid-through date has passed. */
@@ -1489,6 +1585,13 @@ export async function listRenewalCandidates(
         and ms.shopify_contract_id is not null
         and ms.next_billing_at is not null
         and ms.next_billing_at <= $2
+        -- A requested cancel is owed its minimum and nothing after it. The
+        -- daily cancel job normally ends the contract well before this date;
+        -- this stops a renewal being charged if it has not. A day of slack, as
+        -- in dueCycle, for cycle dates a few hours off the promised date.
+        and not (ms.cancel_requested_at is not null
+                 and ms.cancel_ends_on is not null
+                 and ms.next_billing_at >= ms.cancel_ends_on - interval '1 day')
       order by ms.next_billing_at`,
     [shop, now],
   );

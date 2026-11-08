@@ -38,6 +38,12 @@ export const loader = async ({ request }: LoaderFunctionArgs) =>
             endsOn: closet.membership.cancelledAt
               ? (closet.membership.accessUntil ?? closet.membership.cancelledAt).toISOString()
               : null,
+            // Set while a cancel the member asked for during their minimum is
+            // waiting to be carried out: the date it will end on.
+            cancelEndsOn: !closet.membership.cancelledAt && closet.membership.cancelRequestedAt
+              ? closet.membership.cancelEndsOn?.toISOString() ?? null
+              : null,
+            cancelRequested: !closet.membership.cancelledAt && Boolean(closet.membership.cancelRequestedAt),
             // What the membership is worth to them: the discount on additional
             // services, and the Rejuvenations they can still book — granted
             // every three months, less any already held by a booking. The page

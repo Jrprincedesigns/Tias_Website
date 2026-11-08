@@ -2,9 +2,11 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   accessUntilAfterCancel,
+  accessUntilForRequest,
   addMonths,
   cancellationPolicy,
   membershipStatus,
+  minimumTermEndsOn,
   type MemberContract,
 } from '../app/lib/membership-cancellation.ts';
 
@@ -133,4 +135,34 @@ test('benefits run to the next billing date, and not at all when that has passed
   assert.equal(accessUntilAfterCancel(contract(), now)?.toISOString(), '2026-10-15T12:00:00.000Z');
   assert.equal(accessUntilAfterCancel(contract({ nextBillingDate: new Date('2026-09-01T00:00:00Z') }), now), null);
   assert.equal(accessUntilAfterCancel(contract({ nextBillingDate: null }), now), null);
+});
+
+test('a cancel requested during the minimum ends the membership a full minimum after joining', () => {
+  // Three monthly payments: September, October, November — paid through to December.
+  assert.equal(minimumTermEndsOn(contract())?.toISOString(), '2026-12-15T12:00:00.000Z');
+  assert.equal(
+    minimumTermEndsOn(contract({ billingPolicy: { interval: 'MONTH', intervalCount: 1, minCycles: 6 } }))?.toISOString(),
+    '2027-03-15T12:00:00.000Z',
+  );
+  assert.equal(
+    minimumTermEndsOn(contract({ billingPolicy: { interval: 'WEEK', intervalCount: 1, minCycles: 3 } })),
+    null,
+  );
+});
+
+test('a carried-out request keeps the paid-through date, or the date the member was promised', () => {
+  const now = new Date('2026-11-16T00:00:00Z');
+  const promised = new Date('2026-12-15T12:00:00Z');
+  // The usual case: the last minimum charge moved the billing date on.
+  assert.equal(
+    accessUntilForRequest(contract({ nextBillingDate: new Date('2026-12-15T12:00:00Z') }), promised, now)?.toISOString(),
+    '2026-12-15T12:00:00.000Z',
+  );
+  // The billing date was not moved: the promise still stands.
+  assert.equal(
+    accessUntilForRequest(contract({ nextBillingDate: new Date('2026-11-15T12:00:00Z') }), promised, now)?.toISOString(),
+    '2026-12-15T12:00:00.000Z',
+  );
+  // Neither is ahead of today: nothing to hold open.
+  assert.equal(accessUntilForRequest(contract({ nextBillingDate: null }), new Date('2026-11-01T00:00:00Z'), now), null);
 });
