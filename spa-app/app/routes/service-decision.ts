@@ -20,7 +20,7 @@ export const action = async ({ request }: ActionFunctionArgs) =>
   withProxyAuth(request, async (customer) => {
     if (request.method !== 'POST') return proxyError('method_not_allowed', 405);
 
-    let body: any;
+    let body: { serviceRequestId?: unknown; approved?: unknown } | null;
     try {
       body = await request.json();
     } catch {

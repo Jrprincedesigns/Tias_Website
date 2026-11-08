@@ -1,6 +1,7 @@
 import test, { before, after, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
 import pg from 'pg';
+import type { RouteHandler } from './route-handler.ts';
 
 /**
  * Renewal billing end to end: a real database, the real claim-before-charge
@@ -27,7 +28,7 @@ const FIRST_RENEWAL = new Date('2026-11-25T15:00:00Z');
 
 let pool: pg.Pool;
 let billing: typeof import('../app/lib/renewal-billing.ts');
-let cronLoader: any;
+let cronLoader: RouteHandler;
 
 interface FakeCycle {
   cycleIndex: number;
@@ -38,11 +39,11 @@ interface FakeCycle {
 
 /** What the fake Admin API answers, and what it was asked. */
 interface FakeShopify {
-  contract: { id: string; status: string; createdAt: string; nextBillingDate: string; billingPolicy: any };
+  contract: { id: string; status: string; createdAt: string; nextBillingDate: string; billingPolicy: { interval: string; intervalCount: number } | null };
   cycles: FakeCycle[];
   chargeUserErrors?: Array<{ field: string[]; message: string; code: string }>;
   chargeThrows?: boolean;
-  calls: Array<{ op: string; variables: any }>;
+  calls: Array<{ op: string; variables: Record<string, unknown> }>;
   attemptsCreated: number;
 }
 let shopify: FakeShopify;
@@ -50,7 +51,7 @@ let shopify: FakeShopify;
 function fakeAdmin() {
   return {
     graphql: async (query: string, options?: { variables?: Record<string, unknown> }) => {
-      const variables: any = options?.variables ?? {};
+      const variables = options?.variables ?? {};
       const op = /(?:query|mutation)\s+(\w+)/.exec(query)?.[1] ?? 'unknown';
       shopify.calls.push({ op, variables });
       let data: unknown;
@@ -81,7 +82,7 @@ function fakeAdmin() {
           break;
         }
         case 'SetRenewalDate':
-          shopify.contract.nextBillingDate = variables.date;
+          shopify.contract.nextBillingDate = String(variables.date);
           data = { subscriptionContractSetNextBillingDate: { contract: { id: variables.id }, userErrors: [] } };
           break;
         case 'CancelMemberContract':
@@ -137,7 +138,7 @@ before(async () => {
   billing = await import('../app/lib/renewal-billing.ts');
   const { shopAdmin } = await import('../app/shop-admin.server.ts');
   shopAdmin.forShop = adminFor;
-  ({ loader: cronLoader } = await import('../app/routes/cron.billing.ts'));
+  cronLoader = (await import('../app/routes/cron.billing.ts')).loader as unknown as RouteHandler;
 });
 
 after(async () => {

@@ -7,7 +7,13 @@ import {
   undoCancellationRequest,
   type Queryable,
 } from './db.ts';
-import { syncMemberTags, type AdminClient } from './membership-provisioning.ts';
+import {
+  graphqlErrorsMessage,
+  syncMemberTags,
+  type AdminClient,
+  type GraphQLBody,
+  type UserError,
+} from './membership-provisioning.ts';
 import type { MembershipWindow } from './allowance.ts';
 import { termFromPlanName, tierFromNames } from './membership-tiers.ts';
 
@@ -244,16 +250,27 @@ export async function readMemberContract(admin: AdminClient, contractId: string)
       }`,
     { variables: { id: contractId, attempts: BILLING_ATTEMPTS_READ } },
   );
-  const body: any = await response.json();
+  const body = (await response.json()) as GraphQLBody<{
+    subscriptionContract: {
+      id: string;
+      status: string;
+      createdAt: string;
+      nextBillingDate: string | null;
+      customer: { id: string } | null;
+      billingPolicy: { interval: string; intervalCount: number; minCycles: number | null } | null;
+      lines: { nodes: Array<{ title: string | null; variantTitle: string | null; sellingPlanName: string | null }> } | null;
+      billingAttempts: { nodes: Array<{ ready: boolean; errorCode: string | null }> } | null;
+    } | null;
+  }>;
   if (body.errors?.length) {
-    throw new Error(`reading contract ${contractId} failed: ${body.errors.map((e: any) => e.message).join('; ')}`);
+    throw new Error(`reading contract ${contractId} failed: ${graphqlErrorsMessage(body.errors)}`);
   }
 
   const contract = body.data?.subscriptionContract;
   if (!contract) return null;
 
   const line = contract.lines?.nodes?.[0];
-  const attempts: any[] = contract.billingAttempts?.nodes ?? [];
+  const attempts = contract.billingAttempts?.nodes ?? [];
 
   return {
     id: contract.id,
@@ -287,14 +304,16 @@ export async function cancelContract(admin: AdminClient, contractId: string): Pr
       }`,
     { variables: { id: contractId } },
   );
-  const body: any = await response.json();
+  const body = (await response.json()) as GraphQLBody<{
+    subscriptionContractCancel: { userErrors: UserError[] } | null;
+  }>;
   if (body.errors?.length) {
-    throw new Error(`cancelling ${contractId} failed: ${body.errors.map((e: any) => e.message).join('; ')}`);
+    throw new Error(`cancelling ${contractId} failed: ${graphqlErrorsMessage(body.errors)}`);
   }
   const userErrors = body.data?.subscriptionContractCancel?.userErrors ?? [];
   if (userErrors.length) {
     throw new Error(
-      `cancelling ${contractId} rejected: ${userErrors.map((e: any) => `${JSON.stringify(e.field)} ${e.message}`).join('; ')}`,
+      `cancelling ${contractId} rejected: ${userErrors.map((e) => `${JSON.stringify(e.field)} ${e.message}`).join('; ')}`,
     );
   }
 }

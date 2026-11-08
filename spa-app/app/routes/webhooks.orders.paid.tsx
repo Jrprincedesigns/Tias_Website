@@ -18,10 +18,16 @@ import { reconcilePaidOrder } from '../lib/db';
 export const action = async ({ request }: ActionFunctionArgs) => {
   const { topic, shop, payload } = await authenticate.webhook(request);
 
-  const order = payload as any;
+  /** The fields this handler reads from an orders/paid payload. */
+  const order = (payload ?? {}) as {
+    id?: number | string;
+    admin_graphql_api_id?: string;
+    draft_order_id?: number | string | null;
+    admin_graphql_api_draft_order_id?: string | null;
+  };
   const orderId =
-    order?.admin_graphql_api_id ??
-    (order?.id ? `gid://shopify/Order/${order.id}` : null);
+    order.admin_graphql_api_id ??
+    (order.id ? `gid://shopify/Order/${order.id}` : null);
 
   if (!orderId) {
     console.warn(`[${topic}] ${shop}: no order id in payload, nothing to do`);
@@ -32,10 +38,10 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   // read because the REST payload and the GraphQL id differ in shape, and an
   // order that came from no draft simply has neither.
   const draftIds: string[] = [];
-  if (order?.admin_graphql_api_draft_order_id) {
+  if (order.admin_graphql_api_draft_order_id) {
     draftIds.push(order.admin_graphql_api_draft_order_id);
   }
-  if (order?.draft_order_id) {
+  if (order.draft_order_id) {
     draftIds.push(`gid://shopify/DraftOrder/${order.draft_order_id}`);
   }
 

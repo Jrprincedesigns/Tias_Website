@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { parseIntake } from '../app/lib/intake.ts';
+import { parseIntake, parseWigRegistration, parseUploadRequest, MAX_UPLOAD_BYTES } from '../app/lib/intake.ts';
 
 const WIG = '11111111-2222-3333-4444-555555555555';
 
@@ -76,8 +76,6 @@ test('every advertised service type is accepted', () => {
 });
 
 /* --- registering a unit --------------------------------------------------- */
-
-import { parseWigRegistration, parseUploadRequest, MAX_UPLOAD_BYTES } from '../app/lib/intake.ts';
 
 test('a nickname alone is enough to register a unit', () => {
   // Demanding texture, cap size and lace type up front is how a form gets

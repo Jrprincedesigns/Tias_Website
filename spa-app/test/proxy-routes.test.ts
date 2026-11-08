@@ -2,6 +2,7 @@ import test, { before, after, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import pg from 'pg';
+import type { RouteHandler } from './route-handler.ts';
 
 /**
  * Exercises the proxy endpoints the way Shopify calls them: real signatures,
@@ -16,18 +17,18 @@ process.env.SHOPIFY_API_SECRET = SECRET;
 if (CONNECTION) process.env.DATABASE_URL = CONNECTION;
 
 let pool: pg.Pool;
-let closetLoader: any;
-let serviceRequestAction: any;
-let whoamiLoader: any;
-let wigsAction: any;
+let closetLoader: RouteHandler;
+let serviceRequestAction: RouteHandler;
+let whoamiLoader: RouteHandler;
+let wigsAction: RouteHandler;
 
 before(async () => {
   if (!CONNECTION) return;
   pool = new pg.Pool({ connectionString: CONNECTION, max: 4 });
-  ({ loader: closetLoader } = await import('../app/routes/closet.ts'));
-  ({ action: serviceRequestAction } = await import('../app/routes/service-request.ts'));
-  ({ loader: whoamiLoader } = await import('../app/routes/whoami.ts'));
-  ({ action: wigsAction } = await import('../app/routes/wigs.ts'));
+  closetLoader = (await import('../app/routes/closet.ts')).loader as unknown as RouteHandler;
+  serviceRequestAction = (await import('../app/routes/service-request.ts')).action as unknown as RouteHandler;
+  whoamiLoader = (await import('../app/routes/whoami.ts')).loader as unknown as RouteHandler;
+  wigsAction = (await import('../app/routes/wigs.ts')).action as unknown as RouteHandler;
 });
 
 after(async () => {

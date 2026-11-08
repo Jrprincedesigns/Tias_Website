@@ -2,6 +2,7 @@ import test, { before, after, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import pg from 'pg';
+import type { RouteHandler } from './route-handler.ts';
 
 /**
  * Self-serve cancellation, end to end: real signatures, a real database, and
@@ -21,8 +22,9 @@ const CUSTOMER = 'gid://shopify/Customer/7401';
 const CONTRACT = 'gid://shopify/SubscriptionContract/9001';
 
 let pool: pg.Pool;
-let membershipLoader: any;
-let membershipAction: any;
+let membershipLoader: RouteHandler;
+let membershipAction: RouteHandler;
+let closetLoader: RouteHandler;
 let db: typeof import('../app/lib/db.ts');
 let cancellation: typeof import('../app/lib/membership-cancellation.ts');
 
@@ -31,7 +33,7 @@ interface FakeShopify {
   contract: Record<string, unknown> | null;
   cancelError?: string;
   tagError?: string;
-  calls: Array<{ op: string; variables: any }>;
+  calls: Array<{ op: string; variables: Record<string, unknown> }>;
 }
 let shopify: FakeShopify;
 
@@ -74,7 +76,10 @@ function shopifyContract(overrides: { renewals?: number; [key: string]: unknown 
 before(async () => {
   if (!CONNECTION) return;
   pool = new pg.Pool({ connectionString: CONNECTION, max: 4 });
-  ({ loader: membershipLoader, action: membershipAction } = await import('../app/routes/membership.ts'));
+  const membership = await import('../app/routes/membership.ts');
+  membershipLoader = membership.loader as unknown as RouteHandler;
+  membershipAction = membership.action as unknown as RouteHandler;
+  closetLoader = (await import('../app/routes/closet.ts')).loader as unknown as RouteHandler;
   const { shopAdmin } = await import('../app/shop-admin.server.ts');
   shopAdmin.forShop = async () => fakeAdmin();
   db = await import('../app/lib/db.ts');
@@ -334,17 +339,16 @@ test('the daily job leaves a membership open when its tags cannot be removed', {
 });
 
 test('the closet says when a cancelled membership ends, instead of a renewal', { skip }, async () => {
-  const { loader: closetLoader } = await import('../app/routes/closet.ts');
   const membershipId = await seedMembership();
 
-  let body = await (await closetLoader({ request: asMember(), params: {}, context: {} } as any)).json();
+  let body = await (await closetLoader({ request: asMember(), params: {}, context: {} })).json();
   assert.equal(body.membership.endsOn, null);
 
   await pool.query(
     `update memberships set cancelled_at = now(), access_until = '2026-12-15T12:00:00Z' where id = $1`,
     [membershipId],
   );
-  body = await (await closetLoader({ request: asMember(), params: {}, context: {} } as any)).json();
+  body = await (await closetLoader({ request: asMember(), params: {}, context: {} })).json();
   assert.equal(body.membership.status, 'active');
   assert.equal(body.membership.endsOn, '2026-12-15T12:00:00.000Z');
 });
@@ -513,14 +517,13 @@ test('no renewal past the end of a requested minimum is ever charged', { skip },
 });
 
 test('the closet shows a requested cancel and the date it ends', { skip }, async () => {
-  const { loader: closetLoader } = await import('../app/routes/closet.ts');
   await seedMembership();
-  let body = await (await closetLoader({ request: asMember(), params: {}, context: {} } as any)).json();
+  let body = await (await closetLoader({ request: asMember(), params: {}, context: {} })).json();
   assert.equal(body.membership.cancelRequested, false);
   assert.equal(body.membership.cancelEndsOn, null);
 
   await membershipAction({ request: postIntent('request_cancel'), params: {}, context: {} });
-  body = await (await closetLoader({ request: asMember(), params: {}, context: {} } as any)).json();
+  body = await (await closetLoader({ request: asMember(), params: {}, context: {} })).json();
   assert.equal(body.membership.cancelRequested, true);
   assert.equal(body.membership.cancelEndsOn, '2026-12-15T12:00:00.000Z');
   assert.equal(body.membership.endsOn, null);

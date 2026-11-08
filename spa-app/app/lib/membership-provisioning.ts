@@ -40,6 +40,24 @@ export interface AdminClient {
   graphql: (query: string, options?: { variables?: Record<string, unknown> }) => Promise<Response>;
 }
 
+/** An Admin API answer: the data asked for, or top-level errors. */
+export interface GraphQLBody<D> {
+  data?: D | null;
+  errors?: Array<{ message: string }>;
+}
+
+/** What a mutation rejects with: the field it objected to, and why. */
+export interface UserError {
+  field?: unknown;
+  message: string;
+  code?: string | null;
+}
+
+/** Top-level GraphQL errors, as one line. */
+export function graphqlErrorsMessage(errors: Array<{ message: string }>): string {
+  return errors.map((e) => e.message).join('; ');
+}
+
 export interface ProvisionResult {
   productId: string;
   productHandle: string;
@@ -50,19 +68,20 @@ export interface ProvisionResult {
   variants: Array<{ id: string; tier: string; price: number }>;
 }
 
-async function run<T>(
+async function run<T, D>(
   admin: AdminClient,
   query: string,
   variables: Record<string, unknown>,
-  pick: (data: any) => { result: T; userErrors: Array<{ field?: unknown; message: string }> },
+  pick: (data: D) => { result: T; userErrors: UserError[] },
   label: string,
 ): Promise<T> {
   const response = await admin.graphql(query, { variables });
-  const body: any = await response.json();
+  const body = (await response.json()) as GraphQLBody<D>;
 
   if (body.errors?.length) {
-    throw new Error(`${label} failed: ${body.errors.map((e: any) => e.message).join('; ')}`);
+    throw new Error(`${label} failed: ${graphqlErrorsMessage(body.errors)}`);
   }
+  if (!body.data) throw new Error(`${label} failed: no data in the response`);
 
   const { result, userErrors } = pick(body.data);
   if (userErrors?.length) {
@@ -166,7 +185,7 @@ async function upsertProduct(admin: AdminClient): Promise<{
   created: boolean;
   variants: Array<{ id: string; title: string; price: string }>;
 }> {
-  const existing = await run<ExistingProduct | null>(
+  const existing = await run(
     admin,
     `#graphql
       query MembershipProduct($handle: String!) {
@@ -183,7 +202,7 @@ async function upsertProduct(admin: AdminClient): Promise<{
         }
       }`,
     { handle: MEMBERSHIP_HANDLE },
-    (data) => ({
+    (data: { productByIdentifier: { id: string; variants: { nodes: ExistingProduct['variants'] } } | null }) => ({
       result: data.productByIdentifier
         ? { id: data.productByIdentifier.id, variants: data.productByIdentifier.variants.nodes }
         : null,
@@ -192,7 +211,7 @@ async function upsertProduct(admin: AdminClient): Promise<{
     'membership product lookup',
   );
 
-  const product = await run<any>(
+  const product = await run(
     admin,
     `#graphql
       mutation MembershipProductSet($identifier: ProductSetIdentifiers, $input: ProductSetInput!) {
@@ -211,10 +230,16 @@ async function upsertProduct(admin: AdminClient): Promise<{
       identifier: existing ? { id: existing.id } : null,
       input: productSetInput(existing),
     },
-    (data) => ({ result: data.productSet.product, userErrors: data.productSet.userErrors }),
+    (data: {
+      productSet: {
+        product: { id: string; handle: string; variants: { nodes: Array<{ id: string; title: string; price: string }> } } | null;
+        userErrors: UserError[];
+      };
+    }) => ({ result: data.productSet.product, userErrors: data.productSet.userErrors }),
     'membership product',
   );
 
+  if (!product) throw new Error('membership product: Shopify returned no product');
   return {
     id: product.id,
     handle: product.handle,
@@ -263,7 +288,7 @@ function sellingPlanInput(tier: MembershipTier, term: MembershipTerm) {
 }
 
 async function findSellingPlanGroup(admin: AdminClient, merchantCode: string): Promise<string | null> {
-  const groups = await run<any>(
+  const groups = await run(
     admin,
     `#graphql
       query MembershipPlans($query: String!) {
@@ -272,11 +297,14 @@ async function findSellingPlanGroup(admin: AdminClient, merchantCode: string): P
         }
       }`,
     { query: `merchant_code:${merchantCode}` },
-    (data) => ({ result: data.sellingPlanGroups.nodes, userErrors: [] }),
+    (data: { sellingPlanGroups: { nodes: Array<{ id: string; merchantCode: string }> } }) => ({
+      result: data.sellingPlanGroups.nodes,
+      userErrors: [],
+    }),
     'selling plan group lookup',
   );
 
-  const match = groups.find((g: any) => g.merchantCode === merchantCode);
+  const match = groups.find((g) => g.merchantCode === merchantCode);
   return match?.id ?? null;
 }
 
@@ -297,7 +325,7 @@ async function upsertTierSellingPlanGroup(
   const existingId = await findSellingPlanGroup(admin, merchantCode);
 
   if (existingId) {
-    await run<any>(
+    await run(
       admin,
       `#graphql
         mutation AttachMembershipPlans($id: ID!, $productVariantIds: [ID!]!) {
@@ -307,7 +335,7 @@ async function upsertTierSellingPlanGroup(
           }
         }`,
       { id: existingId, productVariantIds: [variantId] },
-      (data) => ({
+      (data: { sellingPlanGroupAddProductVariants: { sellingPlanGroup: { id: string } | null; userErrors: UserError[] } }) => ({
         result: data.sellingPlanGroupAddProductVariants.sellingPlanGroup,
         userErrors: data.sellingPlanGroupAddProductVariants.userErrors,
       }),
@@ -316,7 +344,7 @@ async function upsertTierSellingPlanGroup(
     return { id: existingId, created: false };
   }
 
-  const group = await run<any>(
+  const group = await run(
     admin,
     `#graphql
       mutation CreateMembershipPlans(
@@ -340,13 +368,14 @@ async function upsertTierSellingPlanGroup(
       // this tier's prices on every tier.
       resources: { productVariantIds: [variantId] },
     },
-    (data) => ({
+    (data: { sellingPlanGroupCreate: { sellingPlanGroup: { id: string } | null; userErrors: UserError[] } }) => ({
       result: data.sellingPlanGroupCreate.sellingPlanGroup,
       userErrors: data.sellingPlanGroupCreate.userErrors,
     }),
     `${tier.name} selling plans`,
   );
 
+  if (!group) throw new Error(`${tier.name} selling plans: Shopify returned no group`);
   return { id: group.id, created: true };
 }
 
@@ -359,7 +388,7 @@ async function detachLegacySellingPlanGroup(admin: AdminClient, productId: strin
   const legacyId = await findSellingPlanGroup(admin, LEGACY_SELLING_PLAN_MERCHANT_CODE);
   if (!legacyId) return false;
 
-  await run<any>(
+  await run(
     admin,
     `#graphql
       mutation DetachLegacyMembershipPlans($id: ID!, $productIds: [ID!]!) {
@@ -369,7 +398,7 @@ async function detachLegacySellingPlanGroup(admin: AdminClient, productId: strin
         }
       }`,
     { id: legacyId, productIds: [productId] },
-    (data) => ({
+    (data: { sellingPlanGroupRemoveProducts: { removedProductIds: string[] | null; userErrors: UserError[] } }) => ({
       result: data.sellingPlanGroupRemoveProducts.removedProductIds,
       userErrors: data.sellingPlanGroupRemoveProducts.userErrors,
     }),
@@ -469,7 +498,7 @@ export async function syncMemberTags(
   const unwanted = [MEMBER_TAG, ...allTierTags].filter((tag) => !wanted.includes(tag));
 
   if (unwanted.length > 0) {
-    await run<any>(
+    await run(
       admin,
       `#graphql
         mutation RemoveMemberTags($id: ID!, $tags: [String!]!) {
@@ -478,13 +507,13 @@ export async function syncMemberTags(
           }
         }`,
       { id: input.customerId, tags: unwanted },
-      (data) => ({ result: null, userErrors: data.tagsRemove.userErrors }),
+      (data: { tagsRemove: { userErrors: UserError[] } }) => ({ result: null, userErrors: data.tagsRemove.userErrors }),
       'removing member tags',
     );
   }
 
   if (wanted.length > 0) {
-    await run<any>(
+    await run(
       admin,
       `#graphql
         mutation AddMemberTags($id: ID!, $tags: [String!]!) {
@@ -493,7 +522,7 @@ export async function syncMemberTags(
           }
         }`,
       { id: input.customerId, tags: wanted },
-      (data) => ({ result: null, userErrors: data.tagsAdd.userErrors }),
+      (data: { tagsAdd: { userErrors: UserError[] } }) => ({ result: null, userErrors: data.tagsAdd.userErrors }),
       'adding member tags',
     );
   }

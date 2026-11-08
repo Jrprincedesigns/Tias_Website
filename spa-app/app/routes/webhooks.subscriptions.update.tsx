@@ -22,9 +22,10 @@ import { termFromPlanName, tierFromNames } from '../lib/membership-tiers';
 export const action = async ({ request }: ActionFunctionArgs) => {
   const { topic, shop, payload, admin } = await authenticate.webhook(request);
 
+  const delivered = (payload ?? {}) as { id?: number | string; admin_graphql_api_id?: string };
   const contractId =
-    (payload as any)?.admin_graphql_api_id ??
-    ((payload as any)?.id ? `gid://shopify/SubscriptionContract/${(payload as any).id}` : null);
+    delivered.admin_graphql_api_id ??
+    (delivered.id ? `gid://shopify/SubscriptionContract/${delivered.id}` : null);
 
   if (!contractId) {
     console.warn(`[${topic}] ${shop}: no contract id in payload, nothing to do`);
