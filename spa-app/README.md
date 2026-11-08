@@ -162,6 +162,13 @@ Members cancel from *Manage membership* in the Wig Closet
   plan's `minCycles` only in its own subscription UI, so an API cancel would go
   straight through. The route counts paid cycles (the checkout plus each
   successful billing attempt) and refuses until the contract's minimum is met.
+- **Under the minimum, members can ask to cancel instead.** The request is
+  saved (`memberships.cancel_requested_at`, migration 0010) and changes
+  nothing in Shopify: the remaining minimum payments go through as normal.
+  Once the last one is paid, the daily `/cron/memberships` job cancels the
+  contract, and from there it is an ordinary member cancel. The member can
+  withdraw the request until then. The renewal job never charges past the end
+  of a requested minimum (`cancel_ends_on`), even if the cancel has not run.
 - **Cancelling keeps what was paid for.** `subscriptionContractCancel` ends the
   contract at once, so nothing more can be charged, but the membership stays
   active until the contract's next billing date (`memberships.access_until`).

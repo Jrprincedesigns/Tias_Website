@@ -1,7 +1,10 @@
 import {
   closeLapsedCancellation,
+  listDueCancelRequests,
   listLapsedCancellations,
   membershipStatusFromContract,
+  recordCancellationRequest,
+  undoCancellationRequest,
   type Queryable,
 } from './db.ts';
 import { syncMemberTags, type AdminClient } from './membership-provisioning.ts';
@@ -29,6 +32,12 @@ import { termFromPlanName, tierFromNames } from './membership-tiers.ts';
  *
  * A cancellation Tia makes in Shopify admin sets no `access_until`, so it still
  * ends everything at once, exactly as before.
+ *
+ * A member still inside the minimum can ask to cancel instead. The request is
+ * written down (`cancel_requested_at`, migration 0010), their remaining minimum
+ * payments go through as normal, and the daily job carries it out once the
+ * last of them has been paid — from there it is an ordinary member cancel,
+ * held open to the paid-through date. Until then they can take it back.
  */
 
 /** A contract as read back for the member, from the Admin API. */
@@ -141,6 +150,33 @@ export function cancellationPolicy(contract: MemberContract): CancellationPolicy
     reason: 'minimum_term',
     cancellableFrom: months === null ? null : addMonths(contract.createdAt, (minCycles - 1) * months),
   };
+}
+
+/**
+ * The date a minimum term runs out: one billing interval after the charge that
+ * completes it, which is the date a cancel requested during the minimum ends
+ * the membership. Null when the interval is not months or years.
+ */
+export function minimumTermEndsOn(contract: MemberContract): Date | null {
+  const months = intervalMonths(contract.billingPolicy);
+  return months === null ? null : addMonths(contract.createdAt, minimumCycles(contract) * months);
+}
+
+/**
+ * How long a member keeps their membership when their requested cancel is
+ * carried out: the paid-through date, or failing that the date they were told
+ * when they asked. The contract's date comes first because it is what was
+ * actually paid for; the promised date covers a renewal whose billing date was
+ * not moved on. Neither in the past.
+ */
+export function accessUntilForRequest(
+  contract: MemberContract,
+  promised: Date | null,
+  now: Date = new Date(),
+): Date | null {
+  const paidThrough = accessUntilAfterCancel(contract, now);
+  if (paidThrough) return paidThrough;
+  return promised && promised.getTime() > now.getTime() ? promised : null;
 }
 
 /**
@@ -292,6 +328,55 @@ export async function endLapsedMemberships(
     } catch (error) {
       result.failed.push({
         membershipId: lapsed.membershipId,
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
+  }
+  return result;
+}
+
+export interface RequestRunResult {
+  /** Memberships whose requested cancel was carried out. */
+  carriedOut: string[];
+  failed: Array<{ membershipId: string; error: string }>;
+}
+
+/**
+ * Carry out every requested cancellation whose minimum has now been paid.
+ *
+ * Still under the minimum — the last payment not yet taken, or failing and
+ * being retried — it waits for another day. A contract no longer active has
+ * been dealt with elsewhere (cancelled for non-payment, or in admin), and the
+ * contract webhook ends the membership as it would any other.
+ *
+ * Recorded before Shopify is asked, for the same reason as a member cancel:
+ * the webhook decides from access_until whether to keep the membership open.
+ */
+export async function carryOutCancelRequests(
+  db: Queryable,
+  adminFor: (shop: string) => Promise<AdminClient>,
+  now: Date = new Date(),
+): Promise<RequestRunResult> {
+  const result: RequestRunResult = { carriedOut: [], failed: [] };
+  for (const request of await listDueCancelRequests(db)) {
+    try {
+      const admin = await adminFor(request.shop);
+      const contract = await readMemberContract(admin, request.shopifyContractId);
+      if (!contract || contract.status.toUpperCase() !== 'ACTIVE') continue;
+      if (!cancellationPolicy(contract).canCancel) continue;
+
+      const accessUntil = accessUntilForRequest(contract, request.cancelEndsOn, now);
+      await recordCancellationRequest(db, request.membershipId, accessUntil, 'system');
+      try {
+        await cancelContract(admin, contract.id);
+      } catch (error) {
+        await undoCancellationRequest(db, request.membershipId);
+        throw error;
+      }
+      result.carriedOut.push(request.membershipId);
+    } catch (error) {
+      result.failed.push({
+        membershipId: request.membershipId,
         error: error instanceof Error ? error.message : String(error),
       });
     }
