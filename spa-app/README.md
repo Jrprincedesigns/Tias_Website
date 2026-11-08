@@ -96,31 +96,20 @@ ordinary role reads nothing and the tests fail in a confusing way. Locally:
 Tests run with `--test-concurrency=1` because the integration files share one
 database and truncate between cases.
 
-## Phase 0 — proving the storefront can reach this app
+## Checking the storefront can reach this app
 
-Under new customer accounts the account portal runs on a different origin from
-the storefront, and everything the Wig Closet does assumes a signed-in visitor
-still arrives here with an identity Shopify vouches for. `sections/tc-phase0-probe.liquid`
-in the theme tests that chain and prints a verdict per link.
+Everything the Wig Closet does assumes a signed-in visitor arrives here,
+through the app proxy, with an identity Shopify vouches for. Signed in on the
+storefront, open `/apps/spa/whoami`: it should name your customer id and shop.
+It reads no database, so it isolates a Shopify problem from a Supabase one.
 
-1. `npm run dev` here (`shopify app dev`) — note the tunnel URL it prints.
-2. Set `DATABASE_URL` in `.env` to the Supabase **pooler** string (port 6543).
-3. In Shopify admin, create a page using the **page.phase0** template on the
-   duplicated unpublished theme.
-4. Sign in on the storefront, open that page, read the four rows.
-
-A and C decide the architecture. B and D are configuration:
-
-- **B fails** — nothing at `/apps/spa`. Check that `shopify app dev` is still
-  running and that its tunnel URL matches `app_proxy.url`. The proxy endpoints
-  live at the app root (`whoami.ts`, `closet.ts`, `service-request.ts`) because
-  the CLI sets `app_proxy.url` to the bare tunnel host on every run.
-- **D fails** — `DATABASE_URL` is unset or pointed at direct Postgres rather
-  than the pooler.
-
-Delete `sections/tc-phase0-probe.liquid` and `templates/page.phase0.json` once
-the answer is recorded. `/apps/spa/whoami` is worth keeping — it reads no
-database, so it isolates a Shopify problem from a Supabase one.
+- **Nothing at `/apps/spa`** — the proxy is not reaching the app. Check that
+  `app_proxy.url` points at the deployment (or, in development, that
+  `shopify app dev` is still running). The proxy endpoints live at the app
+  root (`whoami.ts`, `closet.ts`, `service-request.ts`) because the CLI sets
+  `app_proxy.url` to the bare tunnel host on every run.
+- **`whoami` works but the closet fails** — `DATABASE_URL` is unset or pointed
+  at direct Postgres rather than the pooler (port 6543).
 
 ## The app will not start without DATABASE_URL
 

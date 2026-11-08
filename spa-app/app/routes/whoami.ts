@@ -2,7 +2,7 @@ import type { LoaderFunctionArgs } from 'react-router';
 import { json, withProxyAuth } from '../lib/proxy.ts';
 
 /**
- * GET /apps/spa/whoami — the diagnostic behind the Phase 0 probe.
+ * GET /apps/spa/whoami — a diagnostic for the storefront-to-app chain.
  *
  * Answers one question: does a storefront request arrive here carrying a
  * customer Shopify has vouched for? Under new customer accounts the portal
