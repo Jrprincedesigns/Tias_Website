@@ -1,7 +1,6 @@
 import type { ActionFunctionArgs, HeadersFunction, LoaderFunctionArgs } from 'react-router';
-import { Form, useActionData, useLoaderData, useNavigation } from 'react-router';
+import { Form, useActionData, useLoaderData, useNavigation, useRouteError } from 'react-router';
 import { boundary } from '@shopify/shopify-app-react-router/server';
-import { useRouteError } from 'react-router';
 import { authenticate } from '../shopify.server';
 import { MEMBERSHIP_HANDLE, provisionMembership, pricingPreview } from '../lib/membership-provisioning.ts';
 
@@ -29,7 +28,16 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       }`,
     { variables: { handle: MEMBERSHIP_HANDLE } },
   );
-  const body: any = await response.json();
+  const body = (await response.json()) as {
+    data?: {
+      productByIdentifier: {
+        title: string;
+        status: string;
+        onlineStoreUrl: string | null;
+        sellingPlanGroupCount: number | null;
+      } | null;
+    };
+  };
   const product = body?.data?.productByIdentifier ?? null;
 
   return {
@@ -75,7 +83,7 @@ export default function MembershipSetup() {
       <s-section heading="What members pay">
         <s-paragraph>
           Every tier takes 10% off all additional Wig Spa services. Rejuvenations are credited every
-          three months; unused ones roll over, and each period's expire 30 days after it ends.
+          three months; unused ones roll over, and each period’s expire 30 days after it ends.
         </s-paragraph>
 
         {pricing.map((tier) => (
@@ -95,9 +103,9 @@ export default function MembershipSetup() {
 
         <s-paragraph>
           Each tier has its own selling plans, and each plan sets its own price. The discount lives
-          on each variant's <s-text>member_discount_percent</s-text> metafield, so it can be changed
+          on each variant’s <s-text>member_discount_percent</s-text> metafield, so it can be changed
           in the product screen. Price and term changes apply to new members only — Shopify fixes a
-          subscription's terms when it is bought.
+          subscription’s terms when it is bought.
         </s-paragraph>
       </s-section>
 

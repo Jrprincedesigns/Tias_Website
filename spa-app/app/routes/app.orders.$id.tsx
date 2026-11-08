@@ -205,7 +205,7 @@ export default function WorkOrderDetail() {
             {order.coveredByAllowance && order.status === 'inspection' ? (
               <s-banner tone="info">
                 <s-paragraph>
-                  Approving spends one of this member's included services.
+                  Approving spends one of this member’s included services.
                 </s-paragraph>
               </s-banner>
             ) : null}

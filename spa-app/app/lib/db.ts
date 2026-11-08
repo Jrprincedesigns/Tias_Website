@@ -25,8 +25,16 @@ import { membershipStatus } from './membership-cancellation.ts';
  * member is told and what they are charged cannot drift.
  */
 
+/**
+ * A row as `pg` returns it. The driver has no idea what a query selects, so
+ * columns are untyped here and each function below maps its rows onto a typed
+ * result before anything else sees them. This is the one place that is loose.
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export type Row = any;
+
 export interface Queryable {
-  query(text: string, values?: unknown[]): Promise<{ rows: any[]; rowCount: number | null }>;
+  query(text: string, values?: unknown[]): Promise<{ rows: Row[]; rowCount: number | null }>;
 }
 
 export interface Transactable extends Queryable {
@@ -520,7 +528,7 @@ export async function listActiveServices(db: Queryable, memberId: string): Promi
   return rows.map(toSummary);
 }
 
-function toSummary(row: any): ServiceRequestSummary {
+function toSummary(row: Row): ServiceRequestSummary {
   return {
     id: row.id,
     wigId: row.wig_id,
@@ -905,7 +913,7 @@ export async function getWigDetail(
     [wigId, memberId],
   );
 
-  const serviceIds = serviceRows.map((r: any) => r.id);
+  const serviceIds = serviceRows.map((r) => r.id);
 
   // Two grouped reads rather than one per service — a unit with a long history
   // would otherwise fan out into a query per row.
@@ -977,7 +985,7 @@ export async function getWigDetail(
       notes: w.notes,
       lastServicedAt: w.last_serviced_at ? new Date(w.last_serviced_at).toISOString() : null,
     },
-    services: serviceRows.map((row: any) => ({
+    services: serviceRows.map((row) => ({
       id: row.id,
       serviceType: row.service_type,
       status: row.status,
@@ -990,7 +998,7 @@ export async function getWigDetail(
       events: eventsByService.get(row.id) ?? [],
       inspection: inspectionByService.get(row.id) ?? null,
     })),
-    photos: photoRows.map((row: any) => ({
+    photos: photoRows.map((row) => ({
       id: row.id,
       kind: row.kind,
       storagePath: row.storage_path,
@@ -1453,7 +1461,7 @@ export async function reconcilePaidOrder(
       );
     }
 
-    return rows.map((row: any) => row.id);
+    return rows.map((row) => row.id);
   });
 }
 
@@ -1486,7 +1494,7 @@ export async function listServiceInputs(db: Queryable): Promise<ServiceInput[]> 
     `select id, name, hours, materials_cents, includes_shipping, notes
        from service_pricing order by position, name`,
   );
-  return rows.map((row: any) => ({
+  return rows.map((row) => ({
     id: row.id,
     name: row.name,
     hours: Number(row.hours),
@@ -1617,7 +1625,7 @@ export interface BillingAttemptRow {
 const BILLING_ATTEMPT_COLUMNS = `id, membership_id, shop, shopify_contract_id, cycle_index, attempt_number,
   idempotency_key, status, shopify_attempt_id, requested_at, resolved_at`;
 
-function billingAttemptFromRow(row: any): BillingAttemptRow {
+function billingAttemptFromRow(row: Row): BillingAttemptRow {
   return {
     id: row.id,
     membershipId: row.membership_id,

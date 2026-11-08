@@ -14,7 +14,12 @@ import {
 } from './db.ts';
 import { sendAlert } from './alerts.ts';
 import { addMonths, cancelContract, intervalMonths } from './membership-cancellation.ts';
-import type { AdminClient } from './membership-provisioning.ts';
+import {
+  graphqlErrorsMessage,
+  type AdminClient,
+  type GraphQLBody,
+  type UserError,
+} from './membership-provisioning.ts';
 
 /**
  * Charging membership renewals.
@@ -185,11 +190,16 @@ export function renewalStep(attempts: AttemptRecord[], now: Date = new Date()): 
 
 // ─── Admin API ──────────────────────────────────────────────────────────────
 
-async function graphql(admin: AdminClient, what: string, query: string, variables: Record<string, unknown>) {
+async function graphql<D>(
+  admin: AdminClient,
+  what: string,
+  query: string,
+  variables: Record<string, unknown>,
+): Promise<D | null | undefined> {
   const response = await admin.graphql(query, { variables });
-  const body: any = await response.json();
+  const body = (await response.json()) as GraphQLBody<D>;
   if (body.errors?.length) {
-    throw new ShopifyRefused(`${what}: ${body.errors.map((e: any) => e.message).join('; ')}`);
+    throw new ShopifyRefused(`${what}: ${graphqlErrorsMessage(body.errors)}`);
   }
   return body.data;
 }
@@ -208,7 +218,7 @@ export class ShopifyRefused extends Error {
   }
 }
 
-function userErrorsMessage(errors: any[]): string {
+function userErrorsMessage(errors: UserError[]): string {
   return errors.map((e) => `${e.code ?? JSON.stringify(e.field)} ${e.message}`).join('; ');
 }
 
@@ -217,7 +227,23 @@ export async function readRenewalContract(
   contractId: string,
   now: Date = new Date(),
 ): Promise<RenewalContract | null> {
-  const data = await graphql(
+  const data = await graphql<{
+    subscriptionContract: {
+      id: string;
+      status: string;
+      createdAt: string;
+      nextBillingDate: string | null;
+      billingPolicy: { interval: string; intervalCount: number } | null;
+    } | null;
+    subscriptionBillingCycles: {
+      nodes: Array<{
+        cycleIndex: number;
+        billingAttemptExpectedDate: string;
+        status: BillingCycle['status'];
+        skipped: boolean | null;
+      }>;
+    } | null;
+  }>(
     admin,
     `reading billing cycles for ${contractId}`,
     `#graphql
@@ -251,7 +277,7 @@ export async function readRenewalContract(
     createdAt: new Date(contract.createdAt),
     nextBillingDate: contract.nextBillingDate ? new Date(contract.nextBillingDate) : null,
     billingPolicy: contract.billingPolicy ?? null,
-    cycles: (data?.subscriptionBillingCycles?.nodes ?? []).map((cycle: any) => ({
+    cycles: (data?.subscriptionBillingCycles?.nodes ?? []).map((cycle) => ({
       cycleIndex: cycle.cycleIndex,
       expectedAt: new Date(cycle.billingAttemptExpectedDate),
       status: cycle.status,
@@ -266,7 +292,12 @@ export async function chargeBillingCycle(
   contractId: string,
   cycleIndex: number,
 ): Promise<{ attemptId: string | null }> {
-  const data = await graphql(
+  const data = await graphql<{
+    subscriptionBillingCycleCharge: {
+      subscriptionBillingAttempt: { id: string } | null;
+      userErrors: UserError[];
+    } | null;
+  }>(
     admin,
     `charging ${contractId} cycle ${cycleIndex}`,
     `#graphql
@@ -282,11 +313,11 @@ export async function chargeBillingCycle(
     { id: contractId, index: cycleIndex },
   );
   const payload = data?.subscriptionBillingCycleCharge;
-  const userErrors: any[] = payload?.userErrors ?? [];
+  const userErrors = payload?.userErrors ?? [];
   if (userErrors.length) {
     throw new ShopifyRefused(
       `charging ${contractId} cycle ${cycleIndex} rejected: ${userErrorsMessage(userErrors)}`,
-      userErrors.map((e) => e.code).filter(Boolean),
+      userErrors.map((e) => e.code).filter((code): code is string => Boolean(code)),
     );
   }
   return { attemptId: payload?.subscriptionBillingAttempt?.id ?? null };
@@ -298,7 +329,9 @@ export async function nextCycleDate(
   contractId: string,
   cycleIndex: number,
 ): Promise<Date | null> {
-  const data = await graphql(
+  const data = await graphql<{
+    subscriptionBillingCycles: { nodes: Array<{ cycleIndex: number; billingAttemptExpectedDate: string }> } | null;
+  }>(
     admin,
     `reading the cycle after ${cycleIndex} for ${contractId}`,
     `#graphql
@@ -318,7 +351,9 @@ export async function nextCycleDate(
 }
 
 export async function setContractNextBillingDate(admin: AdminClient, contractId: string, date: Date): Promise<void> {
-  const data = await graphql(
+  const data = await graphql<{
+    subscriptionContractSetNextBillingDate: { userErrors: UserError[] } | null;
+  }>(
     admin,
     `moving ${contractId}'s next billing date`,
     `#graphql
@@ -330,7 +365,7 @@ export async function setContractNextBillingDate(admin: AdminClient, contractId:
       }`,
     { id: contractId, date: date.toISOString() },
   );
-  const userErrors: any[] = data?.subscriptionContractSetNextBillingDate?.userErrors ?? [];
+  const userErrors = data?.subscriptionContractSetNextBillingDate?.userErrors ?? [];
   if (userErrors.length) {
     throw new ShopifyRefused(`moving ${contractId}'s next billing date rejected: ${userErrorsMessage(userErrors)}`);
   }
@@ -535,7 +570,20 @@ function gid(type: string, apiId: unknown, numericId: unknown): string | null {
   return null;
 }
 
-export function billingAttemptOutcome(payload: any): BillingAttemptOutcome {
+/** The fields this app reads from a subscription_billing_attempts webhook. */
+interface BillingAttemptPayload {
+  id?: unknown;
+  admin_graphql_api_id?: unknown;
+  subscription_contract_id?: unknown;
+  admin_graphql_api_subscription_contract_id?: unknown;
+  order_id?: unknown;
+  admin_graphql_api_order_id?: unknown;
+  error_code?: string | null;
+  error_message?: string | null;
+}
+
+export function billingAttemptOutcome(raw: unknown): BillingAttemptOutcome {
+  const payload = (raw ?? {}) as BillingAttemptPayload;
   return {
     attemptId: gid('SubscriptionBillingAttempt', payload?.admin_graphql_api_id, payload?.id),
     contractId: gid(

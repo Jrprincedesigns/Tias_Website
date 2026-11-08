@@ -32,10 +32,10 @@ test('does nothing but log when no notifier is configured', async () => {
 test('posts the summary where a chat notifier will render it', async () => {
   process.env.ALERT_WEBHOOK_URL = 'https://hooks.example.test/abc';
   let seenUrl: string | undefined;
-  let seenBody: any;
-  globalThis.fetch = (async (url: any, init: any) => {
+  let seenBody: { text?: string; event?: string; detail?: Record<string, unknown>; at?: string } | undefined;
+  globalThis.fetch = (async (url: string | URL | Request, init?: RequestInit) => {
     seenUrl = String(url);
-    seenBody = JSON.parse(init.body);
+    seenBody = JSON.parse(String(init?.body));
     return new Response('');
   }) as typeof fetch;
 
@@ -47,10 +47,10 @@ test('posts the summary where a chat notifier will render it', async () => {
 
   assert.equal(seenUrl, 'https://hooks.example.test/abc');
   // Slack and Discord both render `text`; everything else rides alongside.
-  assert.equal(seenBody.text, 'The Wig Spa app was uninstalled');
-  assert.equal(seenBody.event, 'app_uninstalled');
-  assert.equal(seenBody.detail.shop, 'example.myshopify.com');
-  assert.ok(seenBody.at, 'carries a timestamp');
+  assert.equal(seenBody?.text, 'The Wig Spa app was uninstalled');
+  assert.equal(seenBody?.event, 'app_uninstalled');
+  assert.equal(seenBody?.detail?.shop, 'example.myshopify.com');
+  assert.ok(seenBody?.at, 'carries a timestamp');
 });
 
 test('a dead notifier does not fail the webhook that raised the alert', async () => {
